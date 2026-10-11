@@ -92,7 +92,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.6);
             border: 3px solid transparent; 
             transition: 0.3s; 
-            background: rgba(255,255,255,0.05); /* Fundo sutil enquanto carrega */
+            background: rgba(255,255,255,0.05); 
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -122,16 +122,19 @@
         <h3 style="margin-bottom: 20px;">Bem-vindo ao Jogo!</h3>
         <input type="text" id="globalPlayerName" placeholder="Digite seu Apelido">
         
+        <!-- OPÇÃO PRINCIPAL PARA JOGADORES (GUESTS) NO TOPO -->
         <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; margin-top: 25px;">
+            <h4 style="color: #38ef7d; margin-bottom: 10px;">🎮 Já tem um convite?</h4>
+            <p style="font-size: 13px; opacity: 0.8; margin-bottom: 15px;">A maioria dos jogadores entra por aqui.</p>
+            <button onclick="showJoinRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); margin-top: 0;">Entrar em uma Sala</button>
+        </div>
+
+        <!-- OPÇÃO SECUNDÁRIA PARA O HOST ABAIXO -->
+        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; margin-top: 15px;">
             <h4 style="color: #f1c40f; margin-bottom: 10px;">👑 Criar Nova Partida</h4>
             <label style="font-size: 13px; opacity: 0.8;">Pontos para Vencer (Ex: 30):</label>
             <input type="number" id="targetScoreInput" value="30">
-            <button onclick="showCreateRoom()">Criar Sala como Host</button>
-        </div>
-        
-        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; margin-top: 15px;">
-            <h4 style="color: #38ef7d; margin-bottom: 10px;">🎮 Já tem um convite?</h4>
-            <button onclick="showJoinRoom()" style="background: rgba(255,255,255,0.1); box-shadow: none; border: 1px solid rgba(255,255,255,0.2);">Entrar em uma Sala</button>
+            <button onclick="showCreateRoom()" style="background: rgba(255,255,255,0.1); box-shadow: none; border: 1px solid rgba(255,255,255,0.2);">Criar Sala como Host</button>
         </div>
     </div>
 
@@ -180,22 +183,50 @@
         let amINarrator = false;
         let narratorHasPlayed = false;
 
-        // Função mágica que tenta carregar a imagem em loop invisível se a IA falhar na primeira vez
+        // NOVO SISTEMA DE CARREGAMENTO COM TIMEOUT (Anti-Congelamento)
         function loadAndRetryImage(imgElement, originalUrl, onSuccess) {
             let attempts = 0;
+            let hasLoaded = false;
+
             const tryLoad = (urlToTry) => {
+                if (hasLoaded) return;
+
+                // TIMEOUT: Se a API da IA travar por mais de 5 segundos, forçamos o erro
+                const timeoutId = setTimeout(() => {
+                    if (!hasLoaded) {
+                        imgElement.src = ''; // Interrompe o request travado
+                        handleError();
+                    }
+                }, 5000);
+
                 imgElement.onload = () => {
+                    if (hasLoaded) return;
+                    hasLoaded = true;
+                    clearTimeout(timeoutId);
                     if (onSuccess) onSuccess();
                 };
-                imgElement.onerror = () => {
+
+                const handleError = () => {
+                    if (hasLoaded) return;
+                    clearTimeout(timeoutId);
                     attempts++;
-                    // Espera 2 segundos e engana o cache do navegador colocando um timestamp falso
-                    setTimeout(() => {
-                        tryLoad(originalUrl + '&retry=' + new Date().getTime() + attempts);
-                    }, 2000);
+                    
+                    if (attempts >= 2) {
+                        // PLANO B SEGURO: Após 2 tentativas (10s máximo), renderiza uma carta base para NÃO travar o jogo
+                        hasLoaded = true;
+                        imgElement.onload = () => { if (onSuccess) onSuccess(); };
+                        // Usa picsum blur como fallback surreal abstrato
+                        imgElement.src = `https://picsum.photos/seed/${Math.random()}/300/450?blur=2`;
+                    } else {
+                        // Tenta de novo na IA, adicionando um sufixo para enganar o cache do navegador
+                        tryLoad(originalUrl + '&retry=' + new Date().getTime());
+                    }
                 };
+
+                imgElement.onerror = handleError;
                 imgElement.src = urlToTry;
             };
+
             tryLoad(originalUrl);
         }
 
@@ -288,14 +319,13 @@
                             alert("Calma! Você precisa esperar o Narrador falar a dica e colocar a carta dele na mesa primeiro.");
                             return;
                         }
-                        openModal(img.src, 'PLAY'); // Pega a URL final com retry
+                        openModal(img.src, 'PLAY');
                     };
 
-                    // Usa o novo sistema de Retry Invisível
+                    // CARREGA AS IMAGENS COM O SISTEMA ANTI-CONGELAMENTO
                     loadAndRetryImage(img, url, () => {
                         loadedCount++;
                         if (loadedCount === totalImages) {
-                            // SÓ MANDA O OK QUANDO 100% DAS IMAGENS TIVEREM CARREGADO
                             socket.emit('imagesLoaded', { roomId: myRoomId });
                         }
                     });
@@ -346,13 +376,11 @@
                 const img = document.createElement('img');
                 img.className = 'card';
                 
-                // Usa o sistema de Retry invisível nas cartas da votação também
                 loadAndRetryImage(img, url, () => {
                     if (amINarrator) {
                         img.classList.add('narrator-card-view');
                         img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
                     } else if (img.src.includes(myPlayedCardUrl.split('&retry')[0])) { 
-                        // Verifica ignorando o carimbo de retry
                         img.classList.add('my-card-disabled');
                         img.onclick = () => alert("Você não pode votar na sua própria carta!");
                     } else {
