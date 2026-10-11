@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-// Função para gerar URLs de cartas únicas e evitar repetições
 function generateUniqueCard() {
     const randomSeed = Math.random().toString(36).substring(2, 10);
     return `https://picsum.photos/seed/${randomSeed}/200/300`;
@@ -58,10 +57,8 @@ io.on('connection', (socket) => {
       room.playersLoadedImages = 0;
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
       
-      // Sorteia o primeiro narrador
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
-      // Distribui 5 cartas ÚNICAS para todos
       room.players.forEach(p => {
         p.hand = Array.from({length: 5}, () => generateUniqueCard());
       });
@@ -70,7 +67,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Função para avançar de rodada
   socket.on('nextRound', ({ roomId }) => {
     const room = gameRooms[roomId];
     if (room && room.status === 'ROUND_END') {
@@ -78,12 +74,10 @@ io.on('connection', (socket) => {
         room.playersLoadedImages = 0;
         room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
 
-        // Passa o narrador para o próximo
         const currentNarratorIndex = room.players.findIndex(p => p.isNarrator);
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
-        // Repõe a mão dos jogadores para sempre terem 5 cartas
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
             for(let i = 0; i < cardsNeeded; i++) {
@@ -109,7 +103,6 @@ io.on('connection', (socket) => {
   socket.on('playCard', ({ roomId, cardUrl }) => {
     const room = gameRooms[roomId];
     if(room) {
-      // Salva qual é a carta oficial do narrador
       const narrator = room.players.find(p => p.isNarrator);
       if (narrator && narrator.id === socket.id) {
           room.currentRound.narratorCard = cardUrl;
@@ -120,7 +113,6 @@ io.on('connection', (socket) => {
         room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
       }
 
-      // Quando todos jogarem as cartas
       if (room.currentRound.playedCards.length === room.players.length) {
         room.status = 'VOTING_PHASE';
         const shuffledCards = [...room.currentRound.playedCards].sort(() => Math.random() - 0.5);
@@ -133,11 +125,14 @@ io.on('connection', (socket) => {
   socket.on('voteCard', ({ roomId, cardUrl }) => {
       const room = gameRooms[roomId];
       if (room) {
+          // TRAVA DE SEGURANÇA: Narrador não pode votar de jeito nenhum
+          const isNarrator = room.players.find(p => p.id === socket.id)?.isNarrator;
+          if (isNarrator) return;
+
           room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
           
-          const expectedVotes = room.players.length - 1; // Narrador não vota
+          const expectedVotes = room.players.length - 1; 
           
-          // Quando todos votarem
           if (room.currentRound.votes.length === expectedVotes) {
               const narratorCard = room.currentRound.narratorCard;
               const narratorPlayer = room.players.find(p => p.isNarrator);
@@ -145,12 +140,9 @@ io.on('connection', (socket) => {
               let acertos = 0;
               room.currentRound.votes.forEach(v => { if(v.votedCardUrl === narratorCard) acertos++; });
 
-              // LÓGICA DE PONTUAÇÃO DO DIXIT
               if (acertos === 0 || acertos === expectedVotes) {
-                  // Todos acertaram ou todos erraram (Narrador = 0, Outros = 2)
                   room.players.forEach(p => { if(!p.isNarrator) p.score += 2; });
               } else {
-                  // Alguns acertaram (Narrador = 3, Quem acertou = 3)
                   narratorPlayer.score += 3;
                   room.currentRound.votes.forEach(v => {
                       if(v.votedCardUrl === narratorCard) {
@@ -160,7 +152,6 @@ io.on('connection', (socket) => {
                   });
               }
 
-              // Ponto bônus por enganar os outros
               room.currentRound.votes.forEach(v => {
                   if (v.votedCardUrl !== narratorCard) {
                       const ownerOfCard = room.currentRound.playedCards.find(c => c.cardUrl === v.votedCardUrl);
@@ -171,7 +162,6 @@ io.on('connection', (socket) => {
                   }
               });
 
-              // Tira as cartas jogadas da mão dos jogadores
               room.players.forEach(p => {
                   const pCard = room.currentRound.playedCards.find(c => c.playerId === p.id);
                   if (pCard) {
@@ -180,11 +170,7 @@ io.on('connection', (socket) => {
               });
 
               room.status = 'ROUND_END';
-              
-              // Verifica se alguém atingiu a pontuação máxima
               const isGameOver = room.players.some(p => p.score >= room.targetScore);
-              
-              // Ordena do maior para o menor pontuador
               const ranking = [...room.players].sort((a, b) => b.score - a.score);
 
               io.to(roomId).emit('roundEnded', { 
