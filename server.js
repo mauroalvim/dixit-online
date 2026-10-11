@@ -12,42 +12,52 @@ app.use(express.static(path.join(__dirname, 'public')));
 const gameRooms = {}; 
 
 // =========================================================================
-// 🎴 SEU REPOSITÓRIO DE CARTAS (O BARALHO MESTRE)
+// 🎴 SEU REPOSITÓRIO DE CARTAS (A SUA IDEIA DO PINTEREST/IMGUR)
 // =========================================================================
-// Como você sugeriu, aqui está o banco de dados fixo. 
-// Essas URLs já estão em cache, carregarão instantaneamente e nunca se repetem.
-// Você pode adicionar ou trocar por links de imagens do Pinterest/Imgur (.jpg ou .png).
+// Aqui estão 40 links diretos de imagens abstratas e coloridas para garantir
+// que o jogo não trave. Você pode apagar esses links e colocar os seus
+// do Pinterest, Imgur, etc. Lembre-se que o link deve terminar em .jpg ou .png
 const MASTER_DECK = [
-    "https://image.pollinations.ai/prompt/surreal%20painting%20melting%20clocks%20in%20a%20vibrant%20red%20desert%20Dali%20style?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20giant%20glowing%20whale%20flying%20through%20a%20starry%20night%20sky%20over%20a%20city?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20mysterious%20staircase%20leading%20up%20into%20a%20giant%20glowing%20eye%20in%20the%20clouds?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20tree%20with%20glowing%20blue%20butterflies%20instead%20of%20leaves%20fantasy%20art?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20wooden%20door%20standing%20open%20in%20the%20middle%20of%20the%20ocean%20showing%20a%20galaxy?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/floating%20islands%20connected%20by%20golden%20chains%20in%20a%20pink%20sky?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20giant%20teacup%20in%20a%20forest%20pouring%20a%20colorful%20waterfall?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20mechanical%20steampunk%20owl%20with%20stained%20glass%20wings?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20vintage%20mirror%20reflecting%20an%20underwater%20world%20with%20jellyfish?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20magical%20train%20driving%20through%20fluffy%20colorful%20clouds?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/giant%20neon%20mushrooms%20glowing%20in%20a%20dark%20mystical%20cave?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20cat%20made%20entirely%20of%20bright%20nebulae%20and%20stars?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20floating%20house%20suspended%20by%20hundreds%20of%20giant%20colorful%20balloons?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20surreal%20labyrinth%20of%20endless%20stairs%20MC%20Escher%20style%20but%20colorful?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20chessboard%20where%20pieces%20are%20bizarre%20living%20fantasy%20creatures?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20glowing%20castle%20built%20on%20the%20back%20of%20a%20giant%20swimming%20turtle?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/vibrant%20clouds%20shaped%20like%20mythical%20dragons%20and%20beasts?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20waterfall%20of%20liquid%20gold%20falling%20into%20a%20mystical%20glowing%20pool?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20surreal%20library%20with%20floating%20magical%20books%20and%20glowing%20pages?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20clockwork%20sun%20made%20of%20gears%20radiating%20magical%20neon%20light?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20person%20walking%20on%20a%20tightrope%20made%20of%20light%20between%20two%20planets?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20hot%20air%20balloon%20shaped%20like%20a%20giant%20jellyfish%20over%20a%20desert?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20forest%20where%20the%20trees%20are%20made%20of%20crystal%20and%20glass?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20giant%20pocket%20watch%20half%20buried%20in%20snow%20glowing%20blue?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20painting%20of%20a%20boat%20sailing%20on%20a%20sea%20of%20clouds?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20keyhole%20in%20a%20brick%20wall%20showing%20a%20vibrant%20jungle%20inside?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20flock%20of%20birds%20turning%20into%20autumn%20leaves%20in%20the%20sky?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/an%20hourglass%20where%20the%20sand%20is%20a%20miniature%20city%20falling%20apart?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20piano%20in%20the%20middle%20of%20a%20field%20playing%20glowing%20musical%20notes?width=300&height=450&nologo=true",
-    "https://image.pollinations.ai/prompt/a%20lantern%20containing%20a%20tiny%20trapped%20galaxy?width=300&height=450&nologo=true"
+    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1506744626753-1fa44df14d28?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1497215848122-330104711311?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1505909182942-e2f09aee3e89?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1524169358666-79f22534bc6e?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1519120944692-1a8d8cfc107f?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1501862700950-18382cd41497?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1484589065579-248aad0d8e93?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1549490349-8643362247b5?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1574169208507-84376144848b?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1552083375-1447ce886485?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1563089145-599997674d42?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1551009175-8a68da93d5f9?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1557672199-6e8c8b2b8faa?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1561214115-f2f119cd5e80?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1563089145-599997674d42?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1566041510639-8d95a2490bfb?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1567095761054-7a02e69e5c43?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1568283626786-fb7131751dce?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1573511190529-672522718e87?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1574169208507-84376144848b?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1574169208536-c953e05c1440?w=300&h=450&fit=crop",
+    "https://images.unsplash.com/photo-1576502200916-3808e07386a5?w=300&h=450&fit=crop"
 ];
 // =========================================================================
 
