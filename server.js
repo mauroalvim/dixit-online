@@ -11,30 +11,41 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
+// Novos prompts SUPER específicos para forçar a IA a criar artes no estilo Dixit
 const surrealPrompts = [
-    "surreal_dreamlike_fantasy_art_painting",
-    "whimsical_storybook_illustration_abstract_bizarre",
-    "salvador_dali_style_surrealism_melting_mystical",
-    "magical_realism_colorful_oil_painting_dream",
-    "abstract_concept_art_mystical_wonder_glowing",
-    "psychedelic_bizarre_imaginative_watercolor",
-    "ethereal_cosmic_fantasy_creatures_painting",
-    "surreal_isometric_optical_illusion_art",
-    "dark_fantasy_fairy_tale_mysterious_forest",
-    "steampunk_surreal_clockwork_dreamscape"
+    "A+surreal+painting+in+the+style+of+Salvador+Dali,+melting+clocks+in+a+desert,+dreamlike",
+    "Whimsical+and+bizarre+storybook+illustration,+a+flying+whale+over+a+city+of+clouds",
+    "Magical+realism+oil+painting,+a+staircase+leading+into+a+giant+glowing+moon",
+    "Abstract+and+mystical+concept+art,+a+tree+with+eyes+instead+of+leaves",
+    "Psychedelic+watercolor+art,+a+cat+made+of+galaxies+and+stars",
+    "Ethereal+fantasy+creatures+in+a+surreal+landscape,+vibrant+colors,+dreamcore",
+    "Optical+illusion+art,+impossible+geometry,+a+room+with+no+end,+Escher+style",
+    "Dark+fairy+tale+illustration,+a+mysterious+forest+where+the+trees+are+clocks",
+    "Steampunk+surrealism,+a+mechanical+butterfly+with+stained+glass+wings",
+    "A+floating+island+with+a+giant+teacup+waterfall,+surreal+fantasy+digital+art"
 ];
 
 function generateUniqueCard() {
     const randomSeed = Math.floor(Math.random() * 9999999);
     const randomPrompt = surrealPrompts[Math.floor(Math.random() * surrealPrompts.length)];
+    // Utilizando a API Pollinations, agora com os prompts formatados corretamente para garantir a arte gerada por IA
     return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true`;
 }
 
 io.on('connection', (socket) => {
   console.log(`Novo usuário conectado: ${socket.id}`);
 
+  // Nova rota para validar se a sala existe antes de pedir o nome
+  socket.on('validateRoom', ({ roomId }) => {
+      const room = gameRooms[roomId];
+      if (room && room.status === 'LOBBY') {
+          socket.emit('roomValidated', { roomId });
+      } else {
+          socket.emit('joinError', { message: 'Sala não encontrada ou partida já em andamento!' });
+      }
+  });
+
   socket.on('createRoom', ({ targetScore, playerName }) => {
-    // GERA UM CÓDIGO APENAS NUMÉRICO DE 4 DÍGITOS (ex: 1234 a 9999)
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
