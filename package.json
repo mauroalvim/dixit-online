@@ -1,4 +1,16 @@
-  "dependencies": {
-    "express": "^4.18.2",
-    "@google/genai": "^0.1.1"
-  }
+​{
+
+
+"dependencies": {
+
+
+"express": "^4.18.2",
+
+
+"@google/genai": "^0.1.1"
+
+
+}
+
+
+}
