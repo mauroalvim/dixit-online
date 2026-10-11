@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-// Lista de comandos (prompts) de estilos surrealistas para a IA gerar cartas de Dixit
 const surrealPrompts = [
     "surreal_dreamlike_fantasy_art_painting",
     "whimsical_storybook_illustration_abstract_bizarre",
@@ -25,13 +24,9 @@ const surrealPrompts = [
     "steampunk_surreal_clockwork_dreamscape"
 ];
 
-// Nova função que chama a IA Geradora de Imagens com estilos artísticos
 function generateUniqueCard() {
     const randomSeed = Math.floor(Math.random() * 9999999);
-    // Sorteia um estilo surrealista da lista acima
     const randomPrompt = surrealPrompts[Math.floor(Math.random() * surrealPrompts.length)];
-    
-    // Usa a API gratuita do Pollinations AI para gerar as artes abstratas (tamanho 300x450 para melhor qualidade)
     return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true`;
 }
 
@@ -39,7 +34,8 @@ io.on('connection', (socket) => {
   console.log(`Novo usuário conectado: ${socket.id}`);
 
   socket.on('createRoom', ({ targetScore, playerName }) => {
-    const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+    // GERA UM CÓDIGO NUMÉRICO DE 4 DÍGITOS (ex: 1000 a 9999)
+    const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
     gameRooms[roomId] = {
