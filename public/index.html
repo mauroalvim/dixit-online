@@ -92,13 +92,13 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.6);
             border: 3px solid transparent; 
             transition: 0.3s; 
+            background: rgba(255,255,255,0.05); /* Fundo sutil enquanto carrega */
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
         .my-card-disabled { opacity: 0.3; cursor: not-allowed; border-color: #ff4b2b !important; transform: none !important; }
         .narrator-card-view { cursor: default; }
         .narrator-card-view:hover { transform: none; border-color: transparent; }
-        
         .locked-card { opacity: 0.7; filter: grayscale(30%); }
         .locked-card:hover { transform: none; border-color: transparent; cursor: wait; }
         
@@ -137,8 +137,8 @@
 
     <div id="joinForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px;">Entrar na Sala</h3>
-        <p style="font-size: 14px; opacity: 0.8; margin-bottom: 15px;">Peça o código de 4 letras para o criador da sala.</p>
-        <input type="text" id="roomId" placeholder="Código da Sala (Ex: A1B2)">
+        <p style="font-size: 14px; opacity: 0.8; margin-bottom: 15px;">Peça o código de 4 números para o criador da sala.</p>
+        <input type="number" id="roomId" placeholder="Código (Ex: 1234)">
         <button onclick="joinRoom()">Conectar</button>
         <button onclick="backToMenu()" class="btn-cancel">Voltar</button>
     </div>
@@ -150,7 +150,7 @@
         
         <div id="dynamicMessages">
             <h3 id="waitingMessage" style="color: #f1c40f; display:none;">Aguardando outros jogadores entrarem...</h3>
-            <h3 id="loadingMessage" style="color: #38ef7d; display:none;">🪄 Pintando novas cartas abstratas... Aguarde!</h3>
+            <h3 id="loadingMessage" style="color: #38ef7d; display:none;">🪄 Pintando cartas surrealistas... Isso pode levar alguns segundos, aguarde!</h3>
             <div id="actionInstruction" class="status-text"></div>
         </div>
         
@@ -179,6 +179,25 @@
         let myHandElements = [];
         let amINarrator = false;
         let narratorHasPlayed = false;
+
+        // Função mágica que tenta carregar a imagem em loop invisível se a IA falhar na primeira vez
+        function loadAndRetryImage(imgElement, originalUrl, onSuccess) {
+            let attempts = 0;
+            const tryLoad = (urlToTry) => {
+                imgElement.onload = () => {
+                    if (onSuccess) onSuccess();
+                };
+                imgElement.onerror = () => {
+                    attempts++;
+                    // Espera 2 segundos e engana o cache do navegador colocando um timestamp falso
+                    setTimeout(() => {
+                        tryLoad(originalUrl + '&retry=' + new Date().getTime() + attempts);
+                    }, 2000);
+                };
+                imgElement.src = urlToTry;
+            };
+            tryLoad(originalUrl);
+        }
 
         function showCreateRoom() {
             const name = document.getElementById('globalPlayerName').value;
@@ -210,7 +229,7 @@
         });
 
         function joinRoom() {
-            const room = document.getElementById('roomId').value.toUpperCase();
+            const room = document.getElementById('roomId').value;
             const name = document.getElementById('globalPlayerName').value;
             if(!room) return alert("Digite o código da sala!");
             socket.emit('joinRoom', { roomId: room, playerName: name });
@@ -262,7 +281,6 @@
 
                 me.hand.forEach(url => {
                     const img = new Image();
-                    img.src = url;
                     img.className = 'card';
                     
                     img.onclick = () => {
@@ -270,20 +288,20 @@
                             alert("Calma! Você precisa esperar o Narrador falar a dica e colocar a carta dele na mesa primeiro.");
                             return;
                         }
-                        openModal(url, 'PLAY');
+                        openModal(img.src, 'PLAY'); // Pega a URL final com retry
                     };
 
-                    img.onload = checkAllLoaded;
-                    img.onerror = checkAllLoaded; 
+                    // Usa o novo sistema de Retry Invisível
+                    loadAndRetryImage(img, url, () => {
+                        loadedCount++;
+                        if (loadedCount === totalImages) {
+                            // SÓ MANDA O OK QUANDO 100% DAS IMAGENS TIVEREM CARREGADO
+                            socket.emit('imagesLoaded', { roomId: myRoomId });
+                        }
+                    });
+
                     myHandElements.push(img);
                 });
-
-                function checkAllLoaded() {
-                    loadedCount++;
-                    if (loadedCount === totalImages) {
-                        socket.emit('imagesLoaded', { roomId: myRoomId });
-                    }
-                }
             }
         });
 
@@ -326,18 +344,22 @@
 
             cards.forEach(url => {
                 const img = document.createElement('img');
-                img.src = url;
                 img.className = 'card';
                 
-                if (amINarrator) {
-                    img.classList.add('narrator-card-view');
-                    img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
-                } else if (url === myPlayedCardUrl) {
-                    img.classList.add('my-card-disabled');
-                    img.onclick = () => alert("Você não pode votar na sua própria carta!");
-                } else {
-                    img.onclick = () => openModal(url, 'VOTE');
-                }
+                // Usa o sistema de Retry invisível nas cartas da votação também
+                loadAndRetryImage(img, url, () => {
+                    if (amINarrator) {
+                        img.classList.add('narrator-card-view');
+                        img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
+                    } else if (img.src.includes(myPlayedCardUrl.split('&retry')[0])) { 
+                        // Verifica ignorando o carimbo de retry
+                        img.classList.add('my-card-disabled');
+                        img.onclick = () => alert("Você não pode votar na sua própria carta!");
+                    } else {
+                        img.onclick = () => openModal(img.src, 'VOTE');
+                    }
+                });
+                
                 handDiv.appendChild(img);
             });
         });
