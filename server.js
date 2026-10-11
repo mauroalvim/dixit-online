@@ -11,54 +11,68 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-const subjects = [
-    "melting clocks in a vibrant desert",
-    "a giant glowing whale flying in a starry sky",
-    "a glowing staircase leading into a giant eye",
-    "a tree with glowing butterflies instead of leaves",
-    "a mysterious door standing alone in the middle of the ocean",
-    "floating islands connected by golden chains",
-    "a giant teacup pouring a colorful waterfall",
-    "a mechanical owl with stained glass wings",
-    "a vintage mirror reflecting a different galaxy",
-    "a magical train driving through colorful clouds",
-    "giant neon mushrooms glowing in a dark forest",
-    "a cat made of bright nebulae and stars",
-    "a floating house suspended by giant colorful balloons",
-    "a surreal labyrinth of endless stairs",
-    "a chessboard where pieces are bizarre living creatures",
-    "a glowing city built on the back of a giant turtle",
-    "vibrant clouds shaped like mythical beasts",
-    "a waterfall of liquid gold in a mystical cave",
-    "a surreal library with floating magical books",
-    "a clockwork sun radiating magical neon light"
+// LISTA DE PROMPTS SURREAIS (Estilo Dixit puro). 
+// Por serem fixos e sem 'seed', a IA só vai criá-los UMA VEZ na primeira partida da vida.
+// Depois disso, a CDN serve a imagem em milissegundos para todos os jogadores.
+const dixitConcepts = [
+    "A giant hourglass containing a bustling miniature city in the top and a serene forest in the bottom",
+    "A small paper boat sailing on a sea of floating open books under a starry night sky with two moons",
+    "A solitary figure walking on a tightrope made of glowing thread between two giant floating teacups",
+    "A chessboard where the pieces are different phases of the moon and the board is the night sky",
+    "A solitary lighthouse projecting a beam of music notes instead of light over a stormy sea",
+    "A child swinging on a swing suspended from a giant crescent moon, above a cloud sea",
+    "A keyhole in an old brick wall revealing a vibrant, lush alien jungle",
+    "A painter whose brush is creating real, flying birds escaping the canvas",
+    "A pair of gentle hands holding a fragile, glowing miniature galaxy",
+    "A door opening in the middle of a burning desert, leading into a snowy winter forest",
+    "A giant ancient tortoise carrying a bustling medieval castle on its shell",
+    "A pocket watch opening to reveal a miniature spinning solar system inside",
+    "A bridge made of giant piano keys stretching over a river of flowing watercolor paints",
+    "A hot air balloon where the balloon is a giant, glowing jellyfish in the sky",
+    "A vintage bicycle with wheels made of sliced citrus fruits riding on a sunny path",
+    "A giant tree whose branches are intertwined human hands reaching for the stars",
+    "A book open on a desk, a miniature stormy ocean with a pirate ship spilling out of its pages",
+    "A lantern containing a tiny, sleeping dragon illuminating a dark mysterious cave",
+    "A path of glowing stepping stones leading into a giant, mysterious foggy forest",
+    "A clock face where the hands are snakes and the numbers are blooming flowers",
+    "A woman whose hair flows naturally into becoming a winding river through a valley",
+    "A massive, floating crystal illuminating a ruined, ancient temple in the clouds",
+    "A labyrinth of tall mirrors in a desert, reflecting oceans and deep forests",
+    "A giant floating eye in the sky crying a waterfall into a dry canyon below",
+    "A mechanical owl with stained glass feathers flying towards a mechanical sun",
+    "A cozy armchair in a snowy field, a fire burning brightly in a floating fireplace nearby",
+    "A twilight sky filled with floating, glowing jellyfish instead of clouds",
+    "A staircase made of clouds spiraling up to a glowing golden door in the sky",
+    "A desert landscape where the sand dunes are shaped exactly like sleeping giants",
+    "A giant compass where the needle points to a glowing, floating heart in the distance",
+    "A futuristic city built entirely inside a giant glass bottle floating on a calm sea",
+    "A dark forest where the trees are giant mushrooms glowing with bright bioluminescence",
+    "A tightrope walker balancing delicately on a thread of light between two glass skyscrapers",
+    "A giant sparkling spider web catching shooting stars instead of insects in space",
+    "A pair of angel wings made entirely of autumn leaves falling gently to the ground",
+    "A formal tea party set up on a giant lily pad in a pond reflecting a magenta sky",
+    "A glowing golden key floating above an open palm in a dark, mysterious room",
+    "A landscape where the mountain ranges are actually giant, sleeping green dragons",
+    "A clockwork heart beating inside a chest made of rusty gears and brass springs",
+    "A giant feather falling from the sky, transforming into a flock of white doves",
+    "A tall mirror reflecting a person's childhood self holding their hand warmly",
+    "A solitary floating island with a single, glowing tree that drops stars as leaves",
+    "A vintage steam train driving directly out of a roaring fireplace into a living room",
+    "Heavy rain falling upwards from an umbrella into a bright, sunny blue sky",
+    "An intricate birdcage with its door open, holding a glowing miniature storm cloud inside"
 ];
 
-const styles = [
-    "Salvador Dali surrealism",
-    "Rene Magritte style",
-    "dreamcore aesthetic",
-    "highly colorful magical realism",
-    "psychedelic abstract art",
-    "whimsical fantasy illustration",
-    "ethereal digital masterpiece",
-    "vibrant oil painting",
-    "intricate surreal masterpiece"
-];
-
-function generateDeck(size) {
-    const deck = [];
-    for(let i = 0; i < size; i++) {
-        const seed = Math.floor(Math.random() * 9999999);
-        const subject = subjects[Math.floor(Math.random() * subjects.length)];
-        const style = styles[Math.floor(Math.random() * styles.length)];
-        
-        const prompt = `Surreal masterpiece, ${subject}, ${style}, vibrant colors, high definition`;
+function generateDeck() {
+    // Embaralha as cartas disponíveis para a partida
+    const shuffled = [...dixitConcepts].sort(() => Math.random() - 0.5);
+    
+    return shuffled.map(concept => {
+        // Adiciona a base de estilo surrealista para forçar o aspecto "Dixit"
+        const prompt = concept + ", surreal Dixit board game art style, highly detailed, whimsical, metaphorical, dreamlike masterpiece";
         const encodedPrompt = encodeURIComponent(prompt);
-        
-        deck.push(`https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&seed=${seed}&nologo=true`);
-    }
-    return deck;
+        // Não usar o Math.random() ou seed é essencial para o CDN cache funcionar perfeitamente
+        return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&nologo=true`;
+    });
 }
 
 io.on('connection', (socket) => {
@@ -82,7 +96,7 @@ io.on('connection', (socket) => {
       targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
-      deck: generateDeck(50), 
+      deck: generateDeck(), // Gera o baralho otimizado e surreal
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
@@ -115,7 +129,7 @@ io.on('connection', (socket) => {
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
       room.players.forEach(p => {
-        p.hand = room.deck.splice(0, 5);
+        p.hand = room.deck.splice(0, 6); // Agora distribuímos 6 cartas por jogador
       });
 
       io.to(roomId).emit('gameStarted', { players: room.players });
@@ -133,12 +147,10 @@ io.on('connection', (socket) => {
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
         room.players.forEach(p => {
-            const cardsNeeded = 5 - p.hand.length;
+            const cardsNeeded = 6 - p.hand.length;
             for(let i = 0; i < cardsNeeded; i++) {
                 if (room.deck.length > 0) {
                     p.hand.push(room.deck.splice(0, 1)[0]);
-                } else {
-                    p.hand.push(generateDeck(1)[0]);
                 }
             }
         });
