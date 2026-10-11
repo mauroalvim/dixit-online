@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -35,8 +34,15 @@ io.on('connection', (socket) => {
       const newPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
       room.players.push(newPlayer);
       socket.join(roomId);
+      
+      // Avisa o host que alguém entrou
       io.to(room.hostSocketId).emit('playerJoined', { players: room.players });
+      
+      // Confirma para o jogador que ele entrou com sucesso
       socket.emit('joinedSuccess', { roomId, playerName });
+    } else {
+      // SE A SALA NÃO EXISTIR OU JÁ ESTIVER JOGANDO
+      socket.emit('joinError', { message: 'Sala não encontrada ou partida já em andamento!' });
     }
   });
 
@@ -48,8 +54,7 @@ io.on('connection', (socket) => {
       const narratorIndex = Math.floor(Math.random() * room.players.length);
       room.players.forEach((p, i) => p.isNarrator = (i === narratorIndex));
       
-      // Aqui integraria a chamada da IA para gerar imagens únicas para a mão de cada jogador
-      // Exemplo fictício de distribuição de URLs geradas:
+      // Simulação de distribuição de cartas/imagens
       room.players.forEach(p => {
         p.hand = Array.from({length: 5}, (_, i) => `https://picsum.photos/seed/${roomId}${p.name}${i}/200/300`);
       });
@@ -58,7 +63,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Outros eventos (narratorPlay, playerPlay, vote) seguiriam a mesma lógica baseada no nosso plano
 });
 
 const PORT = process.env.PORT || 3000;
