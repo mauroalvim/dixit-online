@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dixit Online</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #2c3e50; color: white; }
+        .card { width: 100px; height: 150px; border-radius: 8px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Dixit Online</h1>
+    <div id="lobby">
+        <button onclick="createRoom()">Criar Sala (Host)</button>
+        <br><br>
+        <input type="text" id="roomId" placeholder="Código da Sala">
+        <input type="text" id="playerName" placeholder="Seu Nome">
+        <button onclick="joinRoom()">Entrar</button>
+    </div>
+    <div id="game" style="display:none;">
+        <h2 id="roomCodeDisplay"></h2>
+        <div id="playersList"></div>
+        <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
+        <div id="hand"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myRoomId = '';
+
+        function createRoom() {
+            socket.emit('createRoom', { targetScore: 30 });
+        }
+
+        socket.on('roomCreated', ({ roomId }) => {
+            myRoomId = roomId;
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            document.getElementById('roomCodeDisplay').innerText = 'Sala: ' + roomId;
+            document.getElementById('startBtn').style.display = 'inline-block';
+        });
+
+        function joinRoom() {
+            const room = 
+document.getElementById('roomId').value.toUpperCase();
+            const name = document.getElementById('playerName').value;
+            socket.emit('joinRoom', { roomId: room, playerName: name });
+        }
+
+        socket.on('joinedSuccess', ({ roomId, playerName }) => {
+            myRoomId = roomId;
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            document.getElementById
+('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
+        });
+
+        socket.on('playerJoined', ({ players }) => {
+            document.getElementById('playersList').innerText = 'Jogadores: ' + players.map(p => p.name).join(', ');
+        });
+
+        function startGame() {
+            socket.emit('startGame', { roomId: myRoomId });
+        }
+
+        socket.on('gameStarted', ({ players, status }) => {
+            document.getElementById('startBtn').style.display = 'none';
+            const me = players.find(p => p.id === socket.id);
+            if(me) {
+                const handDiv = document.getElementById('hand');
+                handDiv.innerHTML = '<h3>Sua Mão:</h3>';
+                me.hand.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'card';
+                    handDiv.appendChild(img);
+                });
+                if(me.isNarrator) 
+alert('Você é o narrador!');
+            }
+        });
+    </script>
+</body>
+</html>
