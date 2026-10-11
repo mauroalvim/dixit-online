@@ -173,11 +173,18 @@
             socket.emit('createRoom', { targetScore: $('targetScoreInput').value, playerName: name });
         }
         
+        // Ecrã visual para mostrar que a IA está a processar os dados!
+        socket.on('generatingDeck', () => {
+            $('initialMenu').style.display = 'none';
+            $('game').style.display = 'block';$('roomCodeDisplay').innerText = '🪄 A invocar a IA...';
+            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'A Inteligência Artificial está a criar 50 cartas surrealistas. Pode demorar uns segundos, aguarde...';
+            $('playersList').innerHTML = '';$('startBtn').style.display = 'none';
+        });
+
         socket.on('roomCreated', ({ roomId, players }) => {
             myRoomId = roomId;
-            $('initialMenu').style.display = 'none';
-            $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
-            $('waitingMessage').style.display = 'block';
+            $('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
+            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'Aguardando jogadores entrarem...';
             updatePlayersList(players);
         });
 
@@ -234,8 +241,7 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                // Tenta recarregar sutilmente se houver falha de rede
-                setTimeout(() => { img.src = url; }, 2000);
+                setTimeout(() => { img.src = url + "?retry=" + new Date().getTime(); }, 3000);
             };
             img.src = url;
         }
