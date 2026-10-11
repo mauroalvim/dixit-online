@@ -14,7 +14,7 @@
             min-height: 100vh;
             background-color: #1a1a2e;
             background-image: 
-                linear-gradient(rgba(26, 26, 46, 0.8), rgba(26, 26, 46, 0.9)), 
+                linear-gradient(rgba(26, 26, 46, 0.7), rgba(26, 26, 46, 0.9)), 
                 url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=2070&auto=format&fit=crop'); 
             background-size: cover;
             background-position: center;
@@ -93,10 +93,19 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.8);
             border: 3px solid transparent; 
             transition: 0.3s; 
-            background: rgba(255,255,255,0.05); 
+            background-color: rgba(255,255,255,0.05);
+            position: relative;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
+        /* Animação para quando a carta está sendo pintada */
+        .card-loading {
+            background: linear-gradient(90deg, #161b22, #2c3e50, #161b22);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         .my-card-disabled { opacity: 0.3; cursor: not-allowed; border-color: #ff4b2b !important; transform: none !important; }
         .narrator-card-view { cursor: default; }
         .narrator-card-view:hover { transform: none; border-color: transparent; }
@@ -120,16 +129,15 @@
     <h1>Dixit Online ✨</h1>
     
     <div id="initialMenu" class="glass-panel">
-        
         <div style="background: rgba(0,0,0,0.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);">
-            <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar em uma Partida</h3>
-            <p style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">Digite o código de 4 números fornecido pelo Host.</p>
-            <input type="number" id="roomIdCheck" placeholder="Código da Sala (Ex: 1234)">
+            <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
+            <p style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
+            <input type="number" id="roomIdCheck" placeholder="Código (Ex: 1234)">
             <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); margin-top: 15px; padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
 
         <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; cursor: pointer;" id="hostToggleBtn" onclick="toggleHostMenu()">
-            <h4 style="color: #f1c40f; margin: 0;">👑 Quer criar uma nova sala? Clique aqui ▼</h4>
+            <h4 style="color: #f1c40f; margin: 0;">👑 Criar uma nova sala? Clique aqui ▼</h4>
         </div>
         
         <div id="hostMenu" style="display: none; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; margin-top: 5px;">
@@ -142,7 +150,7 @@
 
     <div id="joinNameForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
-        <p style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">Como os outros jogadores devem te chamar?</p>
+        <p style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
         <input type="text" id="guestPlayerName" placeholder="Digite seu Apelido">
         <button onclick="joinRoom()" style="background: linear-gradient(135deg, #a777e3, #6e8efb);">Entrar no Jogo</button>
         <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
@@ -154,8 +162,8 @@
         <div id="playersList" style="opacity: 0.9; margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);"></div>
         
         <div id="dynamicMessages">
-            <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando outros jogadores entrarem...</h3>
-            <h3 id="loadingMessage" style="color: #a777e3; display:none;">🪄 A IA está pintando cartas surrealistas exclusivas... Aguarde!</h3>
+            <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando jogadores entrarem...</h3>
+            <h3 id="loadingMessage" style="color: #a777e3; display:none;">🪄 Criando magia surrealista...</h3>
             <div id="actionInstruction" class="status-text"></div>
         </div>
         
@@ -188,54 +196,7 @@
 
         function toggleHostMenu() {
             const menu = document.getElementById('hostMenu');
-            if(menu.style.display === 'none') {
-                menu.style.display = 'block';
-            } else {
-                menu.style.display = 'none';
-            }
-        }
-
-        // NOVO SISTEMA DE CARREGAMENTO EM FILA (STAGGERING) COM RETRY
-        // Isso impede que a IA nos bloqueie por excesso de velocidade
-        function loadAndRetryImage(imgElement, originalUrl, onSuccess, delayMs = 0) {
-            let attempts = 0;
-            let hasLoaded = false;
-
-            const tryLoad = (urlToTry) => {
-                if (hasLoaded) return;
-
-                const timeoutId = setTimeout(() => {
-                    if (!hasLoaded) {
-                        imgElement.src = ''; 
-                        handleError();
-                    }
-                }, 8000); // 8 segundos de paciência para a arte ser desenhada
-
-                imgElement.onload = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    clearTimeout(timeoutId);
-                    if (onSuccess) onSuccess();
-                };
-
-                const handleError = () => {
-                    if (hasLoaded) return;
-                    clearTimeout(timeoutId);
-                    attempts++;
-                    
-                    // Sem fallback cinza! Se falhar, tentamos a IA de novo após um breve descanso.
-                    const waitTime = attempts * 2500; 
-                    setTimeout(() => {
-                        tryLoad(originalUrl + '&retry=' + new Date().getTime());
-                    }, waitTime);
-                };
-
-                imgElement.onerror = handleError;
-                imgElement.src = urlToTry;
-            };
-
-            // Aplica o atraso na fila antes de fazer o primeiro pedido
-            setTimeout(() => { tryLoad(originalUrl); }, delayMs);
+            menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
         }
 
         function showCreateRoom() {
@@ -305,6 +266,7 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
+        // MÓDULO DE CARREGAMENTO BLINDADO DE IMAGENS (PROMISES)
         socket.on('gameStarted', ({ players }) => {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('waitingMessage').style.display = 'none';
@@ -318,30 +280,45 @@
                 narratorHasPlayed = false;
                 myPlayedCardUrl = ''; 
                 myHandElements = [];
-                let loadedCount = 0;
-                const totalImages = me.hand.length;
 
-                me.hand.forEach((url, index) => {
+                // 1. Cria a promessa de carregamento para cada carta
+                const loadPromises = me.hand.map((url, index) => {
                     const img = new Image();
-                    img.className = 'card';
+                    img.className = 'card card-loading'; // Classe de animação enquanto carrega
                     
                     img.onclick = () => {
                         if (!amINarrator && !narratorHasPlayed) {
-                            alert("Calma! Você precisa esperar o Narrador falar a dica e colocar a carta dele na mesa primeiro.");
+                            alert("Calma! Você precisa esperar o Narrador falar a dica e jogar primeiro.");
                             return;
                         }
                         openModal(img.src, 'PLAY');
                     };
-
-                    // CHAMA A IA COLOCANDO UM ATRASO DE 800ms ENTRE CADA IMAGEM (Staggering)
-                    loadAndRetryImage(img, url, () => {
-                        loadedCount++;
-                        if (loadedCount === totalImages) {
-                            socket.emit('imagesLoaded', { roomId: myRoomId });
-                        }
-                    }, index * 800);
-
+                    
                     myHandElements.push(img);
+
+                    return new Promise((resolve) => {
+                        let isResolved = false;
+                        const finalImg = new Image();
+
+                        const finish = (finalUrl) => {
+                            if(!isResolved) {
+                                isResolved = true;
+                                img.src = finalUrl;
+                                img.classList.remove('card-loading');
+                                resolve();
+                            }
+                        };
+
+                        finalImg.onload = () => finish(finalImg.src);
+                        
+                        // Fallback Colorido se a IA der erro (Removemos a lógica cinza!)
+                        finalImg.onerror = () => finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`);                          // Espaçamento para não estressar a IA (Staggering)                         setTimeout(() => { if(!isResolved) finalImg.src = url; }, index * 600);                                                  // TIMEOUT ABSOLUTO: Garante que a tela será liberada em no máximo 10s por carta.                         setTimeout(() => { if(!isResolved) finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`); }, (index * 600) + 9000);
+                    });
+                });
+
+                // 2. Quando TODAS as cartas decidirem seu destino (carregar ou falhar), avisa o servidor
+                Promise.all(loadPromises).then(() => {
+                    socket.emit('imagesLoaded', { roomId: myRoomId });
                 });
             }
         });
@@ -372,6 +349,7 @@
             }
         });
 
+        // MESMA LÓGICA DE CARREGAMENTO BLINDADO PARA A VOTAÇÃO
         socket.on('startVotingPhase', ({ cards }) => {
             const instructionDiv = document.getElementById('actionInstruction');
             const handDiv = document.getElementById('hand');
@@ -385,22 +363,34 @@
 
             cards.forEach((url, index) => {
                 const img = document.createElement('img');
-                img.className = 'card';
-                
-                // Aplica o mesmo atraso para as cartas de votação
-                loadAndRetryImage(img, url, () => {
-                    if (amINarrator) {
-                        img.classList.add('narrator-card-view');
-                        img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
-                    } else if (img.src.includes(myPlayedCardUrl.split('&retry')[0])) { 
-                        img.classList.add('my-card-disabled');
-                        img.onclick = () => alert("Você não pode votar na sua própria carta!");
-                    } else {
-                        img.onclick = () => openModal(img.src, 'VOTE');
-                    }
-                }, index * 800);
-                
+                img.className = 'card card-loading';
                 handDiv.appendChild(img);
+                
+                // Promises para não quebrar a mesa se uma imagem faltar
+                let isResolved = false;
+                const finalImg = new Image();
+
+                const finish = (finalUrl) => {
+                    if(!isResolved) {
+                        isResolved = true;
+                        img.src = finalUrl;
+                        img.classList.remove('card-loading');
+                        
+                        // Configura os cliques assim que revelar
+                        if (amINarrator) {
+                            img.classList.add('narrator-card-view');
+                            img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
+                        } else if (img.src === myPlayedCardUrl) { 
+                            img.classList.add('my-card-disabled');
+                            img.onclick = () => alert("Você não pode votar na sua própria carta!");
+                        } else {
+                            img.onclick = () => openModal(img.src, 'VOTE');
+                        }
+                    }
+                };
+
+                finalImg.onload = () => finish(finalImg.src);
+                finalImg.onerror = () => finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`);                  setTimeout(() => { if(!isResolved) finalImg.src = url; }, index * 300);                 setTimeout(() => { if(!isResolved) finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`); }, (index * 300) + 6000);
             });
         });
 
