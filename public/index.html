@@ -5,10 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dixit Online</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #2c3e50; color: white; }
-        .card { width: 100px; height: 150px; border-radius: 8px; margin: 5px; cursor: pointer; }
-        button { padding: 10px 15px; font-size: 16px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; }
-        input { padding: 10px; font-size: 16px; margin: 5px; border-radius: 5px; border: none; }
+        body { font-family: sans-serif; text-align: center; background: #2c3e50; color: white; margin: 0; padding: 20px; }
+        
+        /* Estilos do Lobby */
+        button { padding: 10px 15px; font-size: 16px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; background: #3498db; color: white; font-weight: bold; }
+        button:hover { background: #2980b9; }
+        input { padding: 10px; font-size: 16px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
+        
+        /* Estilos das Cartas */
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+        .card { width: 100px; height: 150px; border-radius: 8px; cursor: pointer; object-fit: cover; border: 2px solid transparent; transition: 0.2s; }
+        .card:hover { transform: scale(1.05); border-color: #f1c40f; }
+        
+        /* Estilos do Modal (Zoom) */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #34495e; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 400px; }
+        .modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; }
+        .modal-buttons button { width: 100%; margin-bottom: 10px; }
+        .btn-confirm { background: #2ecc71; }
+        .btn-confirm:hover { background: #27ae60; }
+        .btn-cancel { background: #e74c3c; }
+        .btn-cancel:hover { background: #c0392b; }
     </style>
 </head>
 <body>
@@ -16,7 +33,9 @@
     
     <!-- TELA 1: Menu Inicial -->
     <div id="initialMenu">
-        <h3>Bem-vindo! O que você deseja fazer?</h3>
+        <h3>Bem-vindo!</h3>
+        <input type="text" id="globalPlayerName" placeholder="Digite seu Nome">
+        <br><br>
         <button onclick="showCreateRoom()">Criar Nova Sala (Host)</button>
         <br><br>
         <button onclick="showJoinRoom()">Entrar em uma Sala Existente</button>
@@ -27,18 +46,15 @@
         <h3>Entrar na Sala</h3>
         <input type="text" id="roomId" placeholder="Código da Sala">
         <br><br>
-        <input type="text" id="playerName" placeholder="Seu Nome">
-        <br><br>
         <button onclick="joinRoom()">Entrar</button>
         <br><br>
-        <button onclick="backToMenu()">Voltar</button>
+        <button onclick="backToMenu()" class="btn-cancel">Voltar</button>
     </div>
 
-    <!-- TELA 3: Tela do Jogo e Sala de Espera (Lobby) -->
+    <!-- TELA 3: Tela do Jogo e Sala de Espera -->
     <div id="game" style="display:none;">
         <h2 id="roomCodeDisplay"></h2>
         
-        <!-- MENSAGEM DE AGUARDANDO JOGADORES -->
         <h3 id="waitingMessage" style="color: #f1c40f; display:none;">Aguardando outros jogadores entrarem...</h3>
         
         <div id="playersList">Nenhum jogador na sala ainda.</div>
@@ -47,17 +63,39 @@
         <div id="hand"></div>
     </div>
 
+    <!-- MODAL DE ZOOM E SELEÇÃO DE CARTA -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <img id="modalImage" class="modal-img" src="">
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="selectCard()">Confirmar Escolha</button>
+                <button class="btn-cancel" onclick="closeModal()">Voltar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let myRoomId = '';
+        let selectedCardUrl = ''; // Guarda a URL da carta que o jogador clicou
 
         // --- FUNÇÕES DE NAVEGAÇÃO DA TELA ---
         function showCreateRoom() {
-            socket.emit('createRoom', { targetScore: 30 });
+            const name = document.getElementById('globalPlayerName').value;
+            if(!name) {
+                alert("Por favor, digite seu nome primeiro!");
+                return;
+            }
+            socket.emit('createRoom', { targetScore: 30, playerName: name });
         }
 
         function showJoinRoom() {
+            const name = document.getElementById('globalPlayerName').value;
+            if(!name) {
+                alert("Por favor, digite seu nome primeiro antes de entrar em uma sala!");
+                return;
+            }
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'block';
         }
@@ -69,66 +107,64 @@
 
         // --- LÓGICA DO JOGO (SOCKET.IO) ---
         
-        // Quando o Host cria a sala
-        socket.on('roomCreated', ({ roomId }) => {
+        socket.on('roomCreated', ({ roomId, players }) => {
             myRoomId = roomId;
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
             
-            document.getElementById('roomCodeDisplay').innerText = 'Sua Sala foi criada! Código: ' + roomId;
-            
-            // Oculta o botão Iniciar e mostra a mensagem de espera
+            document.getElementById('roomCodeDisplay').innerText = 'Sua Sala: ' + roomId;
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('waitingMessage').style.display = 'block';
+            
+            updatePlayersList(players);
         });
 
-        // Quando o jogador tenta entrar na sala
         function joinRoom() {
             const room = document.getElementById('roomId').value.toUpperCase();
-            const name = document.getElementById('playerName').value;
+            const name = document.getElementById('globalPlayerName').value;
             
-            if(!room || !name) {
-                alert("Por favor, preencha o código da sala e o seu nome!");
+            if(!room) {
+                alert("Por favor, preencha o código da sala!");
                 return;
             }
-
             socket.emit('joinRoom', { roomId: room, playerName: name });
         }
 
-        // Se o jogador entrou com sucesso
-        socket.on('joinedSuccess', ({ roomId, playerName }) => {
+        socket.on('joinedSuccess', ({ roomId }) => {
             myRoomId = roomId;
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
             
             document.getElementById('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
-            document.getElementById('waitingMessage').style.display = 'none'; // Quem entra não é o host, só aguarda.
+            document.getElementById('waitingMessage').style.display = 'none'; 
         });
 
-        // Se deu erro ao entrar na sala (código errado)
         socket.on('joinError', ({ message }) => {
             alert(message);
         });
 
-        // Atualiza a lista de jogadores na sala do Host
         socket.on('playerJoined', ({ players }) => {
-            document.getElementById('playersList').innerText = 'Jogadores na sala: ' + players.map(p => p.name).join(', ');
+            updatePlayersList(players);
             
-            // Se tiver pelo menos 1 jogador, esconde a mensagem e libera o botão de iniciar para o Host
-            if (players.length > 0) {
+            // Se for o Host (quem tem o botão iniciar oculto na tela), verifica se pode liberar
+            if (players.length > 1) {
                 document.getElementById('waitingMessage').style.display = 'none';
-                document.getElementById('startBtn').style.display = 'inline-block';
+                if(document.getElementById('roomCodeDisplay').innerText.includes('Sua Sala:')) {
+                    document.getElementById('startBtn').style.display = 'inline-block';
+                }
             }
         });
 
-        // Host inicia o jogo
+        function updatePlayersList(players) {
+            document.getElementById('playersList').innerText = 'Jogadores: ' + players.map(p => p.name).join(', ');
+        }
+
         function startGame() {
             socket.emit('startGame', { roomId: myRoomId });
         }
 
-        // Quando a partida inicia de fato
         socket.on('gameStarted', ({ players, status }) => {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('waitingMessage').style.display = 'none';
@@ -136,19 +172,47 @@
             const me = players.find(p => p.id === socket.id);
             if(me) {
                 const handDiv = document.getElementById('hand');
-                handDiv.innerHTML = '<h3>Sua Mão:</h3>';
+                handDiv.innerHTML = '<h3>Sua Mão (Clique para ampliar):</h3>';
+                
                 me.hand.forEach(url => {
                     const img = document.createElement('img');
                     img.src = url;
                     img.className = 'card';
+                    // Adiciona o evento de clique para abrir o zoom
+                    img.onclick = () => openModal(url);
                     handDiv.appendChild(img);
                 });
-                if(me.isNarrator) alert('Você é o narrador dessa rodada!');
-            } else {
-                // Caso do Host (que por enquanto atua apenas como gerenciador da partida)
-                document.getElementById('hand').innerHTML = '<h3>A partida começou! Acompanhe o jogo.</h3>';
+
+                if(me.isNarrator) {
+                    alert('Você é o narrador dessa rodada! Escolha uma carta e dê sua dica.');
+                }
             }
         });
+
+        // --- SISTEMA DE ZOOM E SELEÇÃO (MODAL) ---
+        function openModal(url) {
+            selectedCardUrl = url;
+            document.getElementById('modalImage').src = url;
+            document.getElementById('cardModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('cardModal').style.display = 'none';
+            selectedCardUrl = '';
+        }
+
+        function selectCard() {
+            if(!selectedCardUrl) return;
+            
+            // Envia a carta escolhida para o servidor
+            socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
+            
+            alert('Carta confirmada!');
+            closeModal();
+            
+            // Limpa as cartas da tela temporariamente e exibe aviso de aguardando
+            document.getElementById('hand').innerHTML = '<h3>Carta escolhida! Aguardando os outros jogadores...</h3>';
+        }
     </script>
 </body>
 </html>
