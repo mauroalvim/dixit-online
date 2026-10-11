@@ -152,7 +152,7 @@
             d.textContent = msg;
             setTimeout(() => { if(d) d.remove(); }, 5000);
         }
-        window.addEventListener('error', e => showErr('Erro: ' + e.message));
+        window.addEventListener('error', e => showErr('Erro no jogo: ' + e.message));
 
         const socket = io();
         socket.on('connect_error', e => showErr('Sem conexão com o servidor.'));
@@ -227,8 +227,6 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // --- SISTEMA INTELIGENTE DE RETRY NO CLIENTE ---
-        // Se a carta ainda estiver a ser baixada no servidor, o cliente espera e tenta puxar de novo de forma invisível.
         function loadInto(cardDiv, url) {
             const img = new Image();
             img.onload = () => { 
@@ -236,8 +234,8 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                // Se a carta não existe (o servidor ainda está baixando), tenta novamente a cada 2 segundos.
-                setTimeout(() => { img.src = url + "?t=" + new Date().getTime(); }, 2000);
+                // Tenta recarregar sutilmente se houver falha de rede
+                setTimeout(() => { img.src = url; }, 2000);
             };
             img.src = url;
         }
