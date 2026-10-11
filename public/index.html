@@ -1,32 +1,118 @@
-  else if (isHost) html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
-  $('hand').innerHTML = html;
-});
-
-function openModal(url, action) {
-  selectedCardUrl = url;
-  modalAction = action;
-  $('modalImage').src = url;
-  const b = $('btnConfirmModal');
-  if (action === 'PLAY') { b.innerText = 'Enviar Carta para a Mesa'; b.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)'; }
-  else { b.innerText = 'Confirmar Voto'; b.style.background = 'linear-gradient(135deg, #a777e3, #6e8efb)'; }
-  $('cardModal').style.display = 'block';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dixit Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Poppins', sans-serif; text-align: center; min-height: 100vh; color: white; padding: 20px;
+  display: flex; flex-direction: column; align-items: center;
+  background-color: #14122b;
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(167,119,227,.45), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(56,239,125,.18), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(241,196,15,.22), transparent 50%),
+    linear-gradient(180deg, #1a1a2e, #0f0c24);
+  background-attachment: fixed;
 }
-function closeModal() { $('cardModal').style.display = 'none'; selectedCardUrl = ''; }
-
-function handleConfirmModal() {
-  if (!selectedCardUrl) return;
-  if (modalAction === 'PLAY') {
-    myPlayedCardUrl = selectedCardUrl;
-    socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-    $('hand').innerHTML = '';
-    $('actionInstruction').innerHTML = '<span style="color:#38ef7d; font-size:1.2em;">Carta na mesa!</span><br>Aguardando os outros jogadores...';
-  } else {
-    socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-    $('hand').innerHTML = '';
-    $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-size:1.2em;">Voto registrado!</span><br>Aguardando apuração...';
-  }
-  closeModal();
+h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
+.glass-panel {
+  background: rgba(20,20,35,.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+  border-radius: 20px; padding: 25px 20px; border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 15px 40px rgba(0,0,0,.7); width: 100%; max-width: 420px; margin-bottom: 20px;
 }
-</script>
+button {
+  background: linear-gradient(135deg, #6e8efb, #a777e3); color: white; border: none; border-radius: 25px;
+  padding: 14px 24px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(110,142,251,.3); transition: .3s; margin-top: 15px; font-family: inherit;
+}
+button:hover { transform: translateY(-3px); }
+.btn-cancel { background: linear-gradient(135deg, #ff416c, #ff4b2b); box-shadow: 0 4px 15px rgba(255,65,108,.3); }
+input {
+  width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(0,0,0,.5); color: white; text-align: center; font-family: inherit; outline: none; transition: .3s; margin-top: 10px;
+}
+input:focus { border-color: #a777e3; background: rgba(0,0,0,.7); }
+#hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
+.card {
+  width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
+  background-color: #161b22; background-size: cover; background-position: center;
+}
+.card:hover { transform: translateY(-8px); border-color: #a777e3; }
+.card-loading {
+  background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.my-card-disabled { opacity: .3; cursor: not-allowed; border-color: #ff4b2b !important; transform: none !important; }
+.narrator-card-view { cursor: default; }
+.narrator-card-view:hover { transform: none; border-color: transparent; }
+.locked-card { opacity: .7; filter: grayscale(30%); }
+.locked-card:hover { transform: none; border-color: transparent; cursor: wait; }
+.ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(0,0,0,.6); border-radius: 12px; overflow: hidden; }
+.ranking-table th, .ranking-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.ranking-table th { background: rgba(255,255,255,.1); color: #a777e3; font-size: 14px; text-transform: uppercase; }
+.status-text { margin-bottom: 15px; font-size: 1.1em; line-height: 1.4; text-shadow: 1px 1px 3px rgba(0,0,0,.8); }
+.winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241,196,15,.6); animation: pulse 2s infinite; margin: 20px 0; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
+.modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
+.modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<h1>Dixit Online ✨</h1>
+
+<div id="initialMenu" class="glass-panel">
+  <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
+    <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
+    <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
+    <input type="number" id="roomIdCheck" placeholder="Código (Ex: 1234)">
+    <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
+  </div>
+  <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer;" onclick="toggleHostMenu()">
+    <h4 style="color: #f1c40f;">👑 Criar uma nova sala? Clique aqui ▼</h4>
+  </div>
+  <div id="hostMenu" style="display: none; background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; margin-top: 5px;">
+    <input type="text" id="hostPlayerName" placeholder="Seu Apelido de Host">
+    <label style="font-size: 13px; opacity: .8; display: block; margin-top: 15px;">Pontos para Vencer (Ex: 30):</label>
+    <input type="number" id="targetScoreInput" value="30">
+    <button onclick="showCreateRoom()" style="background: rgba(255,255,255,.1); box-shadow: none; border: 1px solid rgba(255,255,255,.2);">Criar Sala</button>
+  </div>
+</div>
+
+<div id="joinNameForm" class="glass-panel" style="display:none;">
+  <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
+  <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
+  <input type="text" id="guestPlayerName" placeholder="Digite seu Apelido">
+  <button onclick="joinRoom()" style="background: linear-gradient(135deg, #a777e3, #6e8efb);">Entrar no Jogo</button>
+  <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
+</div>
+
+<div id="game" class="glass-panel" style="display:none; max-width: 650px;">
+  <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
+  <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
+  <div id="dynamicMessages">
+    <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando jogadores entrarem...</h3>
+    <div id="actionInstruction" class="status-text"></div>
+  </div>
+  <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
+  <div id="hand"></div>
+</div>
+
+<div id="cardModal" class="modal">
+  <div class="modal-content">
+    <img id="modalImage" class="modal-img" src="" alt="">
+    <button id="btnConfirmModal" onclick="handleConfirmModal()">Confirmar</button>
+    <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js?v=2"></script>
 </body>
 </html>
