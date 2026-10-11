@@ -82,23 +82,24 @@
             margin-top: 20px; 
             width: 100%;
         }
+        
+        /* CARTA BLINDADA: A tag DIV impede os ícones quebrados */
         .card { 
             width: calc(33.33% - 12px); 
             max-width: 130px; 
             aspect-ratio: 2 / 3; 
-            height: auto;
             border-radius: 12px; 
             cursor: pointer; 
-            object-fit: cover; 
             box-shadow: 0 8px 20px rgba(0,0,0,0.8);
             border: 3px solid transparent; 
             transition: 0.3s; 
-            background-color: rgba(255,255,255,0.05);
             position: relative;
+            background-color: #161b22;
+            background-size: cover;
+            background-position: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
-        /* O Brilho Mágico de Carregamento não trava a tela! */
         .card-loading {
             background: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
             background-size: 200% 100%;
@@ -120,7 +121,7 @@
         .winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241, 196, 15, 0.6); animation: pulse 2s infinite; margin: 20px 0; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); backdrop-filter: blur(8px); padding: 20px; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.95); backdrop-filter: blur(8px); padding: 20px; }
         .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
         .modal-img { width: 100%; max-height: 55vh; object-fit: contain; border-radius: 12px; margin-bottom: 20px; }
     </style>
@@ -216,7 +217,7 @@
 
         function checkRoom() {
             const room = document.getElementById('roomIdCheck').value;
-            if(!room) return alert("Digite o código da sala de 4 números!");
+            if(!room) return alert("Digite o código da sala!");
             socket.emit('validateRoom', { roomId: room });
         }
 
@@ -238,7 +239,7 @@
             myRoomId = roomId;
             document.getElementById('joinNameForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
-            document.getElementById('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
+            document.getElementById('roomCodeDisplay').innerText = 'Sala: ' + roomId;
             document.getElementById('waitingMessage').style.display = 'none'; 
         });
 
@@ -262,55 +263,68 @@
             document.getElementById('playersList').innerHTML = '<strong>Na Mesa:</strong> ' + players.map(p => p.name).join(', ');
         }
 
+        // --- SISTEMA FANTASMA DE PRE-LOAD NO LOBBY ---
+        socket.on('preloadCards', ({ cards }) => {
+            console.log("Iniciando Buffer Invisível...");
+            cards.forEach((url, i) => {
+                // Intervalos de 600ms para baixar o baralho silenciosamente sem bloquear o celular
+                setTimeout(() => {
+                    const img = new Image();
+                    img.src = url;
+                }, i * 600); 
+            });
+        });
+
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // --- MÓDULO DE IMAGENS NÃO-BLOQUEANTE (NON-BLOCKING + MULTI-IA FALLBACK) ---
-        function renderImages(urlsArray, isVotingPhase = false) {
+        // --- FUNÇÃO BLINDADA: RENDERIZA O DIV EM VEZ DO IMG QUEBRADO ---
+        function appendCardToBoard(url, isVotingPhase = false) {
             const handDiv = document.getElementById('hand');
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card card-loading'; // Começa com a animação de brilho
             
-            urlsArray.forEach(url => {
-                const img = new Image();
-                img.className = 'card card-loading';
-                
-                // MULTI-IA: Se a 1ª falhar, usa um banco diferente de arte surreal!
-                img.onerror = function() {
-                    this.onerror = null; 
-                    // Fallback para API secundária (LoremFlickr focado em arte/surrealismo)
-                    this.src = `https://loremflickr.com/300/450/surrealism,art/all?lock=${Math.floor(Math.random() * 10000)}`;
-                };
-                
-                // Remove a animação brilhante assim que a imagem for baixada com sucesso
-                img.onload = () => { img.classList.remove('card-loading'); };
-                
-                // Inicia o download nativo em background
-                img.src = url;
+            const imgLoader = new Image();
+            
+            // Quando a imagem terminar de baixar (ou se já estiver no cache da memória)
+            imgLoader.onload = () => {
+                cardDiv.classList.remove('card-loading');
+                cardDiv.style.backgroundImage = `url('${imgLoader.src}')`;
+            };
+            
+            // Se a IA der pau, puxa o plano B instantaneamente
+            imgLoader.onerror = () => {
+                imgLoader.src = `https://picsum.photos/seed/${Math.random()}/300/450?blur=2`;
+            };
+            
+            imgLoader.src = url; // Gatilho de download
 
-                // Lógica de Cliques e Bloqueios
-                if(isVotingPhase) {
-                    if (amINarrator) {
-                        img.classList.add('narrator-card-view');
-                        img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
-                    } else if (img.src.includes(myPlayedCardUrl.split('?')[0])) { 
-                        img.classList.add('my-card-disabled');
-                        img.onclick = () => alert("Você não pode votar na sua própria carta!");
-                    } else {
-                        img.onclick = () => openModal(img.src, 'VOTE');
-                    }
+            // Lógica de Cliques
+            if (isVotingPhase) {
+                if (amINarrator) {
+                    cardDiv.classList.add('narrator-card-view');
+                    cardDiv.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
+                } else if (url === myPlayedCardUrl) { 
+                    cardDiv.classList.add('my-card-disabled');
+                    cardDiv.onclick = () => alert("Você não pode votar na sua própria carta!");
                 } else {
-                    img.onclick = () => {
-                        if (!amINarrator && !narratorHasPlayed) {
-                            alert("Calma! Você precisa esperar o Narrador falar a dica e jogar primeiro.");
-                            return;
-                        }
-                        openModal(img.src, 'PLAY');
-                    };
-                    if (!amINarrator && !narratorHasPlayed) img.classList.add('locked-card');
-                    myHandElements.push(img);
+                    cardDiv.onclick = () => openModal(imgLoader.src, 'VOTE');
                 }
+            } else {
+                if (!amINarrator && !narratorHasPlayed) {
+                    cardDiv.classList.add('locked-card');
+                }
+                cardDiv.onclick = () => {
+                    if (!amINarrator && !narratorHasPlayed) {
+                        alert("Calma! Você precisa esperar o Narrador falar a dica e jogar primeiro.");
+                        return;
+                    }
+                    openModal(imgLoader.src, 'PLAY');
+                };
+                myHandElements.push(cardDiv);
+            }
 
-                handDiv.appendChild(img);
-            });
+            handDiv.appendChild(cardDiv);
         }
 
         socket.on('gameStarted', ({ players }) => {
@@ -328,15 +342,14 @@
             if(me) {
                 amINarrator = me.isNarrator;
                 
-                // Renderiza as instruções imediatamente!
                 if(amINarrator) {
-                    instructionDiv.innerHTML = '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica e escolha a carta.';
+                    instructionDiv.innerHTML = '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.';
                 } else {
-                    instructionDiv.innerHTML = '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Suas cartas estão sendo mágicamente reveladas abaixo!';
+                    instructionDiv.innerHTML = '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe suas cartas enquanto isso!';
                 }
 
-                // Dispara o download das imagens de forma assíncrona (não trava a tela)
-                renderImages(me.hand, false);
+                // Renderiza instantaneamente! O Loading é na própria carta de forma individual.
+                me.hand.forEach(url => appendCardToBoard(url, false));
             }
         });
 
@@ -345,7 +358,7 @@
             if (!amINarrator) {
                 const instructionDiv = document.getElementById('actionInstruction');
                 instructionDiv.innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">Sua Vez!</span><br>O Narrador deu a dica. Escolha a sua carta que mais combina com a dica.';
-                myHandElements.forEach(img => img.classList.remove('locked-card'));
+                myHandElements.forEach(div => div.classList.remove('locked-card'));
             }
         });
 
@@ -360,7 +373,7 @@
                 instructionDiv.innerHTML = '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
             }
 
-            renderImages(cards, true);
+            cards.forEach(url => appendCardToBoard(url, true));
         });
 
         socket.on('roundEnded', ({ ranking, isGameOver, targetScore, hostSocketId }) => {
