@@ -1,24 +1,27 @@
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dixit Online</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; background: #2c3e50; color: white; }
-        .card { width: 100px; height: 150px; border-radius: 8px; margin: 5px; cursor: pointer; }
-    </style>
-</head>
 <body>
     <h1>Dixit Online</h1>
-    <div id="lobby">
-        <button onclick="createRoom()">Criar Sala (Host)</button>
+    
+    <!-- TELA 1: Menu Inicial -->
+    <div id="initialMenu">
+        <h3>Bem-vindo! O que você deseja fazer?</h3>
+        <button onclick="showCreateRoom()">Criar Nova Sala (Host)</button>
         <br><br>
-        <input type="text" id="roomId" placeholder="Código da Sala">
-        <input type="text" id="playerName" placeholder="Seu Nome">
-        <button onclick="joinRoom()">Entrar</button>
+        <button onclick="showJoinRoom()">Entrar em uma Sala Existente</button>
     </div>
+
+    <!-- TELA 2: Formulário para Entrar na Sala (Escondido por padrão) -->
+    <div id="joinForm" style="display:none;">
+        <h3>Entrar na Sala</h3>
+        <input type="text" id="roomId" placeholder="Código da Sala">
+        <br><br>
+        <input type="text" id="playerName" placeholder="Seu Nome">
+        <br><br>
+        <button onclick="joinRoom()">Entrar</button>
+        <br><br>
+        <button onclick="backToMenu()">Voltar</button>
+    </div>
+
+    <!-- TELA 3: Tela do Jogo (Escondido por padrão) -->
     <div id="game" style="display:none;">
         <h2 id="roomCodeDisplay"></h2>
         <div id="playersList"></div>
@@ -31,31 +34,59 @@
         const socket = io();
         let myRoomId = '';
 
+        // --- FUNÇÕES DE NAVEGAÇÃO DA TELA ---
+        function showCreateRoom() {
+            // Se o usuário clicar em criar sala, já chama a criação direto
+            createRoom(); 
+        }
+
+        function showJoinRoom() {
+            document.getElementById('initialMenu').style.display = 'none';
+            document.getElementById('joinForm').style.display = 'block';
+        }
+
+        function backToMenu() {
+            document.getElementById('joinForm').style.display = 'none';
+            document.getElementById('initialMenu').style.display = 'block';
+        }
+
+        // --- LÓGICA DO JOGO (SOCKET.IO) ---
         function createRoom() {
             socket.emit('createRoom', { targetScore: 30 });
         }
 
         socket.on('roomCreated', ({ roomId }) => {
             myRoomId = roomId;
-            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('initialMenu').style.display = 'none';
+            document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
-            document.getElementById('roomCodeDisplay').innerText = 'Sala: ' + roomId;
+            document.getElementById('roomCodeDisplay').innerText = 'Sua Sala foi criada! Código: ' + roomId;
             document.getElementById('startBtn').style.display = 'inline-block';
         });
 
         function joinRoom() {
-            const room = 
-document.getElementById('roomId').value.toUpperCase();
+            const room = document.getElementById('roomId').value.toUpperCase();
             const name = document.getElementById('playerName').value;
+            
+            if(!room || !name) {
+                alert("Por favor, preencha o código da sala e o seu nome!");
+                return;
+            }
+
             socket.emit('joinRoom', { roomId: room, playerName: name });
         }
 
         socket.on('joinedSuccess', ({ roomId, playerName }) => {
             myRoomId = roomId;
-            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('initialMenu').style.display = 'none';
+            document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
-            document.getElementById
-('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
+            document.getElementById('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
+        });
+
+        // Adicionando o aviso caso a sala não exista (como conversamos antes)
+        socket.on('joinError', ({ message }) => {
+            alert(message);
         });
 
         socket.on('playerJoined', ({ players }) => {
@@ -78,10 +109,8 @@ document.getElementById('roomId').value.toUpperCase();
                     img.className = 'card';
                     handDiv.appendChild(img);
                 });
-                if(me.isNarrator) 
-alert('Você é o narrador!');
+                if(me.isNarrator) alert('Você é o narrador dessa rodada!');
             }
         });
     </script>
 </body>
-</html>
