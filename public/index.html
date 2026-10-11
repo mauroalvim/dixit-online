@@ -98,9 +98,9 @@
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
-        /* Animação para quando a carta está sendo pintada */
+        /* O Brilho Mágico de Carregamento não trava a tela! */
         .card-loading {
-            background: linear-gradient(90deg, #161b22, #2c3e50, #161b22);
+            background: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
         }
@@ -163,7 +163,6 @@
         
         <div id="dynamicMessages">
             <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando jogadores entrarem...</h3>
-            <h3 id="loadingMessage" style="color: #a777e3; display:none;">🪄 Criando magia surrealista...</h3>
             <div id="actionInstruction" class="status-text"></div>
         </div>
         
@@ -266,26 +265,39 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // MÓDULO DE CARREGAMENTO BLINDADO DE IMAGENS (PROMISES)
-        socket.on('gameStarted', ({ players }) => {
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('waitingMessage').style.display = 'none';
-            document.getElementById('actionInstruction').innerHTML = '';
-            document.getElementById('hand').innerHTML = ''; 
-            document.getElementById('loadingMessage').style.display = 'block'; 
+        // --- MÓDULO DE IMAGENS NÃO-BLOQUEANTE (NON-BLOCKING + MULTI-IA FALLBACK) ---
+        function renderImages(urlsArray, isVotingPhase = false) {
+            const handDiv = document.getElementById('hand');
             
-            const me = players.find(p => p.id === socket.id);
-            if(me) {
-                amINarrator = me.isNarrator;
-                narratorHasPlayed = false;
-                myPlayedCardUrl = ''; 
-                myHandElements = [];
+            urlsArray.forEach(url => {
+                const img = new Image();
+                img.className = 'card card-loading';
+                
+                // MULTI-IA: Se a 1ª falhar, usa um banco diferente de arte surreal!
+                img.onerror = function() {
+                    this.onerror = null; 
+                    // Fallback para API secundária (LoremFlickr focado em arte/surrealismo)
+                    this.src = `https://loremflickr.com/300/450/surrealism,art/all?lock=${Math.floor(Math.random() * 10000)}`;
+                };
+                
+                // Remove a animação brilhante assim que a imagem for baixada com sucesso
+                img.onload = () => { img.classList.remove('card-loading'); };
+                
+                // Inicia o download nativo em background
+                img.src = url;
 
-                // 1. Cria a promessa de carregamento para cada carta
-                const loadPromises = me.hand.map((url, index) => {
-                    const img = new Image();
-                    img.className = 'card card-loading'; // Classe de animação enquanto carrega
-                    
+                // Lógica de Cliques e Bloqueios
+                if(isVotingPhase) {
+                    if (amINarrator) {
+                        img.classList.add('narrator-card-view');
+                        img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
+                    } else if (img.src.includes(myPlayedCardUrl.split('?')[0])) { 
+                        img.classList.add('my-card-disabled');
+                        img.onclick = () => alert("Você não pode votar na sua própria carta!");
+                    } else {
+                        img.onclick = () => openModal(img.src, 'VOTE');
+                    }
+                } else {
                     img.onclick = () => {
                         if (!amINarrator && !narratorHasPlayed) {
                             alert("Calma! Você precisa esperar o Narrador falar a dica e jogar primeiro.");
@@ -293,51 +305,39 @@
                         }
                         openModal(img.src, 'PLAY');
                     };
-                    
+                    if (!amINarrator && !narratorHasPlayed) img.classList.add('locked-card');
                     myHandElements.push(img);
+                }
 
-                    return new Promise((resolve) => {
-                        let isResolved = false;
-                        const finalImg = new Image();
+                handDiv.appendChild(img);
+            });
+        }
 
-                        const finish = (finalUrl) => {
-                            if(!isResolved) {
-                                isResolved = true;
-                                img.src = finalUrl;
-                                img.classList.remove('card-loading');
-                                resolve();
-                            }
-                        };
-
-                        finalImg.onload = () => finish(finalImg.src);
-                        
-                        // Fallback Colorido se a IA der erro (Removemos a lógica cinza!)
-                        finalImg.onerror = () => finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`);                          // Espaçamento para não estressar a IA (Staggering)                         setTimeout(() => { if(!isResolved) finalImg.src = url; }, index * 600);                                                  // TIMEOUT ABSOLUTO: Garante que a tela será liberada em no máximo 10s por carta.                         setTimeout(() => { if(!isResolved) finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`); }, (index * 600) + 9000);
-                    });
-                });
-
-                // 2. Quando TODAS as cartas decidirem seu destino (carregar ou falhar), avisa o servidor
-                Promise.all(loadPromises).then(() => {
-                    socket.emit('imagesLoaded', { roomId: myRoomId });
-                });
-            }
-        });
-
-        socket.on('allClientsReady', () => {
-            document.getElementById('loadingMessage').style.display = 'none';
+        socket.on('gameStarted', ({ players }) => {
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('waitingMessage').style.display = 'none';
             const instructionDiv = document.getElementById('actionInstruction');
             const handDiv = document.getElementById('hand');
             
-            if(amINarrator) {
-                instructionDiv.innerHTML = '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Escolha uma carta e fale sua dica em voz alta.';
-            } else {
-                instructionDiv.innerHTML = '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está pensando na dica. Analise suas cartas enquanto isso!';
-            }
+            handDiv.innerHTML = ''; 
+            myHandElements = [];
+            narratorHasPlayed = false;
+            myPlayedCardUrl = ''; 
             
-            myHandElements.forEach(img => {
-                if (!amINarrator && !narratorHasPlayed) img.classList.add('locked-card');
-                handDiv.appendChild(img);
-            });
+            const me = players.find(p => p.id === socket.id);
+            if(me) {
+                amINarrator = me.isNarrator;
+                
+                // Renderiza as instruções imediatamente!
+                if(amINarrator) {
+                    instructionDiv.innerHTML = '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica e escolha a carta.';
+                } else {
+                    instructionDiv.innerHTML = '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Suas cartas estão sendo mágicamente reveladas abaixo!';
+                }
+
+                // Dispara o download das imagens de forma assíncrona (não trava a tela)
+                renderImages(me.hand, false);
+            }
         });
 
         socket.on('narratorPlayed', () => {
@@ -349,7 +349,6 @@
             }
         });
 
-        // MESMA LÓGICA DE CARREGAMENTO BLINDADO PARA A VOTAÇÃO
         socket.on('startVotingPhase', ({ cards }) => {
             const instructionDiv = document.getElementById('actionInstruction');
             const handDiv = document.getElementById('hand');
@@ -361,37 +360,7 @@
                 instructionDiv.innerHTML = '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
             }
 
-            cards.forEach((url, index) => {
-                const img = document.createElement('img');
-                img.className = 'card card-loading';
-                handDiv.appendChild(img);
-                
-                // Promises para não quebrar a mesa se uma imagem faltar
-                let isResolved = false;
-                const finalImg = new Image();
-
-                const finish = (finalUrl) => {
-                    if(!isResolved) {
-                        isResolved = true;
-                        img.src = finalUrl;
-                        img.classList.remove('card-loading');
-                        
-                        // Configura os cliques assim que revelar
-                        if (amINarrator) {
-                            img.classList.add('narrator-card-view');
-                            img.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
-                        } else if (img.src === myPlayedCardUrl) { 
-                            img.classList.add('my-card-disabled');
-                            img.onclick = () => alert("Você não pode votar na sua própria carta!");
-                        } else {
-                            img.onclick = () => openModal(img.src, 'VOTE');
-                        }
-                    }
-                };
-
-                finalImg.onload = () => finish(finalImg.src);
-                finalImg.onerror = () => finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`);                  setTimeout(() => { if(!isResolved) finalImg.src = url; }, index * 300);                 setTimeout(() => { if(!isResolved) finish(`https://picsum.photos/seed/${Math.random()}/300/450?blur=2`); }, (index * 300) + 6000);
-            });
+            renderImages(cards, true);
         });
 
         socket.on('roundEnded', ({ ranking, isGameOver, targetScore, hostSocketId }) => {
