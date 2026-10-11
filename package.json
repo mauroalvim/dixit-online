@@ -1,16 +1,13 @@
-​{
-
-
-"dependencies": {
-
-
-"express": "^4.18.2",
-
-
-"@google/genai": "^0.1.1"
-
-
-}
-
-
+{
+  "name": "dixit-online",
+  "version": "1.0.0",
+  "description": "Jogo Dixit Online",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@google/genai": "^0.1.1"
+  }
 }
