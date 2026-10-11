@@ -14,6 +14,7 @@
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
         .card { width: 100px; height: 150px; border-radius: 8px; cursor: pointer; object-fit: cover; border: 2px solid transparent; transition: 0.2s; }
         .card:hover { transform: scale(1.05); border-color: #f1c40f; }
+        .my-card-disabled { opacity: 0.5; cursor: not-allowed; border-color: red !important; }
         
         /* Modal de Zoom */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); }
@@ -54,7 +55,6 @@
         <h2 id="roomCodeDisplay"></h2>
         
         <h3 id="waitingMessage" style="color: #f1c40f; display:none;">Aguardando outros jogadores entrarem...</h3>
-        <!-- NOVA MENSAGEM DE CARREGAMENTO -->
         <h3 id="loadingMessage" style="color: #3498db; display:none;">Carregando cartas... Aguardando todos os jogadores.</h3>
         
         <div id="playersList">Nenhum jogador na sala ainda.</div>
@@ -68,7 +68,8 @@
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="">
             <div class="modal-buttons">
-                <button class="btn-confirm" onclick="selectCard()">Confirmar Escolha</button>
+                <!-- Adicionado um ID para mudarmos o texto dinamicamente -->
+                <button id="btnConfirmModal" class="btn-confirm" onclick="handleConfirmModal()">Confirmar Escolha</button>
                 <button class="btn-cancel" onclick="closeModal()">Voltar</button>
             </div>
         </div>
@@ -79,8 +80,9 @@
         const socket = io();
         let myRoomId = '';
         let selectedCardUrl = '';
+        let myPlayedCardUrl = ''; // Guarda a carta que eu joguei para não votar nela depois
+        let modalAction = 'PLAY'; // Pode ser 'PLAY' ou 'VOTE'
         
-        // Novas variáveis globais para guardar o estado antes de exibir
         let myHandElements = [];
         let amINarrator = false;
 
@@ -149,28 +151,26 @@
             socket.emit('startGame', { roomId: myRoomId });
         }
 
-        // FASE 1: Recebe o aviso de início e começa a baixar as cartas invisivelmente
         socket.on('gameStarted', ({ players }) => {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('waitingMessage').style.display = 'none';
             document.getElementById('hand').innerHTML = ''; 
-            document.getElementById('loadingMessage').style.display = 'block'; // Mostra aviso de loading
+            document.getElementById('loadingMessage').style.display = 'block'; 
             
             const me = players.find(p => p.id === socket.id);
             if(me) {
                 amINarrator = me.isNarrator;
+                myPlayedCardUrl = ''; // Reseta ao iniciar rodada
                 myHandElements = [];
                 let loadedCount = 0;
                 const totalImages = me.hand.length;
 
-                // Faz o pre-load das imagens no navegador
                 me.hand.forEach(url => {
                     const img = new Image();
                     img.src = url;
                     img.className = 'card';
-                    img.onclick = () => openModal(url);
+                    img.onclick = () => openModal(url, 'PLAY'); // Contexto de jogar
                     
-                    // Conta tanto em caso de sucesso quanto erro para não travar o jogo
                     img.onload = checkAllLoaded;
                     img.onerror = checkAllLoaded; 
                     
@@ -180,35 +180,91 @@
                 function checkAllLoaded() {
                     loadedCount++;
                     if (loadedCount === totalImages) {
-                        // Avisa o servidor que ESTE jogador está pronto
                         socket.emit('imagesLoaded', { roomId: myRoomId });
                     }
                 }
             }
         });
 
-        // FASE 2: Servidor avisa que TODOS baixaram as cartas
         socket.on('allClientsReady', () => {
             document.getElementById('loadingMessage').style.display = 'none';
             
             const handDiv = document.getElementById('hand');
-            handDiv.innerHTML = '<h3>Sua Mão (Clique para ampliar):</h3>';
+            handDiv.innerHTML = '<h3>Sua Mão (Clique para jogar):</h3>';
             
             myHandElements.forEach(img => {
                 handDiv.appendChild(img);
             });
 
-            // Só agora dispara o alerta
             if(amINarrator) {
                 setTimeout(() => {
-                    alert('Você é o narrador dessa rodada! Escolha uma carta e dê sua dica.');
-                }, 150); // Timeout rápido só para garantir a renderização visual do HTML
+                    alert('Você é o narrador dessa rodada! Escolha uma carta (Lembre-se de dar uma dica em voz alta!).');
+                }, 150); 
             }
         });
 
-        function openModal(url) {
+        // REVELA AS CARTAS PARA VOTAÇÃO
+        socket.on('startVotingPhase', ({ cards }) => {
+            const handDiv = document.getElementById('hand');
+            
+            if (amINarrator) {
+                handDiv.innerHTML = '<h3>As cartas foram reveladas! Aguardando os votos dos outros jogadores...</h3>';
+            } else {
+                handDiv.innerHTML = '<h3>Fase de Votação: Qual é a carta do narrador? (Clique para votar)</h3>';
+            }
+
+            const cardsContainer = document.createElement('div');
+            cardsContainer.style.display = 'flex';
+            cardsContainer.style.flexWrap = 'wrap';
+            cardsContainer.style.justifyContent = 'center';
+            cardsContainer.style.gap = '10px';
+
+            cards.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'card';
+                
+                // Impede o jogador de votar na própria carta
+                if (url === myPlayedCardUrl && !amINarrator) {
+                    img.classList.add('my-card-disabled');
+                    img.onclick = () => alert("Você não pode votar na sua própria carta!");
+                } else {
+                    img.onclick = () => {
+                        if (!amINarrator) {
+                            openModal(url, 'VOTE'); // Contexto de votar
+                        }
+                    };
+                }
+                
+                cardsContainer.appendChild(img);
+            });
+            handDiv.appendChild(cardsContainer);
+        });
+
+        // FIM DA RODADA (Pontuação)
+        socket.on('roundEnded', ({ playedCards, votes }) => {
+            document.getElementById('hand').innerHTML = `
+                <h3>Todos votaram! Rodada Finalizada.</h3>
+                <p>Implementaremos o placar na próxima etapa!</p>
+                <button onclick="startGame()">Começar Próxima Rodada</button>
+            `;
+        });
+
+        // --- SISTEMA DE MODAL ADAPTÁVEL (JOGAR ou VOTAR) ---
+        function openModal(url, action) {
             selectedCardUrl = url;
+            modalAction = action;
             document.getElementById('modalImage').src = url;
+            
+            const btnConfirm = document.getElementById('btnConfirmModal');
+            if (action === 'PLAY') {
+                btnConfirm.innerText = 'Confirmar Escolha';
+                btnConfirm.style.background = '#2ecc71';
+            } else if (action === 'VOTE') {
+                btnConfirm.innerText = 'Confirmar Voto';
+                btnConfirm.style.background = '#9b59b6'; // Cor diferente para votação (roxo)
+            }
+            
             document.getElementById('cardModal').style.display = 'block';
         }
 
@@ -217,12 +273,22 @@
             selectedCardUrl = '';
         }
 
-        function selectCard() {
+        function handleConfirmModal() {
             if(!selectedCardUrl) return;
-            socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-            alert('Carta confirmada!');
+            
+            if (modalAction === 'PLAY') {
+                myPlayedCardUrl = selectedCardUrl; // Salva a carta que o jogador escolheu
+                socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
+                alert('Carta confirmada!');
+                document.getElementById('hand').innerHTML = '<h3>Carta escolhida! Aguardando os outros jogadores...</h3>';
+            
+            } else if (modalAction === 'VOTE') {
+                socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
+                alert('Voto confirmado!');
+                document.getElementById('hand').innerHTML = '<h3>Voto registrado! Aguardando apuração...</h3>';
+            }
+            
             closeModal();
-            document.getElementById('hand').innerHTML = '<h3>Carta escolhida! Aguardando os outros jogadores...</h3>';
         }
     </script>
 </body>
