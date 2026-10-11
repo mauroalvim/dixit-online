@@ -1,14 +1,4 @@
-
-{
-  "name": "dixit-online",
-  "version": "1.0.0",
-  "description": "Party game baseado em Dixit com geração de imagens por IA",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "@google/genai": "^0.1.1"
   }
-}
