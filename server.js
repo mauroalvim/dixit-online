@@ -11,25 +11,52 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-// Prompts super detalhados para forçar a IA a criar artes coloridas, nítidas e no estilo Dixit
-const surrealPrompts = [
-    "Highly+colorful+surreal+painting,+melting+clocks+in+a+vibrant+desert,+dreamlike,+Salvador+Dali+style,+masterpiece,+sharp+focus",
-    "Whimsical+highly+detailed+storybook+illustration,+a+colorful+flying+whale+over+a+vibrant+city+of+clouds,+masterpiece",
-    "Magical+realism+vibrant+oil+painting,+a+glowing+staircase+leading+into+a+giant+colorful+moon",
-    "Abstract+and+mystical+vibrant+concept+art,+a+colorful+tree+with+glowing+eyes+instead+of+leaves,+high+definition",
-    "Psychedelic+extremely+colorful+watercolor+art,+a+cat+made+of+bright+galaxies+and+stars",
-    "Ethereal+fantasy+vibrant+creatures+in+a+surreal+colorful+landscape,+dreamcore,+high+definition",
-    "Colorful+optical+illusion+art,+impossible+geometry,+a+vibrant+room+with+no+end,+Escher+style+but+highly+colorful",
-    "Vibrant+fairy+tale+illustration,+a+mysterious+colorful+forest+where+trees+are+glowing+clocks",
-    "Steampunk+surrealism,+a+bright+mechanical+butterfly+with+vibrant+stained+glass+wings",
-    "Floating+vibrant+island+with+a+giant+glowing+teacup+waterfall,+surreal+colorful+fantasy+digital+art"
+// --- GERADOR DE ARTE SURREALISTA (ESTILO DIXIT) ---
+const subjects = [
+    "melting clocks in a desert",
+    "a giant glowing whale flying in a starry sky",
+    "a staircase leading into a giant eye",
+    "a tree with glowing butterflies instead of leaves",
+    "a door standing alone in the middle of the ocean",
+    "floating islands connected by chains",
+    "a giant teacup pouring a waterfall",
+    "a mechanical owl with stained glass wings",
+    "a mirror reflecting a different galaxy",
+    "a train driving through the clouds",
+    "giant mushrooms glowing in a dark forest",
+    "a cat made of nebulae and stars",
+    "a house suspended by giant balloons",
+    "a labyrinth of endless stairs",
+    "a chessboard where pieces are living creatures",
+    "a city built on the back of a giant turtle",
+    "clouds shaped like mythical beasts",
+    "a waterfall of liquid gold",
+    "a library with floating books",
+    "a clockwork sun radiating magical light"
+];
+
+const styles = [
+    "Salvador Dali surrealism",
+    "Rene Magritte style",
+    "dreamcore aesthetic",
+    "highly colorful magical realism",
+    "psychedelic abstract art",
+    "whimsical fantasy illustration",
+    "ethereal digital art",
+    "vibrant oil painting",
+    "intricate surreal masterpiece"
 ];
 
 function generateUniqueCard() {
-    const randomSeed = Math.floor(Math.random() * 9999999);
-    const randomPrompt = surrealPrompts[Math.floor(Math.random() * surrealPrompts.length)];
-    // Adicionado parâmetro "enhance=true" para a IA melhorar ainda mais as cores e a nitidez
-    return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true&enhance=true`;
+    const seed = Math.floor(Math.random() * 9999999);
+    const subject = subjects[Math.floor(Math.random() * subjects.length)];
+    const style = styles[Math.floor(Math.random() * styles.length)];
+    
+    // Prompt rigoroso para garantir a arte
+    const prompt = `Surreal masterpiece, ${subject},${style}, vibrant colors, high definition`;
+    const encodedPrompt = encodeURIComponent(prompt);
+    
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&seed=${seed}&nologo=true`;
 }
 
 io.on('connection', (socket) => {
