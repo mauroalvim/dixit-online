@@ -9,14 +9,17 @@
         
         button { padding: 10px 15px; font-size: 16px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; background: #3498db; color: white; font-weight: bold; }
         button:hover { background: #2980b9; }
-        input { padding: 10px; font-size: 16px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
+        input { padding: 10px; font-size: 16px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; text-align: center; }
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
         .card { width: 100px; height: 150px; border-radius: 8px; cursor: pointer; object-fit: cover; border: 2px solid transparent; transition: 0.2s; }
         .card:hover { transform: scale(1.05); border-color: #f1c40f; }
         .my-card-disabled { opacity: 0.5; cursor: not-allowed; border-color: red !important; }
         
-        /* Modal de Zoom */
+        .ranking-table { margin: 20px auto; border-collapse: collapse; width: 90%; max-width: 400px; background: #34495e; border-radius: 8px; overflow: hidden; }
+        .ranking-table th, .ranking-table td { padding: 12px; border-bottom: 1px solid #2c3e50; }
+        .ranking-table th { background: #2980b9; color: white; }
+        
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #34495e; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 400px; }
         .modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; }
@@ -30,17 +33,24 @@
 <body>
     <h1>Dixit Online</h1>
     
-    <!-- TELA 1 -->
     <div id="initialMenu">
         <h3>Bem-vindo!</h3>
         <input type="text" id="globalPlayerName" placeholder="Digite seu Nome">
         <br><br>
-        <button onclick="showCreateRoom()">Criar Nova Sala (Host)</button>
+        <div style="background: #34495e; padding: 15px; border-radius: 8px; display: inline-block;">
+            <h4>Para o Host:</h4>
+            <label>Pontos para Vencer:</label><br>
+            <input type="number" id="targetScoreInput" value="30" style="width: 80px;">
+            <br>
+            <button onclick="showCreateRoom()">Criar Nova Sala</button>
+        </div>
         <br><br>
-        <button onclick="showJoinRoom()">Entrar em uma Sala Existente</button>
+        <div style="background: #34495e; padding: 15px; border-radius: 8px; display: inline-block;">
+            <h4>Para Convidados:</h4>
+            <button onclick="showJoinRoom()">Entrar em uma Sala Existente</button>
+        </div>
     </div>
 
-    <!-- TELA 2 -->
     <div id="joinForm" style="display:none;">
         <h3>Entrar na Sala</h3>
         <input type="text" id="roomId" placeholder="Código da Sala">
@@ -50,7 +60,6 @@
         <button onclick="backToMenu()" class="btn-cancel">Voltar</button>
     </div>
 
-    <!-- TELA 3 -->
     <div id="game" style="display:none;">
         <h2 id="roomCodeDisplay"></h2>
         
@@ -63,12 +72,10 @@
         <div id="hand"></div>
     </div>
 
-    <!-- MODAL -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="">
             <div class="modal-buttons">
-                <!-- Adicionado um ID para mudarmos o texto dinamicamente -->
                 <button id="btnConfirmModal" class="btn-confirm" onclick="handleConfirmModal()">Confirmar Escolha</button>
                 <button class="btn-cancel" onclick="closeModal()">Voltar</button>
             </div>
@@ -80,21 +87,22 @@
         const socket = io();
         let myRoomId = '';
         let selectedCardUrl = '';
-        let myPlayedCardUrl = ''; // Guarda a carta que eu joguei para não votar nela depois
-        let modalAction = 'PLAY'; // Pode ser 'PLAY' ou 'VOTE'
+        let myPlayedCardUrl = ''; 
+        let modalAction = 'PLAY'; 
         
         let myHandElements = [];
         let amINarrator = false;
 
         function showCreateRoom() {
             const name = document.getElementById('globalPlayerName').value;
+            const targetScore = document.getElementById('targetScoreInput').value;
             if(!name) return alert("Por favor, digite seu nome primeiro!");
-            socket.emit('createRoom', { targetScore: 30, playerName: name });
+            socket.emit('createRoom', { targetScore: targetScore, playerName: name });
         }
 
         function showJoinRoom() {
             const name = document.getElementById('globalPlayerName').value;
-            if(!name) return alert("Por favor, digite seu nome primeiro antes de entrar em uma sala!");
+            if(!name) return alert("Por favor, digite seu nome primeiro!");
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'block';
         }
@@ -150,6 +158,10 @@
         function startGame() {
             socket.emit('startGame', { roomId: myRoomId });
         }
+        
+        function nextRound() {
+            socket.emit('nextRound', { roomId: myRoomId });
+        }
 
         socket.on('gameStarted', ({ players }) => {
             document.getElementById('startBtn').style.display = 'none';
@@ -160,7 +172,7 @@
             const me = players.find(p => p.id === socket.id);
             if(me) {
                 amINarrator = me.isNarrator;
-                myPlayedCardUrl = ''; // Reseta ao iniciar rodada
+                myPlayedCardUrl = ''; 
                 myHandElements = [];
                 let loadedCount = 0;
                 const totalImages = me.hand.length;
@@ -169,7 +181,7 @@
                     const img = new Image();
                     img.src = url;
                     img.className = 'card';
-                    img.onclick = () => openModal(url, 'PLAY'); // Contexto de jogar
+                    img.onclick = () => openModal(url, 'PLAY'); 
                     
                     img.onload = checkAllLoaded;
                     img.onerror = checkAllLoaded; 
@@ -188,29 +200,33 @@
 
         socket.on('allClientsReady', () => {
             document.getElementById('loadingMessage').style.display = 'none';
-            
             const handDiv = document.getElementById('hand');
-            handDiv.innerHTML = '<h3>Sua Mão (Clique para jogar):</h3>';
             
-            myHandElements.forEach(img => {
-                handDiv.appendChild(img);
-            });
-
             if(amINarrator) {
-                setTimeout(() => {
-                    alert('Você é o narrador dessa rodada! Escolha uma carta (Lembre-se de dar uma dica em voz alta!).');
-                }, 150); 
+                handDiv.innerHTML = '<h3 style="color:#2ecc71;">VOCÊ É O NARRADOR!</h3><p>Escolha uma carta abaixo e dê sua dica em voz alta.</p>';
+            } else {
+                handDiv.innerHTML = '<h3>Sua Mão (Escolha uma carta para jogar):</h3>';
             }
+            
+            const cardsContainer = document.createElement('div');
+            cardsContainer.style.display = 'flex';
+            cardsContainer.style.flexWrap = 'wrap';
+            cardsContainer.style.justifyContent = 'center';
+            cardsContainer.style.gap = '10px';
+
+            myHandElements.forEach(img => {
+                cardsContainer.appendChild(img);
+            });
+            handDiv.appendChild(cardsContainer);
         });
 
-        // REVELA AS CARTAS PARA VOTAÇÃO
         socket.on('startVotingPhase', ({ cards }) => {
             const handDiv = document.getElementById('hand');
             
             if (amINarrator) {
                 handDiv.innerHTML = '<h3>As cartas foram reveladas! Aguardando os votos dos outros jogadores...</h3>';
             } else {
-                handDiv.innerHTML = '<h3>Fase de Votação: Qual é a carta do narrador? (Clique para votar)</h3>';
+                handDiv.innerHTML = '<h3>Fase de Votação: Qual é a carta do narrador?</h3>';
             }
 
             const cardsContainer = document.createElement('div');
@@ -224,33 +240,63 @@
                 img.src = url;
                 img.className = 'card';
                 
-                // Impede o jogador de votar na própria carta
                 if (url === myPlayedCardUrl && !amINarrator) {
                     img.classList.add('my-card-disabled');
                     img.onclick = () => alert("Você não pode votar na sua própria carta!");
                 } else {
                     img.onclick = () => {
                         if (!amINarrator) {
-                            openModal(url, 'VOTE'); // Contexto de votar
+                            openModal(url, 'VOTE');
                         }
                     };
                 }
-                
                 cardsContainer.appendChild(img);
             });
             handDiv.appendChild(cardsContainer);
         });
 
-        // FIM DA RODADA (Pontuação)
-        socket.on('roundEnded', ({ playedCards, votes }) => {
-            document.getElementById('hand').innerHTML = `
-                <h3>Todos votaram! Rodada Finalizada.</h3>
-                <p>Implementaremos o placar na próxima etapa!</p>
-                <button onclick="startGame()">Começar Próxima Rodada</button>
+        // RENDERIZAÇÃO DO RANKING AO FINAL DA RODADA
+        socket.on('roundEnded', ({ ranking, isGameOver, targetScore, hostSocketId }) => {
+            let html = `<h3>Rodada Finalizada!</h3>`;
+            
+            if (isGameOver) {
+                const vencedor = ranking[0].name;
+                html += `<h2 style="color: #f1c40f;">🏆 FIM DE JOGO! 🏆<br>${vencedor} venceu!</h2>`;
+            } else {
+                html += `<p>Pontuação Máxima: ${targetScore}</p>`;
+            }
+
+            html += `
+                <table class="ranking-table">
+                    <tr>
+                        <th>Posição</th>
+                        <th>Jogador</th>
+                        <th>Pontos</th>
+                    </tr>
             `;
+
+            ranking.forEach((p, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}º</td>
+                        <td>${p.name} ${p.isNarrator ? '(Narrador)' : ''}</td>
+                        <td><strong>${p.score}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `</table>`;
+
+            // Apenas o host vê o botão de iniciar a próxima rodada (se o jogo não acabou)
+            if (!isGameOver && socket.id === hostSocketId) {
+                html += `<button onclick="nextRound()" style="background:#f1c40f; color:#333;">Iniciar Próxima Rodada</button>`;
+            } else if (!isGameOver) {
+                html += `<p>Aguardando o Host iniciar a próxima rodada...</p>`;
+            }
+
+            document.getElementById('hand').innerHTML = html;
         });
 
-        // --- SISTEMA DE MODAL ADAPTÁVEL (JOGAR ou VOTAR) ---
         function openModal(url, action) {
             selectedCardUrl = url;
             modalAction = action;
@@ -262,9 +308,8 @@
                 btnConfirm.style.background = '#2ecc71';
             } else if (action === 'VOTE') {
                 btnConfirm.innerText = 'Confirmar Voto';
-                btnConfirm.style.background = '#9b59b6'; // Cor diferente para votação (roxo)
+                btnConfirm.style.background = '#9b59b6'; 
             }
-            
             document.getElementById('cardModal').style.display = 'block';
         }
 
@@ -277,17 +322,13 @@
             if(!selectedCardUrl) return;
             
             if (modalAction === 'PLAY') {
-                myPlayedCardUrl = selectedCardUrl; // Salva a carta que o jogador escolheu
+                myPlayedCardUrl = selectedCardUrl; 
                 socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                alert('Carta confirmada!');
-                document.getElementById('hand').innerHTML = '<h3>Carta escolhida! Aguardando os outros jogadores...</h3>';
-            
+                document.getElementById('hand').innerHTML = '<h3>Carta escolhida! Aguardando os outros...</h3>';
             } else if (modalAction === 'VOTE') {
                 socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                alert('Voto confirmado!');
                 document.getElementById('hand').innerHTML = '<h3>Voto registrado! Aguardando apuração...</h3>';
             }
-            
             closeModal();
         }
     </script>
