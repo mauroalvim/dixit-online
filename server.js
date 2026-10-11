@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs'); // Módulo para ler os arquivos do seu computador/servidor
+const https = require('https');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,32 +13,53 @@ app.use(express.static(path.join(__dirname, 'public')));
 const gameRooms = {}; 
 
 // =========================================================================
-// 🎴 FIM DAS IAs - LEITOR DE BARALHO LOCAL
+// 🤖 NOVA IA: LEXICA.ART (STABLE DIFFUSION)
 // =========================================================================
-let MASTER_DECK = [];
-const pastaCartas = path.join(__dirname, 'public', 'cartas');
+// Em vez de gerar pixel a pixel, pesquisamos na IA por 50 imagens perfeitas
+// de uma só vez. Isto evita bloqueios (Rate Limit) e o jogo corre fluido!
+async function fetchAIImages() {
+    return new Promise((resolve) => {
+        // Diferentes estilos que a IA vai procurar para criar o baralho
+        const prompts = [
+            'surrealism masterpiece salvador dali', 
+            'dreamcore aesthetic fantasy illustration', 
+            'magical realism bizarre landscape', 
+            'whimsical dreamlike concept art'
+        ];
+        const prompt = prompts[Math.floor(Math.random() * prompts.length)];
+        const url = `https://lexica.art/api/v1/search?q=${encodeURIComponent(prompt)}`;
 
-function carregarBaralhoLocal() {
-    // Verifica se a pasta "cartas" existe dentro de "public"
-    if (fs.existsSync(pastaCartas)) {
-        const arquivos = fs.readdirSync(pastaCartas);
-        // Filtra apenas imagens e cria os caminhos locais
-        MASTER_DECK = arquivos
-            .filter(arq => arq.endsWith('.jpg') || arq.endsWith('.png') || arq.endsWith('.jpeg'))
-            .map(arq => `/cartas/${arq}`);
-    }
-    
-    if (MASTER_DECK.length === 0) {
-        console.warn("⚠️ AVISO: A pasta 'public/cartas' está vazia ou não existe! Crie a pasta e coloque as imagens do Pinterest lá.");
-        // Imagem de emergência só para o servidor não quebrar se você testar antes de colocar as fotos
-        MASTER_DECK = ["https://via.placeholder.com/300x450.png?text=Coloque+Imagens+na+Pasta+/cartas"];
-    } else {
-        console.log(`✅ Baralho Oficial carregado com sucesso! ${MASTER_DECK.length} cartas encontradas na pasta local.`);
-    }
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    if (json.images && json.images.length > 0) {
+                        // A IA devolve centenas, nós ficamos com as 50 primeiras
+                        const urls = json.images.map(img => img.src).slice(0, 50);
+                        resolve(urls);
+                    } else {
+                        resolve([]);
+                    }
+                } catch (e) {
+                    resolve([]);
+                }
+            });
+        }).on('error', () => {
+            resolve([]);
+        });
+    });
 }
 
-// Carrega as cartas assim que o servidor liga
-carregarBaralhoLocal();
+// Plano B de emergência: se a Lexica estiver em manutenção, usamos a antiga
+function getFallbackDeck() {
+    const deck = [];
+    for(let i = 0; i < 50; i++) {
+        deck.push(`https://image.pollinations.ai/prompt/surreal_fantasy_art_${Math.floor(Math.random()*10000)}?width=300&height=450&nologo=true`);
+    }
+    return deck;
+}
 // =========================================================================
 
 io.on('connection', (socket) => {
@@ -53,12 +74,21 @@ io.on('connection', (socket) => {
       }
   });
 
-  socket.on('createRoom', ({ targetScore, playerName }) => {
+  // Alteração importante: a criação da sala agora aguarda que a IA entregue as 50 cartas
+  socket.on('createRoom', async ({ targetScore, playerName }) => {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
-    // Embaralha as cartas locais que o servidor encontrou na pasta
-    const shuffledDeck = [...MASTER_DECK].sort(() => Math.random() - 0.5);
+    // Avisa os telemóveis para mostrarem a mensagem "A invocar a IA..."
+    socket.emit('generatingDeck');
+
+    // Pede as 50 cartas à Inteligência Artificial
+    let aiDeck = await fetchAIImages();
+    if (aiDeck.length < 10) {
+        aiDeck = getFallbackDeck(); // Se a Lexica falhar, entra o plano B
+    }
+
+    const shuffledDeck = aiDeck.sort(() => Math.random() - 0.5);
 
     gameRooms[roomId] = {
       hostSocketId: socket.id,
@@ -119,8 +149,7 @@ io.on('connection', (socket) => {
                 if (room.deck.length > 0) {
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 } else {
-                    // Se o baralho acabar, re-embaralha o Mestre
-                    room.deck = [...MASTER_DECK].sort(() => Math.random() - 0.5);
+                    room.deck = getFallbackDeck(); // Se acabar o baralho, gera mais
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 }
             }
@@ -219,4 +248,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor Dixit Online a rodar na porta ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor Dixit a rodar na porta ${PORT}`));
