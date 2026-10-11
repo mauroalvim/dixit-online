@@ -8,15 +8,14 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Novo fundo surrealista e lúdico para o jogo inteiro */
         body { 
             font-family: 'Poppins', sans-serif; 
             text-align: center; 
             min-height: 100vh;
             background-color: #1a1a2e;
             background-image: 
-                linear-gradient(rgba(26, 26, 46, 0.8), rgba(26, 26, 46, 0.9)), /* Película escura para legibilidade */
-                url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=2070&auto=format&fit=crop'); /* Imagem abstrata/pintura */
+                linear-gradient(rgba(26, 26, 46, 0.8), rgba(26, 26, 46, 0.9)), 
+                url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=2070&auto=format&fit=crop'); 
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -30,7 +29,7 @@
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0px 4px 15px rgba(0,0,0,0.9); margin: 20px 0; color: #fff; letter-spacing: 2px;}
         
         .glass-panel {
-            background: rgba(20, 20, 35, 0.85); /* Fundo mais opaco para destacar do wallpaper */
+            background: rgba(20, 20, 35, 0.85); 
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border-radius: 20px;
@@ -120,10 +119,8 @@
 <body>
     <h1>Dixit Online ✨</h1>
     
-    <!-- TELA 1: MENU PRINCIPAL DE ENTRADA -->
     <div id="initialMenu" class="glass-panel">
         
-        <!-- OPÇÃO PRINCIPAL: ENTRAR NA SALA -->
         <div style="background: rgba(0,0,0,0.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);">
             <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar em uma Partida</h3>
             <p style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">Digite o código de 4 números fornecido pelo Host.</p>
@@ -131,7 +128,6 @@
             <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); margin-top: 15px; padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
 
-        <!-- OPÇÃO SECUNDÁRIA: CRIAR SALA -->
         <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; cursor: pointer;" id="hostToggleBtn" onclick="toggleHostMenu()">
             <h4 style="color: #f1c40f; margin: 0;">👑 Quer criar uma nova sala? Clique aqui ▼</h4>
         </div>
@@ -144,7 +140,6 @@
         </div>
     </div>
 
-    <!-- TELA 1.5: PEDIR NOME DO JOGADOR CONVIDADO APÓS VALIDAR A SALA -->
     <div id="joinNameForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
         <p style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">Como os outros jogadores devem te chamar?</p>
@@ -153,7 +148,6 @@
         <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
     </div>
 
-    <!-- TELA DO JOGO -->
     <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
         <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px; text-shadow: 1px 1px 5px rgba(0,0,0,0.5);"></h2>
         
@@ -170,7 +164,6 @@
         <div id="hand"></div>
     </div>
 
-    <!-- MODAL -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="">
@@ -185,7 +178,7 @@
     <script>
         const socket = io();
         let myRoomId = '';
-        let pendingRoomIdToJoin = ''; // Guarda o ID da sala enquanto o usuário digita o nome
+        let pendingRoomIdToJoin = ''; 
         let selectedCardUrl = '';
         let myPlayedCardUrl = ''; 
         let modalAction = 'PLAY'; 
@@ -193,7 +186,6 @@
         let amINarrator = false;
         let narratorHasPlayed = false;
 
-        // Toggle do Menu Host
         function toggleHostMenu() {
             const menu = document.getElementById('hostMenu');
             if(menu.style.display === 'none') {
@@ -203,8 +195,9 @@
             }
         }
 
-        // Sistema Anti-Congelamento para Carregamento de Imagens
-        function loadAndRetryImage(imgElement, originalUrl, onSuccess) {
+        // NOVO SISTEMA DE CARREGAMENTO EM FILA (STAGGERING) COM RETRY
+        // Isso impede que a IA nos bloqueie por excesso de velocidade
+        function loadAndRetryImage(imgElement, originalUrl, onSuccess, delayMs = 0) {
             let attempts = 0;
             let hasLoaded = false;
 
@@ -216,7 +209,7 @@
                         imgElement.src = ''; 
                         handleError();
                     }
-                }, 6000); // Aumentado ligeiramente para dar mais chance à IA de gerar a imagem nova
+                }, 8000); // 8 segundos de paciência para a arte ser desenhada
 
                 imgElement.onload = () => {
                     if (hasLoaded) return;
@@ -230,24 +223,21 @@
                     clearTimeout(timeoutId);
                     attempts++;
                     
-                    if (attempts >= 2) {
-                        hasLoaded = true;
-                        imgElement.onload = () => { if (onSuccess) onSuccess(); };
-                        // Fallback mais artístico se a IA falhar
-                        imgElement.src = `https://picsum.photos/seed/${Math.random()}/300/450?blur=4&grayscale`;
-                    } else {
+                    // Sem fallback cinza! Se falhar, tentamos a IA de novo após um breve descanso.
+                    const waitTime = attempts * 2500; 
+                    setTimeout(() => {
                         tryLoad(originalUrl + '&retry=' + new Date().getTime());
-                    }
+                    }, waitTime);
                 };
 
                 imgElement.onerror = handleError;
                 imgElement.src = urlToTry;
             };
 
-            tryLoad(originalUrl);
+            // Aplica o atraso na fila antes de fazer o primeiro pedido
+            setTimeout(() => { tryLoad(originalUrl); }, delayMs);
         }
 
-        // FLUXO DE CRIAÇÃO (HOST)
         function showCreateRoom() {
             const name = document.getElementById('hostPlayerName').value;
             const targetScore = document.getElementById('targetScoreInput').value;
@@ -264,17 +254,12 @@
             updatePlayersList(players);
         });
 
-        // FLUXO DE ENTRADA (GUEST)
-        // PASSO 1: Checar se a sala existe
         function checkRoom() {
             const room = document.getElementById('roomIdCheck').value;
             if(!room) return alert("Digite o código da sala de 4 números!");
-            
-            // Pergunta ao servidor se a sala é válida
             socket.emit('validateRoom', { roomId: room });
         }
 
-        // PASSO 2: Se a sala for válida, pede o nome
         socket.on('roomValidated', ({ roomId }) => {
             pendingRoomIdToJoin = roomId;
             document.getElementById('initialMenu').style.display = 'none';
@@ -283,7 +268,6 @@
 
         socket.on('joinError', ({ message }) => alert(message));
 
-        // PASSO 3: Envia o código E o nome para entrar oficialmente
         function joinRoom() {
             const name = document.getElementById('guestPlayerName').value;
             if(!name) return alert("Por favor, digite seu apelido para entrar!");
@@ -304,7 +288,6 @@
             pendingRoomIdToJoin = '';
         }
 
-        // LÓGICA DO JOGO E DA MESA
         socket.on('playerJoined', ({ players }) => {
             updatePlayersList(players);
             if (players.length > 1) {
@@ -338,7 +321,7 @@
                 let loadedCount = 0;
                 const totalImages = me.hand.length;
 
-                me.hand.forEach(url => {
+                me.hand.forEach((url, index) => {
                     const img = new Image();
                     img.className = 'card';
                     
@@ -350,12 +333,13 @@
                         openModal(img.src, 'PLAY');
                     };
 
+                    // CHAMA A IA COLOCANDO UM ATRASO DE 800ms ENTRE CADA IMAGEM (Staggering)
                     loadAndRetryImage(img, url, () => {
                         loadedCount++;
                         if (loadedCount === totalImages) {
                             socket.emit('imagesLoaded', { roomId: myRoomId });
                         }
-                    });
+                    }, index * 800);
 
                     myHandElements.push(img);
                 });
@@ -399,10 +383,11 @@
                 instructionDiv.innerHTML = '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
             }
 
-            cards.forEach(url => {
+            cards.forEach((url, index) => {
                 const img = document.createElement('img');
                 img.className = 'card';
                 
+                // Aplica o mesmo atraso para as cartas de votação
                 loadAndRetryImage(img, url, () => {
                     if (amINarrator) {
                         img.classList.add('narrator-card-view');
@@ -413,7 +398,7 @@
                     } else {
                         img.onclick = () => openModal(img.src, 'VOTE');
                     }
-                });
+                }, index * 800);
                 
                 handDiv.appendChild(img);
             });
