@@ -9,20 +9,24 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Banco de dados em memória
 const gameRooms = {}; 
+
+// Função para gerar URLs de cartas únicas e evitar repetições
+function generateUniqueCard() {
+    const randomSeed = Math.random().toString(36).substring(2, 10);
+    return `https://picsum.photos/seed/${randomSeed}/200/300`;
+}
 
 io.on('connection', (socket) => {
   console.log(`Novo usuário conectado: ${socket.id}`);
 
   socket.on('createRoom', ({ targetScore, playerName }) => {
     const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
-    
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
     gameRooms[roomId] = {
       hostSocketId: socket.id,
-      targetScore: targetScore,
+      targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
       playersLoadedImages: 0,
@@ -52,19 +56,42 @@ io.on('connection', (socket) => {
     if (room) {
       room.status = 'LOADING_IMAGES';
       room.playersLoadedImages = 0;
-      
-      // Limpa a rodada atual caso seja uma nova rodada
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
       
-      // Sorteia o narrador
-      const narratorIndex = Math.floor(Math.random() * room.players.length);
-      room.players.forEach((p, i) => p.isNarrator = (i === narratorIndex));
+      // Sorteia o primeiro narrador
+      room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
+      // Distribui 5 cartas ÚNICAS para todos
       room.players.forEach(p => {
-        p.hand = Array.from({length: 5}, (_, i) => `https://picsum.photos/seed/${roomId}${p.name}${i}/200/300`);
+        p.hand = Array.from({length: 5}, () => generateUniqueCard());
       });
 
       io.to(roomId).emit('gameStarted', { players: room.players });
+    }
+  });
+
+  // Função para avançar de rodada
+  socket.on('nextRound', ({ roomId }) => {
+    const room = gameRooms[roomId];
+    if (room && room.status === 'ROUND_END') {
+        room.status = 'LOADING_IMAGES';
+        room.playersLoadedImages = 0;
+        room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
+
+        // Passa o narrador para o próximo
+        const currentNarratorIndex = room.players.findIndex(p => p.isNarrator);
+        const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
+        room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
+
+        // Repõe a mão dos jogadores para sempre terem 5 cartas
+        room.players.forEach(p => {
+            const cardsNeeded = 5 - p.hand.length;
+            for(let i = 0; i < cardsNeeded; i++) {
+                p.hand.push(generateUniqueCard());
+            }
+        });
+
+        io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
 
@@ -72,7 +99,6 @@ io.on('connection', (socket) => {
     const room = gameRooms[roomId];
     if (room) {
       room.playersLoadedImages++;
-      
       if (room.playersLoadedImages === room.players.length) {
         room.status = 'NARRATOR_TURN';
         io.to(roomId).emit('allClientsReady');
@@ -80,46 +106,92 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Onde a mágica da Fase de Escolha acontece:
   socket.on('playCard', ({ roomId, cardUrl }) => {
     const room = gameRooms[roomId];
     if(room) {
-      // Evita que o mesmo jogador envie duas vezes
+      // Salva qual é a carta oficial do narrador
+      const narrator = room.players.find(p => p.isNarrator);
+      if (narrator && narrator.id === socket.id) {
+          room.currentRound.narratorCard = cardUrl;
+      }
+
       const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
       if (!alreadyPlayed) {
         room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
       }
 
-      // Se todos os jogadores já escolheram suas cartas
+      // Quando todos jogarem as cartas
       if (room.currentRound.playedCards.length === room.players.length) {
         room.status = 'VOTING_PHASE';
-        
-        // Embaralha as cartas jogadas para ninguém saber de quem é qual (Algoritmo Fisher-Yates)
         const shuffledCards = [...room.currentRound.playedCards].sort(() => Math.random() - 0.5);
-        
-        // Envia apenas as URLs (esconde os IDs dos jogadores)
         const cardsToVote = shuffledCards.map(c => c.cardUrl);
-        
         io.to(roomId).emit('startVotingPhase', { cards: cardsToVote });
       }
     }
   });
 
-  // Onde a mágica da Fase de Votação acontece:
   socket.on('voteCard', ({ roomId, cardUrl }) => {
       const room = gameRooms[roomId];
       if (room) {
           room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
           
-          // Em Dixit, o Narrador não vota. Então esperamos os votos de (Total de Jogadores - 1)
-          const expectedVotes = room.players.length - 1;
+          const expectedVotes = room.players.length - 1; // Narrador não vota
           
+          // Quando todos votarem
           if (room.currentRound.votes.length === expectedVotes) {
+              const narratorCard = room.currentRound.narratorCard;
+              const narratorPlayer = room.players.find(p => p.isNarrator);
+              
+              let acertos = 0;
+              room.currentRound.votes.forEach(v => { if(v.votedCardUrl === narratorCard) acertos++; });
+
+              // LÓGICA DE PONTUAÇÃO DO DIXIT
+              if (acertos === 0 || acertos === expectedVotes) {
+                  // Todos acertaram ou todos erraram (Narrador = 0, Outros = 2)
+                  room.players.forEach(p => { if(!p.isNarrator) p.score += 2; });
+              } else {
+                  // Alguns acertaram (Narrador = 3, Quem acertou = 3)
+                  narratorPlayer.score += 3;
+                  room.currentRound.votes.forEach(v => {
+                      if(v.votedCardUrl === narratorCard) {
+                          const voter = room.players.find(p => p.id === v.playerId);
+                          if(voter) voter.score += 3;
+                      }
+                  });
+              }
+
+              // Ponto bônus por enganar os outros
+              room.currentRound.votes.forEach(v => {
+                  if (v.votedCardUrl !== narratorCard) {
+                      const ownerOfCard = room.currentRound.playedCards.find(c => c.cardUrl === v.votedCardUrl);
+                      if(ownerOfCard && ownerOfCard.playerId !== narratorPlayer.id) {
+                          const owner = room.players.find(p => p.id === ownerOfCard.playerId);
+                          if(owner) owner.score += 1;
+                      }
+                  }
+              });
+
+              // Tira as cartas jogadas da mão dos jogadores
+              room.players.forEach(p => {
+                  const pCard = room.currentRound.playedCards.find(c => c.playerId === p.id);
+                  if (pCard) {
+                      p.hand = p.hand.filter(h => h !== pCard.cardUrl);
+                  }
+              });
+
               room.status = 'ROUND_END';
-              // Avisa que os votos acabaram. Na próxima etapa faremos o cálculo dos pontos!
+              
+              // Verifica se alguém atingiu a pontuação máxima
+              const isGameOver = room.players.some(p => p.score >= room.targetScore);
+              
+              // Ordena do maior para o menor pontuador
+              const ranking = [...room.players].sort((a, b) => b.score - a.score);
+
               io.to(roomId).emit('roundEnded', { 
-                  playedCards: room.currentRound.playedCards, 
-                  votes: room.currentRound.votes 
+                  ranking, 
+                  isGameOver, 
+                  targetScore: room.targetScore,
+                  hostSocketId: room.hostSocketId
               });
           }
       }
