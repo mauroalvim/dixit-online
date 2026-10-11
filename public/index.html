@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dixit Online</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #2c3e50; color: white; }
+        .card { width: 100px; height: 150px; border-radius: 8px; margin: 5px; cursor: pointer; }
+        button { padding: 10px 15px; font-size: 16px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; }
+        input { padding: 10px; font-size: 16px; margin: 5px; border-radius: 5px; border: none; }
+    </style>
+</head>
 <body>
     <h1>Dixit Online</h1>
     
@@ -9,7 +22,7 @@
         <button onclick="showJoinRoom()">Entrar em uma Sala Existente</button>
     </div>
 
-    <!-- TELA 2: Formulário para Entrar na Sala (Escondido por padrão) -->
+    <!-- TELA 2: Formulário para Entrar na Sala -->
     <div id="joinForm" style="display:none;">
         <h3>Entrar na Sala</h3>
         <input type="text" id="roomId" placeholder="Código da Sala">
@@ -21,10 +34,15 @@
         <button onclick="backToMenu()">Voltar</button>
     </div>
 
-    <!-- TELA 3: Tela do Jogo (Escondido por padrão) -->
+    <!-- TELA 3: Tela do Jogo e Sala de Espera (Lobby) -->
     <div id="game" style="display:none;">
         <h2 id="roomCodeDisplay"></h2>
-        <div id="playersList"></div>
+        
+        <!-- MENSAGEM DE AGUARDANDO JOGADORES -->
+        <h3 id="waitingMessage" style="color: #f1c40f; display:none;">Aguardando outros jogadores entrarem...</h3>
+        
+        <div id="playersList">Nenhum jogador na sala ainda.</div>
+        <br>
         <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
         <div id="hand"></div>
     </div>
@@ -36,8 +54,7 @@
 
         // --- FUNÇÕES DE NAVEGAÇÃO DA TELA ---
         function showCreateRoom() {
-            // Se o usuário clicar em criar sala, já chama a criação direto
-            createRoom(); 
+            socket.emit('createRoom', { targetScore: 30 });
         }
 
         function showJoinRoom() {
@@ -51,19 +68,22 @@
         }
 
         // --- LÓGICA DO JOGO (SOCKET.IO) ---
-        function createRoom() {
-            socket.emit('createRoom', { targetScore: 30 });
-        }
-
+        
+        // Quando o Host cria a sala
         socket.on('roomCreated', ({ roomId }) => {
             myRoomId = roomId;
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
+            
             document.getElementById('roomCodeDisplay').innerText = 'Sua Sala foi criada! Código: ' + roomId;
-            document.getElementById('startBtn').style.display = 'inline-block';
+            
+            // Oculta o botão Iniciar e mostra a mensagem de espera
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('waitingMessage').style.display = 'block';
         });
 
+        // Quando o jogador tenta entrar na sala
         function joinRoom() {
             const room = document.getElementById('roomId').value.toUpperCase();
             const name = document.getElementById('playerName').value;
@@ -76,29 +96,43 @@
             socket.emit('joinRoom', { roomId: room, playerName: name });
         }
 
+        // Se o jogador entrou com sucesso
         socket.on('joinedSuccess', ({ roomId, playerName }) => {
             myRoomId = roomId;
             document.getElementById('initialMenu').style.display = 'none';
             document.getElementById('joinForm').style.display = 'none';
             document.getElementById('game').style.display = 'block';
+            
             document.getElementById('roomCodeDisplay').innerText = 'Conectado na Sala: ' + roomId;
+            document.getElementById('waitingMessage').style.display = 'none'; // Quem entra não é o host, só aguarda.
         });
 
-        // Adicionando o aviso caso a sala não exista (como conversamos antes)
+        // Se deu erro ao entrar na sala (código errado)
         socket.on('joinError', ({ message }) => {
             alert(message);
         });
 
+        // Atualiza a lista de jogadores na sala do Host
         socket.on('playerJoined', ({ players }) => {
-            document.getElementById('playersList').innerText = 'Jogadores: ' + players.map(p => p.name).join(', ');
+            document.getElementById('playersList').innerText = 'Jogadores na sala: ' + players.map(p => p.name).join(', ');
+            
+            // Se tiver pelo menos 1 jogador, esconde a mensagem e libera o botão de iniciar para o Host
+            if (players.length > 0) {
+                document.getElementById('waitingMessage').style.display = 'none';
+                document.getElementById('startBtn').style.display = 'inline-block';
+            }
         });
 
+        // Host inicia o jogo
         function startGame() {
             socket.emit('startGame', { roomId: myRoomId });
         }
 
+        // Quando a partida inicia de fato
         socket.on('gameStarted', ({ players, status }) => {
             document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('waitingMessage').style.display = 'none';
+            
             const me = players.find(p => p.id === socket.id);
             if(me) {
                 const handDiv = document.getElementById('hand');
@@ -110,7 +144,11 @@
                     handDiv.appendChild(img);
                 });
                 if(me.isNarrator) alert('Você é o narrador dessa rodada!');
+            } else {
+                // Caso do Host (que por enquanto atua apenas como gerenciador da partida)
+                document.getElementById('hand').innerHTML = '<h3>A partida começou! Acompanhe o jogo.</h3>';
             }
         });
     </script>
 </body>
+</html>
