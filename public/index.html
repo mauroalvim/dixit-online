@@ -142,7 +142,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Banner de Erro Oculto
         function showErr(msg) {
             let d = document.getElementById('errBanner');
             if (!d) { 
@@ -228,8 +227,8 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // --- SISTEMA DEFINITIVO PARA REPOSITÓRIO FIXO ---
-        // Elimina o congelamento: se a imagem existir ela carrega, se der erro ele joga uma imagem reserva de emergência na hora.
+        // --- SISTEMA INTELIGENTE DE RETRY NO CLIENTE ---
+        // Se a carta ainda estiver a ser baixada no servidor, o cliente espera e tenta puxar de novo de forma invisível.
         function loadInto(cardDiv, url) {
             const img = new Image();
             img.onload = () => { 
@@ -237,9 +236,8 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                cardDiv.classList.remove('card-loading'); 
-                // Imagem de emergência caso algum link do Pinterest/Unsplash quebre no futuro
-                cardDiv.style.backgroundImage = `url('https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&h=450&fit=crop')`; 
+                // Se a carta não existe (o servidor ainda está baixando), tenta novamente a cada 2 segundos.
+                setTimeout(() => { img.src = url + "?t=" + new Date().getTime(); }, 2000);
             };
             img.src = url;
         }
@@ -284,7 +282,7 @@
             
             ins.innerHTML = amINarrator
                 ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
-                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe suas cartas enquanto isso!';
+                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe as suas cartas enquanto isso!';
                 
             me.hand.forEach(url => appendCardToBoard(url, false));
         });
