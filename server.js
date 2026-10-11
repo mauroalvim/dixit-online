@@ -11,31 +11,30 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-// Novos prompts SUPER específicos para forçar a IA a criar artes no estilo Dixit
+// Prompts super detalhados para forçar a IA a criar artes coloridas, nítidas e no estilo Dixit
 const surrealPrompts = [
-    "A+surreal+painting+in+the+style+of+Salvador+Dali,+melting+clocks+in+a+desert,+dreamlike",
-    "Whimsical+and+bizarre+storybook+illustration,+a+flying+whale+over+a+city+of+clouds",
-    "Magical+realism+oil+painting,+a+staircase+leading+into+a+giant+glowing+moon",
-    "Abstract+and+mystical+concept+art,+a+tree+with+eyes+instead+of+leaves",
-    "Psychedelic+watercolor+art,+a+cat+made+of+galaxies+and+stars",
-    "Ethereal+fantasy+creatures+in+a+surreal+landscape,+vibrant+colors,+dreamcore",
-    "Optical+illusion+art,+impossible+geometry,+a+room+with+no+end,+Escher+style",
-    "Dark+fairy+tale+illustration,+a+mysterious+forest+where+the+trees+are+clocks",
-    "Steampunk+surrealism,+a+mechanical+butterfly+with+stained+glass+wings",
-    "A+floating+island+with+a+giant+teacup+waterfall,+surreal+fantasy+digital+art"
+    "Highly+colorful+surreal+painting,+melting+clocks+in+a+vibrant+desert,+dreamlike,+Salvador+Dali+style,+masterpiece,+sharp+focus",
+    "Whimsical+highly+detailed+storybook+illustration,+a+colorful+flying+whale+over+a+vibrant+city+of+clouds,+masterpiece",
+    "Magical+realism+vibrant+oil+painting,+a+glowing+staircase+leading+into+a+giant+colorful+moon",
+    "Abstract+and+mystical+vibrant+concept+art,+a+colorful+tree+with+glowing+eyes+instead+of+leaves,+high+definition",
+    "Psychedelic+extremely+colorful+watercolor+art,+a+cat+made+of+bright+galaxies+and+stars",
+    "Ethereal+fantasy+vibrant+creatures+in+a+surreal+colorful+landscape,+dreamcore,+high+definition",
+    "Colorful+optical+illusion+art,+impossible+geometry,+a+vibrant+room+with+no+end,+Escher+style+but+highly+colorful",
+    "Vibrant+fairy+tale+illustration,+a+mysterious+colorful+forest+where+trees+are+glowing+clocks",
+    "Steampunk+surrealism,+a+bright+mechanical+butterfly+with+vibrant+stained+glass+wings",
+    "Floating+vibrant+island+with+a+giant+glowing+teacup+waterfall,+surreal+colorful+fantasy+digital+art"
 ];
 
 function generateUniqueCard() {
     const randomSeed = Math.floor(Math.random() * 9999999);
     const randomPrompt = surrealPrompts[Math.floor(Math.random() * surrealPrompts.length)];
-    // Utilizando a API Pollinations, agora com os prompts formatados corretamente para garantir a arte gerada por IA
-    return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true`;
+    // Adicionado parâmetro "enhance=true" para a IA melhorar ainda mais as cores e a nitidez
+    return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true&enhance=true`;
 }
 
 io.on('connection', (socket) => {
   console.log(`Novo usuário conectado: ${socket.id}`);
 
-  // Nova rota para validar se a sala existe antes de pedir o nome
   socket.on('validateRoom', ({ roomId }) => {
       const room = gameRooms[roomId];
       if (room && room.status === 'LOBBY') {
