@@ -11,27 +11,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
+// Fragmentos super criativos para garantir arte surreal e colorida
 const subjects = [
-    "melting clocks in a desert",
+    "melting clocks in a vibrant desert",
     "a giant glowing whale flying in a starry sky",
-    "a staircase leading into a giant eye",
+    "a glowing staircase leading into a giant eye",
     "a tree with glowing butterflies instead of leaves",
-    "a door standing alone in the middle of the ocean",
-    "floating islands connected by chains",
-    "a giant teacup pouring a waterfall",
+    "a mysterious door standing alone in the middle of the ocean",
+    "floating islands connected by golden chains",
+    "a giant teacup pouring a colorful waterfall",
     "a mechanical owl with stained glass wings",
-    "a mirror reflecting a different galaxy",
-    "a train driving through the clouds",
-    "giant mushrooms glowing in a dark forest",
-    "a cat made of nebulae and stars",
-    "a house suspended by giant balloons",
-    "a labyrinth of endless stairs",
-    "a chessboard where pieces are living creatures",
-    "a city built on the back of a giant turtle",
-    "clouds shaped like mythical beasts",
-    "a waterfall of liquid gold",
-    "a library with floating books",
-    "a clockwork sun radiating magical light"
+    "a vintage mirror reflecting a different galaxy",
+    "a magical train driving through colorful clouds",
+    "giant neon mushrooms glowing in a dark forest",
+    "a cat made of bright nebulae and stars",
+    "a floating house suspended by giant colorful balloons",
+    "a surreal labyrinth of endless stairs",
+    "a chessboard where pieces are bizarre living creatures",
+    "a glowing city built on the back of a giant turtle",
+    "vibrant clouds shaped like mythical beasts",
+    "a waterfall of liquid gold in a mystical cave",
+    "a surreal library with floating magical books",
+    "a clockwork sun radiating magical neon light"
 ];
 
 const styles = [
@@ -41,21 +42,25 @@ const styles = [
     "highly colorful magical realism",
     "psychedelic abstract art",
     "whimsical fantasy illustration",
-    "ethereal digital art",
+    "ethereal digital masterpiece",
     "vibrant oil painting",
     "intricate surreal masterpiece"
 ];
 
-function generateUniqueCard() {
-    const seed = Math.floor(Math.random() * 9999999);
-    const subject = subjects[Math.floor(Math.random() * subjects.length)];
-    const style = styles[Math.floor(Math.random() * styles.length)];
-    
-    const prompt = `Surreal masterpiece, ${subject},${style}, vibrant colors, high definition`;
-    const encodedPrompt = encodeURIComponent(prompt);
-    
-    // IA Principal
-    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&seed=${seed}&nologo=true`;
+// A SUA IDEIA: Gerador do Banco de Dados / Baralho de 50 Cartas
+function generateDeck(size) {
+    const deck = [];
+    for(let i = 0; i < size; i++) {
+        const seed = Math.floor(Math.random() * 9999999);
+        const subject = subjects[Math.floor(Math.random() * subjects.length)];
+        const style = styles[Math.floor(Math.random() * styles.length)];
+        
+        const prompt = `Surreal masterpiece, ${subject},${style}, vibrant colors, high definition`;
+        const encodedPrompt = encodeURIComponent(prompt);
+        
+        deck.push(`https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&seed=${seed}&nologo=true`);
+    }
+    return deck;
 }
 
 io.on('connection', (socket) => {
@@ -79,11 +84,14 @@ io.on('connection', (socket) => {
       targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
+      deck: generateDeck(50), // GERA O BARALHO DE 50 CARTAS INSTANTANEAMENTE
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
     socket.join(roomId);
     socket.emit('roomCreated', { roomId, players: gameRooms[roomId].players });
+    // Envia o baralho para o Host fazer o pre-load silencioso no Lobby
+    socket.emit('preloadCards', { cards: gameRooms[roomId].deck });
   });
 
   socket.on('joinRoom', ({ roomId, playerName }) => {
@@ -95,6 +103,8 @@ io.on('connection', (socket) => {
       
       io.to(roomId).emit('playerJoined', { players: room.players });
       socket.emit('joinedSuccess', { roomId });
+      // Envia o baralho para o Convidado fazer o pre-load silencioso no Lobby
+      socket.emit('preloadCards', { cards: room.deck });
     } else {
       socket.emit('joinError', { message: 'Sala não encontrada ou partida já em andamento!' });
     }
@@ -103,12 +113,15 @@ io.on('connection', (socket) => {
   socket.on('startGame', ({ roomId }) => {
     const room = gameRooms[roomId];
     if (room) {
-      // INÍCIO IMEDIATO: Sem fase de carregamento travando o servidor
       room.status = 'NARRATOR_TURN';
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      room.players.forEach(p => p.hand = Array.from({length: 5}, () => generateUniqueCard()));
+      
+      // Puxa as cartas diretamente do "Buffer/Baralho"
+      room.players.forEach(p => {
+        p.hand = room.deck.splice(0, 5);
+      });
 
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
@@ -124,10 +137,16 @@ io.on('connection', (socket) => {
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
+        // Repõe as cartas do Buffer
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
             for(let i = 0; i < cardsNeeded; i++) {
-                p.hand.push(generateUniqueCard());
+                if (room.deck.length > 0) {
+                    p.hand.push(room.deck.splice(0, 1)[0]);
+                } else {
+                    // Se acabar o baralho por algum milagre, gera na hora
+                    p.hand.push(generateDeck(1)[0]);
+                }
             }
         });
 
