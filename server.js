@@ -11,9 +11,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
+// Lista de comandos (prompts) de estilos surrealistas para a IA gerar cartas de Dixit
+const surrealPrompts = [
+    "surreal_dreamlike_fantasy_art_painting",
+    "whimsical_storybook_illustration_abstract_bizarre",
+    "salvador_dali_style_surrealism_melting_mystical",
+    "magical_realism_colorful_oil_painting_dream",
+    "abstract_concept_art_mystical_wonder_glowing",
+    "psychedelic_bizarre_imaginative_watercolor",
+    "ethereal_cosmic_fantasy_creatures_painting",
+    "surreal_isometric_optical_illusion_art",
+    "dark_fantasy_fairy_tale_mysterious_forest",
+    "steampunk_surreal_clockwork_dreamscape"
+];
+
+// Nova função que chama a IA Geradora de Imagens com estilos artísticos
 function generateUniqueCard() {
-    const randomSeed = Math.random().toString(36).substring(2, 10);
-    return `https://picsum.photos/seed/${randomSeed}/200/300`;
+    const randomSeed = Math.floor(Math.random() * 9999999);
+    // Sorteia um estilo surrealista da lista acima
+    const randomPrompt = surrealPrompts[Math.floor(Math.random() * surrealPrompts.length)];
+    
+    // Usa a API gratuita do Pollinations AI para gerar as artes abstratas (tamanho 300x450 para melhor qualidade)
+    return `https://image.pollinations.ai/prompt/${randomPrompt}?width=300&height=450&seed=${randomSeed}&nologo=true`;
 }
 
 io.on('connection', (socket) => {
@@ -29,7 +48,7 @@ io.on('connection', (socket) => {
       status: 'LOBBY',
       players: [hostPlayer], 
       playersLoadedImages: 0,
-      currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [] }
+      currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
     socket.join(roomId);
@@ -55,7 +74,7 @@ io.on('connection', (socket) => {
     if (room) {
       room.status = 'LOADING_IMAGES';
       room.playersLoadedImages = 0;
-      room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
+      room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
@@ -72,7 +91,7 @@ io.on('connection', (socket) => {
     if (room && room.status === 'ROUND_END') {
         room.status = 'LOADING_IMAGES';
         room.playersLoadedImages = 0;
-        room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
+        room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
 
         const currentNarratorIndex = room.players.findIndex(p => p.isNarrator);
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
@@ -104,13 +123,21 @@ io.on('connection', (socket) => {
     const room = gameRooms[roomId];
     if(room) {
       const narrator = room.players.find(p => p.isNarrator);
-      if (narrator && narrator.id === socket.id) {
-          room.currentRound.narratorCard = cardUrl;
+      const isNarratorPlaying = (narrator && narrator.id === socket.id);
+
+      if (!isNarratorPlaying && !room.currentRound.narratorPlayed) {
+          return;
       }
 
       const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
       if (!alreadyPlayed) {
         room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
+        
+        if (isNarratorPlaying) {
+            room.currentRound.narratorCard = cardUrl;
+            room.currentRound.narratorPlayed = true;
+            io.to(roomId).emit('narratorPlayed');
+        }
       }
 
       if (room.currentRound.playedCards.length === room.players.length) {
@@ -125,12 +152,10 @@ io.on('connection', (socket) => {
   socket.on('voteCard', ({ roomId, cardUrl }) => {
       const room = gameRooms[roomId];
       if (room) {
-          // TRAVA DE SEGURANÇA: Narrador não pode votar de jeito nenhum
           const isNarrator = room.players.find(p => p.id === socket.id)?.isNarrator;
           if (isNarrator) return;
 
           room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
-          
           const expectedVotes = room.players.length - 1; 
           
           if (room.currentRound.votes.length === expectedVotes) {
