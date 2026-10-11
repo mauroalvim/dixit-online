@@ -142,26 +142,25 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- BANNER DE ERRO VISUAL ---
+        // Banner de Erro Oculto
         function showErr(msg) {
             let d = document.getElementById('errBanner');
             if (!d) { 
-                d = document.createElement('div'); 
-                d.id = 'errBanner';
+                d = document.createElement('div'); d.id = 'errBanner';
                 d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#c0392b;color:#fff;padding:8px;font-size:13px';
                 document.body.appendChild(d); 
             }
             d.textContent = msg;
+            setTimeout(() => { if(d) d.remove(); }, 5000);
         }
         window.addEventListener('error', e => showErr('Erro: ' + e.message));
 
         const socket = io();
-        socket.on('connect_error', e => showErr('Sem conexão com o servidor: ' + e.message));
+        socket.on('connect_error', e => showErr('Sem conexão com o servidor.'));
         socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
 
         let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
         let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
-        
         const $ = id => document.getElementById(id);
 
         function toggleHostMenu() { 
@@ -229,8 +228,8 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // --- SISTEMA SIMPLIFICADO DE CARREGAMENTO PARA REPOSITÓRIO FIXO ---
-        // Como a URL é fixa e já está no servidor, não trava mais.
+        // --- SISTEMA DEFINITIVO PARA REPOSITÓRIO FIXO ---
+        // Elimina o congelamento: se a imagem existir ela carrega, se der erro ele joga uma imagem reserva de emergência na hora.
         function loadInto(cardDiv, url) {
             const img = new Image();
             img.onload = () => { 
@@ -238,8 +237,9 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                // Tenta recarregar 1 vez se a internet falhar levemente
-                setTimeout(() => { img.src = url; }, 2000);
+                cardDiv.classList.remove('card-loading'); 
+                // Imagem de emergência caso algum link do Pinterest/Unsplash quebre no futuro
+                cardDiv.style.backgroundImage = `url('https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&h=450&fit=crop')`; 
             };
             img.src = url;
         }
@@ -286,7 +286,6 @@
                 ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
                 : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe suas cartas enquanto isso!';
                 
-            // Como agora as cartas são do Repositório (sem espera de servidor local), renderiza na hora!
             me.hand.forEach(url => appendCardToBoard(url, false));
         });
 
