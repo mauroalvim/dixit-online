@@ -12,57 +12,56 @@ app.use(express.static(path.join(__dirname, 'public')));
 const gameRooms = {}; 
 
 // =========================================================================
-// 🎴 SEU REPOSITÓRIO DE CARTAS (A SUA IDEIA DO PINTEREST/IMGUR)
+// 🎴 O SEU BARALHO MESTRE (ILUSTRAÇÕES SURREALISTAS)
 // =========================================================================
-// Aqui estão 40 links diretos de imagens abstratas e coloridas para garantir
-// que o jogo não trave. Você pode apagar esses links e colocar os seus
-// do Pinterest, Imgur, etc. Lembre-se que o link deve terminar em .jpg ou .png
+// Aqui pode substituir estes links pelos seus links do Imgur com as cartas oficiais!
+// Por agora, coloquei 40 ilustrações geradas com estilo de fantasia e surrealismo.
 const MASTER_DECK = [
-    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1506744626753-1fa44df14d28?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1497215848122-330104711311?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1505909182942-e2f09aee3e89?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1524169358666-79f22534bc6e?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1519120944692-1a8d8cfc107f?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1501862700950-18382cd41497?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1484589065579-248aad0d8e93?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1549490349-8643362247b5?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1574169208507-84376144848b?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1552083375-1447ce886485?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1563089145-599997674d42?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1551009175-8a68da93d5f9?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1557672199-6e8c8b2b8faa?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1561214115-f2f119cd5e80?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1563089145-599997674d42?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1566041510639-8d95a2490bfb?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1567095761054-7a02e69e5c43?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1568283626786-fb7131751dce?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1573511190529-672522718e87?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1574169208507-84376144848b?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1574169208536-c953e05c1440?w=300&h=450&fit=crop",
-    "https://images.unsplash.com/photo-1576502200916-3808e07386a5?w=300&h=450&fit=crop"
+    "https://image.pollinations.ai/prompt/whimsical_surreal_illustration_of_a_giant_flying_whale_in_a_starry_sky_dixit_board_game_art_style?seed=101&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_fantasy_art_melting_clocks_hanging_from_a_glowing_tree_in_a_desert_dreamlike?seed=102&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_illustration_a_staircase_made_of_books_leading_into_a_giant_glowing_moon?seed=103&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamcore_art_a_door_standing_alone_in_the_middle_of_the_ocean_opening_to_a_galaxy?seed=104&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_watercolor_a_cat_made_of_bright_nebulae_and_stars_playing_with_a_planet?seed=105&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_illustration_giant_teacup_in_a_mystical_forest_pouring_a_colorful_waterfall?seed=106&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surrealism_a_mechanical_steampunk_owl_with_stained_glass_wings_flying?seed=107&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_realism_a_magical_train_driving_through_fluffy_pink_clouds?seed=108&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamlike_illustration_a_floating_house_suspended_by_hundreds_of_giant_colorful_balloons?seed=109&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_art_a_chessboard_where_pieces_are_bizarre_living_mythical_creatures?seed=110&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_art_a_glowing_castle_built_on_the_back_of_a_giant_swimming_turtle?seed=111&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_painting_a_waterfall_of_liquid_gold_falling_into_a_mystical_glowing_pool?seed=112&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_illustration_a_library_with_floating_magical_books_and_glowing_pages?seed=113&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamlike_art_a_clockwork_sun_made_of_gears_radiating_magical_neon_light?seed=114&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_fantasy_a_person_walking_on_a_tightrope_made_of_light_between_two_planets?seed=115&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_illustration_a_hot_air_balloon_shaped_like_a_giant_jellyfish_over_a_desert?seed=116&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_art_a_forest_where_the_trees_are_made_of_crystal_and_glass?seed=117&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surrealism_a_giant_pocket_watch_half_buried_in_snow_glowing_blue?seed=118&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamcore_a_painting_of_a_boat_sailing_on_a_sea_of_clouds_inside_a_frame?seed=119&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_illustration_a_keyhole_in_a_brick_wall_showing_a_vibrant_jungle_inside?seed=120&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_art_a_flock_of_birds_turning_into_autumn_leaves_in_the_sky?seed=121&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_painting_an_hourglass_where_the_sand_is_a_miniature_city_falling_apart?seed=122&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_illustration_a_piano_in_the_middle_of_a_field_playing_glowing_musical_notes?seed=123&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surrealism_a_vintage_lantern_containing_a_tiny_trapped_galaxy?seed=124&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamlike_art_a_giant_tree_whose_roots_are_made_of_flowing_water?seed=125&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_painting_a_bridge_made_of_stars_connecting_two_crescent_moons?seed=126&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_illustration_a_man_with_an_open_birdcage_for_a_head_releasing_glowing_birds?seed=127&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_art_a_carousel_where_the_horses_are_real_mythical_creatures?seed=128&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_realism_a_giant_eye_reflecting_a_stormy_ocean_with_a_ship?seed=129&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surrealism_a_city_skyline_emerging_from_the_pages_of_an_open_book?seed=130&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamcore_a_field_of_giant_glowing_dandelions_under_a_purple_sky?seed=131&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_illustration_a_knight_playing_chess_with_a_dragon_in_a_cave?seed=132&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_painting_a_woman_whose_dress_turns_into_a_flock_of_butterflies?seed=133&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_art_a_hot_air_balloon_carrying_a_small_island_with_a_lighthouse?seed=134&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/magical_illustration_a_pocket_watch_spilling_water_instead_of_sand?seed=135&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surrealism_a_giant_hand_reaching_out_from_the_clouds_holding_a_star?seed=136&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/dreamlike_art_a_maze_made_of_mirrors_reflecting_different_seasons?seed=137&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/fantasy_painting_a_tree_house_in_the_shape_of_a_giant_lantern?seed=138&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/surreal_illustration_a_man_rowing_a_boat_on_a_river_of_stars?seed=139&width=300&height=450&nologo=true",
+    "https://image.pollinations.ai/prompt/whimsical_art_a_giant_sleeping_fox_curled_around_a_small_village?seed=140&width=300&height=450&nologo=true"
 ];
 // =========================================================================
 
 io.on('connection', (socket) => {
-  console.log(`Novo usuário conectado: ${socket.id}`);
+  console.log(`Novo utilizador ligado: ${socket.id}`);
 
   socket.on('validateRoom', ({ roomId }) => {
       const room = gameRooms[roomId];
@@ -77,7 +76,6 @@ io.on('connection', (socket) => {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
-    // Ao criar a sala, embaralhamos uma cópia do Baralho Mestre para esta partida
     const shuffledDeck = [...MASTER_DECK].sort(() => Math.random() - 0.5);
 
     gameRooms[roomId] = {
@@ -115,7 +113,6 @@ io.on('connection', (socket) => {
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
-      // Distribui 5 cartas do Baralho para cada jogador
       room.players.forEach(p => {
         p.hand = room.deck.splice(0, 5);
       });
@@ -134,14 +131,12 @@ io.on('connection', (socket) => {
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
-        // Repõe 1 carta para cada jogador
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
             for(let i = 0; i < cardsNeeded; i++) {
                 if (room.deck.length > 0) {
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 } else {
-                    // Se o baralho acabar, re-embaralha o Mestre
                     room.deck = [...MASTER_DECK].sort(() => Math.random() - 0.5);
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 }
