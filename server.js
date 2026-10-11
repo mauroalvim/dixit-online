@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
       targetScore: targetScore,
       status: 'LOBBY',
       players: [hostPlayer], 
-      playersLoadedImages: 0, // Novo contador para sincronizar o carregamento
+      playersLoadedImages: 0,
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [] }
     };
     
@@ -51,42 +51,78 @@ io.on('connection', (socket) => {
     const room = gameRooms[roomId];
     if (room) {
       room.status = 'LOADING_IMAGES';
-      room.playersLoadedImages = 0; // Reseta o contador
+      room.playersLoadedImages = 0;
+      
+      // Limpa a rodada atual caso seja uma nova rodada
+      room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [] };
       
       // Sorteia o narrador
       const narratorIndex = Math.floor(Math.random() * room.players.length);
       room.players.forEach((p, i) => p.isNarrator = (i === narratorIndex));
       
-      // Distribuição de cartas geradas por IA (simulação)
       room.players.forEach(p => {
         p.hand = Array.from({length: 5}, (_, i) => `https://picsum.photos/seed/${roomId}${p.name}${i}/200/300`);
       });
 
-      // Dispara o evento apenas mandando as cartas, sem iniciar a rodada visualmente ainda
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
 
-  // Evento que recebe a confirmação de que um jogador terminou de baixar as imagens
   socket.on('imagesLoaded', ({ roomId }) => {
     const room = gameRooms[roomId];
     if (room) {
       room.playersLoadedImages++;
       
-      // Verifica se TODOS os jogadores já carregaram as cartas
       if (room.playersLoadedImages === room.players.length) {
         room.status = 'NARRATOR_TURN';
-        // Libera a tela para todos ao mesmo tempo
         io.to(roomId).emit('allClientsReady');
       }
     }
   });
 
+  // Onde a mágica da Fase de Escolha acontece:
   socket.on('playCard', ({ roomId, cardUrl }) => {
     const room = gameRooms[roomId];
     if(room) {
-      console.log(`Jogador ${socket.id} escolheu a carta: ${cardUrl}`);
+      // Evita que o mesmo jogador envie duas vezes
+      const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
+      if (!alreadyPlayed) {
+        room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
+      }
+
+      // Se todos os jogadores já escolheram suas cartas
+      if (room.currentRound.playedCards.length === room.players.length) {
+        room.status = 'VOTING_PHASE';
+        
+        // Embaralha as cartas jogadas para ninguém saber de quem é qual (Algoritmo Fisher-Yates)
+        const shuffledCards = [...room.currentRound.playedCards].sort(() => Math.random() - 0.5);
+        
+        // Envia apenas as URLs (esconde os IDs dos jogadores)
+        const cardsToVote = shuffledCards.map(c => c.cardUrl);
+        
+        io.to(roomId).emit('startVotingPhase', { cards: cardsToVote });
+      }
     }
+  });
+
+  // Onde a mágica da Fase de Votação acontece:
+  socket.on('voteCard', ({ roomId, cardUrl }) => {
+      const room = gameRooms[roomId];
+      if (room) {
+          room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
+          
+          // Em Dixit, o Narrador não vota. Então esperamos os votos de (Total de Jogadores - 1)
+          const expectedVotes = room.players.length - 1;
+          
+          if (room.currentRound.votes.length === expectedVotes) {
+              room.status = 'ROUND_END';
+              // Avisa que os votos acabaram. Na próxima etapa faremos o cálculo dos pontos!
+              io.to(roomId).emit('roundEnded', { 
+                  playedCards: room.currentRound.playedCards, 
+                  votes: room.currentRound.votes 
+              });
+          }
+      }
   });
 });
 
