@@ -34,7 +34,7 @@ io.on('connection', (socket) => {
   console.log(`Novo usuário conectado: ${socket.id}`);
 
   socket.on('createRoom', ({ targetScore, playerName }) => {
-    // GERA UM CÓDIGO NUMÉRICO DE 4 DÍGITOS (ex: 1000 a 9999)
+    // GERA UM CÓDIGO APENAS NUMÉRICO DE 4 DÍGITOS (ex: 1234 a 9999)
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
@@ -121,9 +121,7 @@ io.on('connection', (socket) => {
       const narrator = room.players.find(p => p.isNarrator);
       const isNarratorPlaying = (narrator && narrator.id === socket.id);
 
-      if (!isNarratorPlaying && !room.currentRound.narratorPlayed) {
-          return;
-      }
+      if (!isNarratorPlaying && !room.currentRound.narratorPlayed) return;
 
       const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
       if (!alreadyPlayed) {
