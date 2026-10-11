@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
-// --- GERADOR DE ARTE SURREALISTA (ESTILO DIXIT) ---
 const subjects = [
     "melting clocks in a desert",
     "a giant glowing whale flying in a starry sky",
@@ -52,10 +51,10 @@ function generateUniqueCard() {
     const subject = subjects[Math.floor(Math.random() * subjects.length)];
     const style = styles[Math.floor(Math.random() * styles.length)];
     
-    // Prompt rigoroso para garantir a arte
     const prompt = `Surreal masterpiece, ${subject},${style}, vibrant colors, high definition`;
     const encodedPrompt = encodeURIComponent(prompt);
     
+    // IA Principal
     return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=300&height=450&seed=${seed}&nologo=true`;
 }
 
@@ -80,7 +79,6 @@ io.on('connection', (socket) => {
       targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
-      playersLoadedImages: 0,
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
@@ -105,15 +103,12 @@ io.on('connection', (socket) => {
   socket.on('startGame', ({ roomId }) => {
     const room = gameRooms[roomId];
     if (room) {
-      room.status = 'LOADING_IMAGES';
-      room.playersLoadedImages = 0;
+      // INÍCIO IMEDIATO: Sem fase de carregamento travando o servidor
+      room.status = 'NARRATOR_TURN';
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      
-      room.players.forEach(p => {
-        p.hand = Array.from({length: 5}, () => generateUniqueCard());
-      });
+      room.players.forEach(p => p.hand = Array.from({length: 5}, () => generateUniqueCard()));
 
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
@@ -122,8 +117,7 @@ io.on('connection', (socket) => {
   socket.on('nextRound', ({ roomId }) => {
     const room = gameRooms[roomId];
     if (room && room.status === 'ROUND_END') {
-        room.status = 'LOADING_IMAGES';
-        room.playersLoadedImages = 0;
+        room.status = 'NARRATOR_TURN';
         room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
 
         const currentNarratorIndex = room.players.findIndex(p => p.isNarrator);
@@ -138,17 +132,6 @@ io.on('connection', (socket) => {
         });
 
         io.to(roomId).emit('gameStarted', { players: room.players });
-    }
-  });
-
-  socket.on('imagesLoaded', ({ roomId }) => {
-    const room = gameRooms[roomId];
-    if (room) {
-      room.playersLoadedImages++;
-      if (room.playersLoadedImages === room.players.length) {
-        room.status = 'NARRATOR_TURN';
-        io.to(roomId).emit('allClientsReady');
-      }
     }
   });
 
