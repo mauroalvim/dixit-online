@@ -67,14 +67,13 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- CARTA COM O CORTE ESPECÍFICO NA PARTE INFERIOR (CROP DA LOGO) --- */
+        /* --- CARTA COM CORTE GEOMÉTRICO (OCULTA A LOGO NA MÃO E NA MESA) --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
             background-color: #161b22; 
-            /* O SEGREDO DO CORTE: Amplia para 100% e 115% e alinha ligeiramente acima, cortando apenas o rodapé onde fica a logo */
-            background-size: 100% 115%; 
-            background-position: center 30%; 
+            background-size: 112% 122%; /* Aplica zoom expansivo para empurrar o rodapé para fora */
+            background-position: center 38%; /* Centraliza o corte afastando a base */
             overflow: hidden; 
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
@@ -99,9 +98,26 @@
         .winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241,196,15,.6); animation: pulse 2s infinite; margin: 20px 0; }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         
+        /* --- MODAL COM MÁSCARA DE CORTE NA IMAGEM (REMOVE A LOGO MESMO NO ZOOM) --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
         .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
-        .modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; margin-bottom: 10px; }
+        
+        .modal-img-container {
+            width: 100%;
+            max-height: 60vh;
+            aspect-ratio: 2 / 3;
+            overflow: hidden; /* Corta qualquer conteúdo que passe das margens do cartão no modal */
+            border-radius: 12px;
+            margin-bottom: 10px;
+            position: relative;
+            background: #000;
+        }
+        .modal-img { 
+            width: 100%; 
+            height: 115%; /* Estica o conteúdo para baixo, empurrando o rodapé para fora da view */
+            object-fit: cover; 
+            object-position: center top; /* Mantém o foco no topo/centro da arte e corta a base onde está a logo */
+        }
         
         .version-footer {
             margin-top: auto; 
@@ -155,16 +171,19 @@
         <button id="reloadCardsBtn" onclick="reloadCurrentHand()" style="display:none; background: rgba(255,255,255,0.15); font-size: 13px; padding: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2);">🔄 Recarregar Cartas na Tela</button>
     </div>
 
+    <!-- MODAL ATUALIZADO COM CONTROLO DE CORTE DE RODAPÉ -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
-            <img id="modalImage" class="modal-img" src="" alt="">
+            <div class="modal-img-container">
+                <img id="modalImage" class="modal-img" src="" alt="">
+            </div>
             <button id="btnConfirmModal" onclick="handleConfirmModal()">Confirmar</button>
             <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
     
-    <!-- VERSÃO 10.16 -->
-    <div class="version-footer">Versão 10.16</div>
+    <!-- VERSÃO 10.17 -->
+    <div class="version-footer">Versão 10.17</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -320,7 +339,6 @@
             me.hand.forEach(url => appendCardToBoard(url, false));
         });
 
-        // Evento blindado para desbloquear os jogadores imediatamente quando o narrador joga
         socket.on('narratorPlayed', () => {
             narratorHasPlayed = true;
             if (!amINarrator) {
@@ -384,6 +402,7 @@
             $('cardModal').style.display = 'block';
         }
         
+        boxModalClose = closeModal;
         function closeModal() { 
             $('cardModal').style.display = 'none'; 
             selectedCardUrl = ''; 
