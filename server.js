@@ -1,208 +1,148 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
-const cors = require('cors');
-require('dotenv').config();
-
-const { refillBuffer, drawCards } = require('./cardBuffer');
-const { generateSurrealImage } = require('./googleApi');
+const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*', methods: ["GET", "POST"] } });
+const io = new Server(server);
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-let dynamicBackgroundUrl = '';
-let isGeneratingBackground = false;
+// Inicializa a IA do Gemini usando a variável de ambiente segura
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-// Gera a imagem de fundo com a sua lógica do googleApi.js
-async function generateAndEmitBackground() {
-    if (isGeneratingBackground) return;
-    isGeneratingBackground = true;
-    
-    console.log("A preparar fundo de ecrã...");
+// Estrutura de dados para gerenciar múltiplas salas simultâneas
+const salas = {};
+
+// Prompt Implacável - Versão 10.35 (Bloqueio estrito de fotorrealismo e humanos)
+const promptJuizIA = `Você é um curador de arte extremamente rigoroso para um jogo de tabuleiro estilo Dixit. 
+Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qualquer uma que viole as regras abaixo.
+
+REGRA DE REJEIÇÃO ABSOLUTA:
+- REJEITE qualquer imagem que mostre rostos humanos fotorrealistas ou proporções anatômicas realistas de pessoas.
+- REJEITE fotografias do mundo real ou imagens geradas por IA que tentem simular fotografias reais (mesmo que com filtros).
+
+CRITÉRIO DE APROVAÇÃO:
+- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos ou de fantasia, onde as figuras (se houverem) sejam claramente estilizadas, cartunescas ou silhuetas.
+
+Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
+
+async function buscarCartasPixabay() {
     try {
-        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de muitas cartas coloridas de jogo surrealistas e mágicas tipo Dixit");
-        io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
+        // Query de busca com termos negativos para filtrar fotos e humanos antes mesmo de chegar na IA
+        const query = encodeURIComponent("surreal dream abstract -portrait -face -realistic -human -photo");
+        const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&per_page=30&safesearch=true`;
+        
+        const response = await axios.get(url);
+        return response.data.hits.map(hit => hit.largeImageURL);
     } catch (error) {
-        dynamicBackgroundUrl = 'https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg';
-        io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
+        console.error("Erro no Pixabay:", error.message);
+        return [];
     }
-    isGeneratingBackground = false;
 }
 
-async function initializeServer() {
-    console.log("Inicializando servidor...");
-    generateAndEmitBackground();
-    console.log("Carregando o Baú Mágico de cartas na RAM...");
-    refillBuffer(); 
+async function buscarCartasWikimedia() {
+    // Fallback de Segurança caso o Pixabay caia ou atinja o limite
+    try {
+        const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=images&titles=Surrealism&gimlimit=20&iiprop=url`;
+        const response = await axios.get(url);
+        const pages = response.data.query.pages;
+        return Object.values(pages).map(p => p.imageinfo[0].url).filter(url => url.match(/\.(jpeg|jpg|png)$/i));
+    } catch (error) {
+        console.error("Erro no Wikimedia:", error.message);
+        // Fallback de emergência (uma imagem genérica onírica garantida)
+        return ["https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Shakespeare_The_Tempest_-_Project_Gutenberg_eText_18271.jpg/800px-Shakespeare_The_Tempest_-_Project_Gutenberg_eText_18271.jpg"];
+    }
 }
 
-initializeServer();
+async function julgarCartas(urls) {
+    if(!urls || urls.length === 0) return [];
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(`${promptJuizIA}\n\nURLs para análise:\n${JSON.stringify(urls)}`);
+        const text = result.response.text();
+        const jsonMatch = text.match(/\[.*\]/s);
+        
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return urls.slice(0, 5); 
+    } catch (error) {
+        console.error("Erro no Juiz IA:", error.message);
+        return urls.slice(0, 5); 
+    }
+}
 
-const gameRooms = {}; 
+async function reabastecerBau(salaId) {
+    const sala = salas[salaId];
+    if (sala.bau.length < 20) {
+        let urls = await buscarCartasPixabay();
+        if (urls.length === 0) urls = await buscarCartasWikimedia();
+        
+        const aprovadas = await julgarCartas(urls);
+        sala.bau.push(...aprovadas);
+    }
+}
 
 io.on('connection', (socket) => {
-  console.log(`Novo jogador conectado: ${socket.id}`);
-
-  // Se o servidor já tiver o fundo mágico gerado, envia ao telemóvel!
-  if (dynamicBackgroundUrl !== '') {
-      socket.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
-  }
-
-  socket.on('validateRoom', ({ roomId }) => {
-      const room = gameRooms[roomId];
-      if (room && room.status === 'LOBBY') {
-          socket.emit('roomValidated', { roomId });
-      } else {
-          socket.emit('joinError', { message: 'Sala não encontrada ou partida em andamento!' });
-      }
-  });
-
-  socket.on('createRoom', ({ targetScore, playerName }) => {
-    const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
-    const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
-
-    gameRooms[roomId] = {
-      hostSocketId: socket.id,
-      targetScore: parseInt(targetScore) || 30,
-      status: 'LOBBY',
-      players: [hostPlayer], 
-      currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
-    };
-    
-    socket.join(roomId);
-    socket.emit('roomCreated', { roomId, players: gameRooms[roomId].players });
-  });
-
-  socket.on('joinRoom', ({ roomId, playerName }) => {
-    const room = gameRooms[roomId];
-    if (room && room.status === 'LOBBY') {
-      const newPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
-      room.players.push(newPlayer);
-      socket.join(roomId);
-      
-      io.to(roomId).emit('playerJoined', { players: room.players });
-      socket.emit('joinedSuccess', { roomId });
-    } else {
-      socket.emit('joinError', { message: 'Sala não encontrada!' });
-    }
-  });
-
-  socket.on('startGame', ({ roomId }) => {
-    const room = gameRooms[roomId];
-    if (room) {
-      room.status = 'NARRATOR_TURN';
-      room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
-      room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      room.players.forEach(p => { p.hand = drawCards(5); });
-      io.to(roomId).emit('gameStarted', { players: room.players });
-    }
-  });
-
-  socket.on('nextRound', ({ roomId }) => {
-    const room = gameRooms[roomId];
-    if (room && room.status === 'ROUND_END') {
-        room.status = 'NARRATOR_TURN';
-        room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
-
-        const currentNarratorIndex = room.players.findIndex(p => p.isNarrator);
-        const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
-        room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
-
-        room.players.forEach(p => {
-            const cardsNeeded = 5 - p.hand.length;
-            if (cardsNeeded > 0) {
-                p.hand.push(...drawCards(cardsNeeded));
-            }
-        });
-        io.to(roomId).emit('gameStarted', { players: room.players });
-    }
-  });
-
-  socket.on('playCard', ({ roomId, cardUrl }) => {
-    const room = gameRooms[roomId];
-    if(room) {
-      const narrator = room.players.find(p => p.isNarrator);
-      const isNarratorPlaying = (narrator && narrator.id === socket.id);
-
-      if (!isNarratorPlaying && !room.currentRound.narratorPlayed) return;
-
-      const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
-      if (!alreadyPlayed) {
-        room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
-        if (isNarratorPlaying) {
-            room.currentRound.narratorCard = cardUrl;
-            room.currentRound.narratorPlayed = true;
-            io.to(roomId).emit('narratorPlayed');
+    socket.on('entrarSala', async ({ nome, codigo }) => {
+        if (!salas[codigo]) {
+            salas[codigo] = {
+                jogadores: [],
+                bau: [],
+                mesa: [],
+                narradorIndex: 0,
+                estado: 'aguardando'
+            };
+            await reabastecerBau(codigo);
         }
-      }
+        
+        const sala = salas[codigo];
+        const jogador = { id: socket.id, nome, mao: [], pontos: 0 };
+        sala.jogadores.push(jogador);
+        
+        socket.join(codigo);
+        
+        // Distribui 5 cartas iniciais para o jogador
+        for(let i=0; i<5; i++) {
+            if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
+        }
+        
+        io.to(codigo).emit('atualizarSala', sala);
+        
+        // Dispara o reabastecimento do baú de forma assíncrona (não trava o jogo)
+        reabastecerBau(codigo);
+    });
 
-      if (room.currentRound.playedCards.length === room.players.length) {
-        room.status = 'VOTING_PHASE';
-        const shuffledCards = [...room.currentRound.playedCards].sort(() => Math.random() - 0.5);
-        const cardsToVote = shuffledCards.map(c => c.cardUrl);
-        io.to(roomId).emit('startVotingPhase', { cards: cardsToVote });
-      }
-    }
-  });
+    socket.on('jogarCarta', ({ codigo, cartaUrl }) => {
+        const sala = salas[codigo];
+        if(!sala) return;
+        
+        const jogador = sala.jogadores.find(j => j.id === socket.id);
+        if(jogador) {
+            // Remove a carta jogada da mão e coloca na mesa
+            jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
+            sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
+            
+            // Puxa uma nova carta do baú
+            if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
+            
+            io.to(codigo).emit('atualizarSala', sala);
+            reabastecerBau(codigo);
+        }
+    });
 
-  socket.on('voteCard', ({ roomId, cardUrl }) => {
-      const room = gameRooms[roomId];
-      if (room) {
-          const isNarrator = room.players.find(p => p.id === socket.id)?.isNarrator;
-          if (isNarrator) return;
-
-          room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
-          const expectedVotes = room.players.length - 1; 
-          
-          if (room.currentRound.votes.length === expectedVotes) {
-              const narratorCard = room.currentRound.narratorCard;
-              const narratorPlayer = room.players.find(p => p.isNarrator);
-              
-              let acertos = 0;
-              room.currentRound.votes.forEach(v => { if(v.votedCardUrl === narratorCard) acertos++; });
-
-              if (acertos === 0 || acertos === expectedVotes) {
-                  room.players.forEach(p => { if(!p.isNarrator) p.score += 2; });
-              } else {
-                  narratorPlayer.score += 3;
-                  room.currentRound.votes.forEach(v => {
-                      if(v.votedCardUrl === narratorCard) {
-                          const voter = room.players.find(p => p.id === v.playerId);
-                          if(voter) voter.score += 3;
-                      }
-                  });
-              }
-
-              room.currentRound.votes.forEach(v => {
-                  if (v.votedCardUrl !== narratorCard) {
-                      const ownerOfCard = room.currentRound.playedCards.find(c => c.cardUrl === v.votedCardUrl);
-                      if(ownerOfCard && ownerOfCard.playerId !== narratorPlayer.id) {
-                          const owner = room.players.find(p => p.id === ownerOfCard.playerId);
-                          if(owner) owner.score += 1;
-                      }
-                  }
-              });
-
-              room.players.forEach(p => {
-                  const pCard = room.currentRound.playedCards.find(c => c.playerId === p.id);
-                  if (pCard) { p.hand = p.hand.filter(h => h !== pCard.cardUrl); }
-              });
-
-              room.status = 'ROUND_END';
-              const isGameOver = room.players.some(p => p.score >= room.targetScore);
-              const ranking = [...room.players].sort((a, b) => b.score - a.score);
-
-              io.to(roomId).emit('roundEnded', { ranking, isGameOver, targetScore: room.targetScore, hostSocketId: room.hostSocketId });
-          }
-      }
-  });
+    socket.on('disconnect', () => {
+        for (const codigo in salas) {
+            salas[codigo].jogadores = salas[codigo].jogadores.filter(j => j.id !== socket.id);
+            io.to(codigo).emit('atualizarSala', salas[codigo]);
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor Dixit Online a rodar na porta ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Servidor Imagination (Dixit) rodando na porta ${PORT}`);
+});
