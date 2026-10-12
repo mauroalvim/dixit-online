@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dixit Online</title>
+    <title>Imagination</title>
     <style>
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 40, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: -1; }
@@ -66,7 +66,7 @@
 <body>
 
     <div class="main-title-container" id="tituloApp">
-        <h1 class="main-title">Dixit Online</h1>
+        <h1 class="main-title">Imagination</h1>
         <div class="sparkles">✨</div>
     </div>
 
@@ -95,7 +95,6 @@
         <div class="header-sala"><h2>Sala: <span id="lobbyCodigoDisplay"></span></h2></div>
         
         <div class="ranking-container">
-            <!-- REMOVIDO o limite de "/6" (Print 6 corrigido) -->
             <div class="ranking-title">👥 <span id="qtdJogadores">1</span> Jogador(es) no Lobby</div>
             <div id="listaLobby"></div>
         </div>
@@ -109,8 +108,6 @@
     <!-- JOGO -->
     <div class="game-container" id="telaJogo" style="display: none;">
         <div class="header-sala" id="headerJogo"><h2>Sala: <span id="jogoCodigoDisplay"></span></h2></div>
-        
-        <!-- REMOVIDO: A info-mesa que mostrava os nomes "Na Mesa: Mauro, Michele" (Print 5 corrigido) -->
 
         <div class="ranking-container" id="painelRanking" style="display: none;">
             <div class="ranking-title">🏆 Classificação Geral</div>
@@ -122,7 +119,7 @@
         <button class="btn-acao" onclick="pedirNovasCartas()">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <div class="versao" id="versaoApp">Versão 10.42</div>
+    <div class="versao" id="versaoApp">Versão 10.44</div>
 
     <!-- ZOOM -->
     <div id="zoomModal" class="modal hidden">
@@ -182,7 +179,6 @@
             const eu = sala.jogadores.find(j => j.id === socket.id);
             if(!eu) return;
 
-            // BUGFIX: Se o servidor acabou de mandar cartas novas (e eu tenho menos que 5), eu pego
             if (eu.mao.length < 5 && sala.bau.length > 0) {
                  socket.emit('pedirCartas', codigoAtual);
             }
@@ -202,7 +198,7 @@
         function atualizarListaLobby(sala) {
             const painelLobby = document.getElementById('listaLobby');
             const qtd = sala.jogadores.length;
-            document.getElementById('qtdJogadores').innerText = qtd; // Não mostra mais o "/6"
+            document.getElementById('qtdJogadores').innerText = qtd;
             painelLobby.innerHTML = '';
             
             sala.jogadores.forEach((j, index) => {
