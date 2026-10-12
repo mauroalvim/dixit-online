@@ -2,433 +2,386 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imagination ✨</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Imagination - Dixit Online</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+        /* Estilos Globais e Fundo Estático */
         body {
-            font-family: 'Poppins', sans-serif; 
-            text-align: center; 
-            min-height: 100vh; 
-            color: white; 
-            padding: 20px;
-            display: flex; 
-            flex-direction: column; 
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            position: relative; 
-            background: linear-gradient(135deg, #1f1c2c, #928DAB); 
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        body::before {
-            content: "";
+        .container {
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        h1, h2, h3 { margin: 10px 0; }
+        
+        .destaque { color: #f1c40f; }
+        .narrador-texto { color: #2ecc71; font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
+
+        .info-mesa {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .deck {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .carta {
+            width: 100px;
+            height: 150px;
+            border-radius: 10px;
+            object-fit: cover;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .carta:hover {
+            transform: scale(1.05);
+            border: 2px solid #f1c40f;
+        }
+
+        .btn-acao {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .versao {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* --- Estilos do Novo Modal Carrossel (Versão 10.35) --- */
+        .modal {
+            display: none;
             position: fixed;
-            top: -20px; left: -20px; right: -20px; bottom: -20px; 
-            z-index: -1;
-            /* Fundo Inicial Seguro (Noite Estrelada) enquanto o servidor não envia o novo */
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg');
-            background-color: rgba(255, 255, 255, 0.15);
-            background-blend-mode: overlay;
-            background-size: cover;
-            background-position: center;
-            filter: blur(3px) brightness(0.7); 
-            transition: background-image 2s ease-in-out;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 15, 20, 0.95); /* Fundo um pouco mais escuro para focar na arte */
         }
         
-        h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
-        
-        .glass-panel {
-            background: rgba(20,20,35,.82); 
-            backdrop-filter: blur(12px); 
-            border-radius: 20px; 
-            padding: 25px 20px; 
-            border: 1px solid rgba(255,255,255,.15);
-            box-shadow: 0 15px 40px rgba(0,0,0,.6); 
-            width: 100%; 
-            max-width: 420px; 
-            margin-bottom: 20px;
+        .modal:not(.hidden) {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        
-        button {
-            background: linear-gradient(135deg, #6e8efb, #a777e3); 
-            color: white; border: none; border-radius: 25px;
-            padding: 14px 24px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(110,142,251,.3); transition: .3s; margin-top: 15px; font-family: inherit;
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 101;
         }
-        button:hover { transform: translateY(-3px); }
-        .btn-cancel { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
-        
-        input {
-            width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
-            background: rgba(0,0,0,.5); color: white; text-align: center; font-family: inherit; outline: none; transition: .3s; margin-top: 10px;
-        }
-        input:focus { border-color: #a777e3; background: rgba(0,0,0,.7); }
-        
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
-        
-        .card {
-            width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
-            background-color: #161b22; 
-            background-size: 100% 115%; 
-            background-position: center 30%; 
-            background-repeat: no-repeat;
-            overflow: hidden; 
+
+        .carousel-container {
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 65vh;
+            touch-action: pan-y; /* Previne scroll nativo durante o swipe horizontal */
         }
-        .card:hover { transform: translateY(-8px); border-color: #a777e3; }
-        
-        .card-loading {
-            background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22) !important;
-            background-size: 200% 100% !important; animation: shimmer 1.5s infinite;
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 100%;
+            border-radius: 15px;
+            object-fit: contain;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            transition: opacity 0.2s ease-in-out;
         }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        
-        .my-card-disabled { opacity: .3; cursor: not-allowed; border-color: #ff4b2b !important; transform: none !important; }
-        .narrator-card-view { cursor: default; }
-        .narrator-card-view:hover { transform: none; border-color: transparent; }
-        .locked-card { opacity: .7; filter: grayscale(30%); }
-        .locked-card:hover { transform: none; border-color: transparent; cursor: wait; }
-        
-        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(0,0,0,.6); border-radius: 12px; overflow: hidden; }
-        .ranking-table th, .ranking-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.05); }
-        .ranking-table th { background: rgba(255,255,255,.1); color: #a777e3; font-size: 14px; text-transform: uppercase; }
-        
-        .status-text { margin-bottom: 15px; font-size: 1.1em; line-height: 1.4; text-shadow: 1px 1px 3px rgba(0,0,0,.8); }
-        .winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241,196,15,.6); animation: pulse 2s infinite; margin: 20px 0; }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
-        .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
-        
-        .modal-img-container { width: 100%; max-height: 60vh; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 12px; margin-bottom: 10px; position: relative; background: #000; }
-        .modal-img { width: 100%; height: 115%; object-fit: cover; object-position: center top; }
-        
-        .version-footer { margin-top: auto; padding-top: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.4); letter-spacing: 1px; }
+
+        .carousel-nav {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            font-size: 2rem;
+            padding: 15px 10px;
+            cursor: pointer;
+            position: absolute;
+            z-index: 10;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .carousel-nav:active { background: rgba(0, 0, 0, 0.9); }
+        #prevBtn { left: 10px; }
+        #nextBtn { right: 10px; }
+
+        .zoom-action-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #btnEscolherCarta {
+            background-color: #2ecc71;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        #btnEscolherCarta:active { transform: scale(0.95); }
+
+        /* Telas de Entrada */
+        #loginScreen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        input {
+            padding: 12px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+            text-align: center;
+        }
+        button.primario {
+            background: #f1c40f;
+            color: #111;
+            font-weight: bold;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
-    <h1>Imagination ✨</h1>
 
-    <div id="initialMenu" class="glass-panel">
-        <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
-            <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
-            <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
-            <input type="number" id="roomIdCheck" placeholder="Código da Sala (Ex: 1234)">
-            <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
+    <!-- Tela de Entrada -->
+    <div class="container" id="telaEntrada">
+        <h1 class="destaque">✨ Imagination ✨</h1>
+        <p>Um jogo de cartas surreal online.</p>
+        <div id="loginScreen">
+            <input type="text" id="nomeJogador" placeholder="Seu Nome de Jogador">
+            <input type="text" id="codigoSala" placeholder="Código da Sala (Ex: 3040)">
+            <button class="primario" onclick="entrarNaSala()">Entrar na Sala</button>
         </div>
+    </div>
+
+    <!-- Tela do Jogo -->
+    <div class="container" id="telaJogo" style="display: none;">
+        <h2 class="destaque">Código da Sala: <span id="displayCodigo"></span></h2>
         
-        <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,.05);" onclick="toggleHostMenu()">
-            <h4 style="color: #f1c40f; margin: 0; font-size: 1em;">👑 Criar uma nova sala? Clique aqui ▼</h4>
+        <div class="info-mesa">
+            <strong>Na Mesa:</strong> <span id="displayJogadores"></span>
         </div>
+
+        <div id="statusNarrador" style="margin-bottom: 20px;">
+            <!-- Preenchido dinamicamente via JS -->
+        </div>
+
+        <div class="deck" id="deckCartas">
+            <!-- Cartas inseridas dinamicamente via JS -->
+        </div>
+
+        <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
         
-        <div id="hostMenu" style="display: none; background: rgba(0,0,0,.25); padding: 20px; border-radius: 15px; margin-top: 10px; border: 1px solid rgba(255,255,255,.05);">
-            <input type="text" id="hostPlayerName" placeholder="Seu Apelido de Host">
-            <label style="font-size: 13px; opacity: .8; display: block; margin-top: 15px; text-align: left; padding-left: 5px;">Pontos para Vencer (Ex: 30):</label>
-            <input type="number" id="targetScoreInput" value="30">
-            <button onclick="showCreateRoom()" style="background: linear-gradient(135deg, #6e8efb, #a777e3);">Criar Sala</button>
-        </div>
+        <div class="versao">Versão 10.35 (100% Seguro)</div>
     </div>
 
-    <div id="joinNameForm" class="glass-panel" style="display:none;">
-        <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
-        <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
-        <input type="text" id="guestPlayerName" placeholder="Digite seu Apelido">
-        <button onclick="joinRoom()" style="background: linear-gradient(135deg, #a777e3, #6e8efb);">Entrar no Jogo</button>
-        <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
-    </div>
-
-    <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
-        <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
-        <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
-        <div id="dynamicMessages">
-            <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando jogadores entrarem...</h3>
-            <div id="actionInstruction" class="status-text"></div>
+    <!-- Modal de Visualização (O Novo Carrossel) -->
+    <div id="zoomModal" class="modal hidden">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <div class="carousel-container">
+            <button id="prevBtn" class="carousel-nav" onclick="navegarCarrossel(-1)">&#10094;</button>
+            <img id="imgZoom" class="modal-content" src="" alt="Carta em Destaque">
+            <button id="nextBtn" class="carousel-nav" onclick="navegarCarrossel(1)">&#10095;</button>
         </div>
-        <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
-        <div id="hand"></div>
-        <button id="reloadCardsBtn" onclick="reloadCurrentHand()" style="display:none; background: rgba(255,255,255,0.15); font-size: 13px; padding: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2);">🔄 Recarregar Cartas na Tela</button>
-    </div>
-
-    <div id="cardModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-img-container">
-                <img id="modalImage" class="modal-img" src="" alt="">
-            </div>
-            <button id="btnConfirmModal" onclick="handleConfirmModal()">Confirmar</button>
-            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <div class="zoom-action-container">
+            <button id="btnEscolherCarta" onclick="confirmarCartaDoZoom()">🌟 Escolher esta Carta</button>
         </div>
     </div>
-    
-    <div class="version-footer">Versão 10.34 (100% Seguro)</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        function showErr(msg) {
-            let d = document.getElementById('errBanner');
-            if (!d) { 
-                d = document.createElement('div'); d.id = 'errBanner';
-                d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#c0392b;color:#fff;padding:8px;font-size:13px';
-                document.body.appendChild(d); 
-            }
-            d.textContent = msg;
-            setTimeout(() => { if(d) d.remove(); }, 5000);
-        }
-        window.addEventListener('error', e => showErr('Erro no jogo: ' + e.message));
-
         const socket = io();
-        socket.on('connect_error', e => showErr('Sem ligação com o servidor.'));
-        socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
-
-        // ATUALIZAÇÃO DO FUNDO: O servidor envia, o ecrã atualiza
-        socket.on('updateBackground', ({ backgroundUrl }) => {
-            const style = document.createElement('style');
-            style.innerHTML = `body::before { background-image: url('${backgroundUrl}') !important; }`;
-            document.head.appendChild(style);
-        });
-
-        let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
-        let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
-        let currentStoredHand = [];
-        const $ = id => document.getElementById(id);
-
-        function toggleHostMenu() { 
-            const m = $('hostMenu'); 
-            m.style.display = m.style.display === 'none' ? 'block' : 'none'; 
-        }
-
-        function showCreateRoom() {
-            const name = $('hostPlayerName').value;
-            if (!name) return alert("Por favor, digite o seu apelido de Host!");
-            socket.emit('createRoom', { targetScore: $('targetScoreInput').value, playerName: name });
-        }
+        let meuId = null;
+        let codigoAtual = null;
         
-        socket.on('roomCreated', ({ roomId, players }) => {
-            myRoomId = roomId;
-            $('initialMenu').style.display = 'none';
-            $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
-            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'A aguardar que os jogadores entrem...';
-            updatePlayersList(players);
-        });
+        // --- Variáveis Globais de Estado do Jogo e Carrossel ---
+        let cartasNoDeckAtual = []; 
+        let indiceCarrosselAtual = 0;
 
-        function checkRoom() {
-            const room = $('roomIdCheck').value;
-            if (!room) return alert("Digite o código da sala!");
-            socket.emit('validateRoom', { roomId: room });
-        }
-        
-        socket.on('roomValidated', ({ roomId }) => {
-            pendingRoomIdToJoin = roomId;
-            $('initialMenu').style.display = 'none';$('joinNameForm').style.display = 'block';
-        });
-        
-        socket.on('joinError', ({ message }) => alert(message));
-
-        function joinRoom() {
-            const name = $('guestPlayerName').value;
-            if (!name) return alert("Por favor, digite o seu apelido para entrar!");
-            socket.emit('joinRoom', { roomId: pendingRoomIdToJoin, playerName: name });
-        }
-        
-        socket.on('joinedSuccess', ({ roomId }) => {
-            myRoomId = roomId;
-            $('joinNameForm').style.display = 'none';
-            $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Sala: ' + roomId;
-            $('waitingMessage').style.display = 'none';
-        });
-        
-        function backToMenu() {
-            $('joinNameForm').style.display = 'none';$('initialMenu').style.display = 'block';
-            pendingRoomIdToJoin = '';
-        }
-        
-        socket.on('playerJoined', ({ players }) => {
-            updatePlayersList(players);
-            if (players.length > 1) {
-                $('waitingMessage').style.display = 'none';
-                if ($('roomCodeDisplay').innerText.includes('Código da Sala:')) $('startBtn').style.display = 'block';
+        function entrarNaSala() {
+            const nome = document.getElementById('nomeJogador').value;
+            const codigo = document.getElementById('codigoSala').value;
+            if(!nome || !codigo) {
+                alert("Por favor, preencha o seu nome e o código da sala.");
+                return;
             }
-        });
-        
-        function updatePlayersList(players) {
-            $('playersList').innerHTML = '<strong>Na Mesa:</strong> ' + players.map(p => p.name).join(', ');
-        }
-
-        function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
-        function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
-
-        function loadInto(cardDiv, url) {
-            const img = new Image();
-            let attempts = 0;
-
-            img.onload = () => { 
-                cardDiv.classList.remove('card-loading'); 
-                cardDiv.style.backgroundImage = `url('${url}')`; 
-                cardDiv.innerHTML = ''; 
-            };
-
-            img.onerror = () => {
-                attempts++;
-                if (attempts < 2) {
-                    setTimeout(() => { 
-                        const separator = url.includes('?') ? '&' : '?';
-                        img.src = url + separator + "retry=" + Date.now(); 
-                    }, 1500); 
-                } else {
-                    cardDiv.classList.remove('card-loading');
-                    cardDiv.style.backgroundColor = '#6e1010'; 
-                    cardDiv.style.backgroundImage = 'none';
-                    cardDiv.innerHTML = '<span style="font-size:32px;">❌</span>';
-                }
-            };
-
-            img.src = url; 
-        }
-
-        function appendCardToBoard(url, isVotingPhase = false) {
-            const cardDiv = document.createElement('div');
-            cardDiv.className = 'card card-loading';
             
-            loadInto(cardDiv, url);
+            codigoAtual = codigo;
+            socket.emit('entrarSala', { nome, codigo });
+            
+            document.getElementById('telaEntrada').style.display = 'none';
+            document.getElementById('telaJogo').style.display = 'block';
+            document.getElementById('displayCodigo').innerText = codigo;
+        }
 
-            if (isVotingPhase) {
-                if (amINarrator) {
-                    cardDiv.classList.add('narrator-card-view');
-                    cardDiv.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
-                } else if (url === myPlayedCardUrl) {
-                    cardDiv.classList.add('my-card-disabled');
-                    cardDiv.onclick = () => alert("Não pode votar na sua própria carta!");
-                } else {
-                    cardDiv.onclick = () => openModal(url, 'VOTE');
-                }
+        socket.on('atualizarSala', (sala) => {
+            const eu = sala.jogadores.find(j => j.id === socket.id);
+            if(!eu) return;
+
+            // Atualiza jogadores conectados na mesa
+            const nomesMesa = sala.jogadores.map(j => j.nome).join(', ');
+            document.getElementById('displayJogadores').innerText = nomesMesa;
+
+            // Define UI do Narrador
+            const souNarrador = sala.jogadores.findIndex(j => j.id === socket.id) === sala.narradorIndex;
+            const statusDiv = document.getElementById('statusNarrador');
+            
+            if (souNarrador) {
+                statusDiv.innerHTML = `
+                    <div class="narrador-texto">Você é o Narrador!</div>
+                    <div style="font-size: 0.95rem;">Fale a sua dica em voz alta e escolha uma carta.</div>
+                `;
             } else {
-                if (!amINarrator && !narratorHasPlayed) cardDiv.classList.add('locked-card');
-                cardDiv.onclick = () => {
-                    if (!amINarrator && !narratorHasPlayed) return alert("Calma! Espere que o Narrador fale a dica e jogue primeiro.");
-                    openModal(url, 'PLAY');
-                };
-                myHandElements.push(cardDiv);
+                statusDiv.innerHTML = `<div style="font-size: 1.1rem; color: #f39c12;">Aguardando o Narrador falar a dica...</div>`;
             }
-            $('hand').appendChild(cardDiv);
-        }
 
-        function reloadCurrentHand() {
-            if (currentStoredHand.length === 0) return;
-            $('hand').innerHTML = '';
-            myHandElements = [];
-            currentStoredHand.forEach(url => appendCardToBoard(url, false));
-        }
-
-        socket.on('gameStarted', ({ players }) => {
-            $('startBtn').style.display = 'none';$('waitingMessage').style.display = 'none';
-            const ins = $('actionInstruction');$('hand').innerHTML = '';
-            myHandElements = [];
-            narratorHasPlayed = false;
-            myPlayedCardUrl = '';
-            
-            const me = players.find(p => p.id === socket.id);
-            if (!me) return;
-            
-            amINarrator = me.isNarrator;
-            currentStoredHand = me.hand;
-            $('reloadCardsBtn').style.display = 'block';
-            
-            ins.innerHTML = amINarrator
-                ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale a sua dica em voz alta e escolha uma carta.'
-                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está a dar a dica. Olhe para as suas cartas entretanto!';
-                
-            me.hand.forEach(url => appendCardToBoard(url, false));
+            // Atualiza o Deck local e desenha as cartas
+            cartasNoDeckAtual = eu.mao;
+            renderizarDeck();
         });
 
-        socket.on('narratorPlayed', () => {
-            narratorHasPlayed = true;
-            if (!amINarrator) {
-                $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">A Sua Vez!</span><br>O Narrador deu a dica. Escolha a carta que mais combina com a dica.';
-                myHandElements.forEach(d => {
-                    d.classList.remove('locked-card');
-                    d.style.opacity = '1';
-                    d.style.filter = 'none';
-                });
-            }
-        });
-
-        socket.on('startVotingPhase', ({ cards }) => {
-            $('hand').innerHTML = '';
-            $('reloadCardsBtn').style.display = 'none';$('actionInstruction').innerHTML = amINarrator
-                ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde que os jogadores votem (Você não vota).'
-                : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
-                
-            cards.forEach(url => appendCardToBoard(url, true));
-        });
-
-        socket.on('roundEnded', ({ ranking, isGameOver, hostSocketId }) => {
-            $('actionInstruction').innerHTML = '';$('reloadCardsBtn').style.display = 'none';
+        function renderizarDeck() {
+            const deckDiv = document.getElementById('deckCartas');
+            deckDiv.innerHTML = '';
             
-            let html = isGameOver
-                ? `<div class="winner-title">🏆 ${ranking[0].name} VENCEU! 🏆</div>`
-                : `<h3 style="color: #a777e3; margin-bottom: 10px; font-size: 1.5em;">Fim da Rodada!</h3>`;
+            cartasNoDeckAtual.forEach((cartaUrl, index) => {
+                const img = document.createElement('img');
+                img.src = cartaUrl;
+                img.className = 'carta';
                 
-            html += `<table class="ranking-table"><tr><th>Pos.</th><th>Jogador</th><th>Pts</th></tr>`;
-            
-            ranking.forEach((p, i) => {
-                const rowStyle = i === 0 ? 'color:#f1c40f; font-weight:bold; background:rgba(241,196,15,.2);' : '';
-                const nar = p.isNarrator ? '<br><span style="font-size:12px; color:#38ef7d; font-weight:normal;">(Narrador)</span>' : '';
-                html += `<tr style="${rowStyle}"><td style="font-size:1.2em;">${i + 1}º</td><td>${p.name} ${nar}</td><td style="font-size:1.4em;">${p.score}</td></tr>`;
+                // O clique agora abre o Zoom interativo, em vez de jogar direto
+                img.onclick = () => abrirZoom(index);
+                deckDiv.appendChild(img);
             });
-            html += `</table>`;
+        }
+
+        function recarregarCartas() {
+            renderizarDeck();
+        }
+
+        // ==========================================
+        //  LÓGICA DO CARROSSEL E SELEÇÃO DE CARTAS
+        // ==========================================
+
+        function abrirZoom(indiceDaCartaClicada) {
+            indiceCarrosselAtual = indiceDaCartaClicada;
+            atualizarImagemCarrossel();
+            document.getElementById('zoomModal').classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('zoomModal').classList.add('hidden');
+        }
+
+        function atualizarImagemCarrossel() {
+            const imgZoom = document.getElementById('imgZoom');
             
-            const isHost = socket.id === hostSocketId;
-            if (!isGameOver && isHost) {
-                html += `<button onclick="nextRound()" style="background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 18px; font-size: 1.1em; margin-top: 20px;">Próxima Rodada</button>`;
-            } else if (!isGameOver) {
-                html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">A aguardar que o Host inicie a próxima rodada...</p>`;
-            } else if (isHost) {
-                html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
-            }
-            $('hand').innerHTML = html;
+            // Efeito de fade suave ao trocar a imagem
+            imgZoom.style.opacity = '0.5';
+            setTimeout(() => {
+                imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual];
+                imgZoom.style.opacity = '1';
+            }, 100);
+            
+            // Oculta setas se estiver nos limites da mão
+            document.getElementById('prevBtn').style.display = (indiceCarrosselAtual === 0) ? 'none' : 'block';
+            document.getElementById('nextBtn').style.display = (indiceCarrosselAtual === cartasNoDeckAtual.length - 1) ? 'none' : 'block';
+        }
+
+        function navegarCarrossel(direcao) {
+            indiceCarrosselAtual += direcao;
+            // Prevenção de estouro de array
+            if (indiceCarrosselAtual < 0) indiceCarrosselAtual = 0;
+            if (indiceCarrosselAtual >= cartasNoDeckAtual.length) indiceCarrosselAtual = cartasNoDeckAtual.length - 1;
+            
+            atualizarImagemCarrossel();
+        }
+
+        function confirmarCartaDoZoom() {
+            const cartaSelecionadaUrl = cartasNoDeckAtual[indiceCarrosselAtual];
+            fecharModal();
+            // Dispara o evento original enviando a carta para a mesa no Backend
+            socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: cartaSelecionadaUrl });
+        }
+
+        // --- Suporte a "Swipe" (Arrastar imagem com o dedo no celular) ---
+        let toqueInicialX = 0;
+        let toqueFinalX = 0;
+        const areaZoom = document.getElementById('imgZoom');
+
+        areaZoom.addEventListener('touchstart', (e) => {
+            toqueInicialX = e.changedTouches[0].screenX;
         });
 
-        function openModal(url, action) {
-            let currentBg = event.currentTarget.style.backgroundImage;
-            if(currentBg && currentBg.includes('url(')) {
-                selectedCardUrl = currentBg.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
-            } else {
-                selectedCardUrl = url;
-            }
-            
-            modalAction = action;
-            $('modalImage').src = selectedCardUrl;
-            
-            const b = $('btnConfirmModal');
-            if (action === 'PLAY') { 
-                b.innerText = 'Enviar Carta para a Mesa'; 
-                b.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)'; 
-            } else { 
-                b.innerText = 'Confirmar Voto'; 
-                b.style.background = 'linear-gradient(135deg, #a777e3, #6e8efb)'; 
-            }
-            $('cardModal').style.display = 'block';
-        }
-        
-        function closeModal() { 
-            $('cardModal').style.display = 'none'; 
-            selectedCardUrl = ''; 
-        }
+        areaZoom.addEventListener('touchend', (e) => {
+            toqueFinalX = e.changedTouches[0].screenX;
+            processarSwipe();
+        });
 
-        function handleConfirmModal() {
-            if (!selectedCardUrl) return;
-            if (modalAction === 'PLAY') {
-                myPlayedCardUrl = selectedCardUrl;
-                socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#38ef7d; font-size:1.2em;">Carta na mesa!</span><br>A aguardar os outros jogadores...';
-            } else {
-                socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-size:1.2em;">Voto registado!</span><br>A aguardar apuração...';
+        function processarSwipe() {
+            const limiteSwipe = 40; // Distância mínima sensível ao toque
+            if (toqueFinalX < toqueInicialX - limiteSwipe) {
+                navegarCarrossel(1); // Deslizou para a esquerda -> Mostra Próxima
             }
-            closeModal();
+            if (toqueFinalX > toqueInicialX + limiteSwipe) {
+                navegarCarrossel(-1); // Deslizou para a direita -> Mostra Anterior
+            }
         }
     </script>
 </body>
