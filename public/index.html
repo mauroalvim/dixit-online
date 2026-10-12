@@ -171,8 +171,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.25 -->
-    <div class="version-footer">Versão 10.25</div>
+    <!-- VERSÃO 10.26 -->
+    <div class="version-footer">Versão 10.26</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -262,30 +262,26 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
+        function loadInto(cardDiv, url, index) {
+            setTimeout(() => {
+                const img = new Image();
+                img.onload = () => { 
+                    cardDiv.classList.remove('card-loading'); 
+                    cardDiv.style.backgroundImage = `url('${url}')`; 
+                };
+                img.onerror = () => {
+                    setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2500);
+                };
+                img.src = url;
+            }, index * 600); 
+        }
+
         function appendCardToBoard(url, isVotingPhase = false, index = 0) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card card-loading';
             
-            // TAG IMG NATIVA: Mais robusto e gerido diretamente pelo navegador
-            const img = document.createElement('img');
-            img.className = 'card-img-element';
-            
-            img.onload = () => {
-                cardDiv.classList.remove('card-loading');
-                img.style.opacity = '1';
-            };
-            
-            img.onerror = () => {
-                setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2500);
-            };
-
-            cardDiv.appendChild(img);
-            $('hand').appendChild(cardDiv);
-
-            // FILA INTELIGENTE: Pede as imagens à API com 500ms de diferença entre si
-            setTimeout(() => {
-                img.src = url;
-            }, index * 500);
+            // Chama a função de carregamento com a referência correta para a div
+            loadInto(cardDiv, url, index);
 
             if (isVotingPhase) {
                 if (amINarrator) {
@@ -305,6 +301,7 @@
                 };
                 myHandElements.push(cardDiv);
             }
+            $('hand').appendChild(cardDiv);
         }
 
         function reloadCurrentHand() {
