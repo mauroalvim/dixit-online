@@ -19,19 +19,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 let dynamicBackgroundUrl = '';
 let isGeneratingBackground = false;
 
-// Função inteligente que garante que o fundo é gerado e emitido para quem já está ligado
+// Gera a imagem de fundo com a sua lógica do googleApi.js
 async function generateAndEmitBackground() {
     if (isGeneratingBackground) return;
     isGeneratingBackground = true;
     
-    console.log("A gerar imagem de fundo dinâmica com a API do Google...");
+    console.log("A preparar fundo de ecrã...");
     try {
-        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de ilustrações surrealistas estilo contos de fadas, muito colorido e mágico, estilo jogo de tabuleiro Dixit.");
-        console.log("Imagem de fundo gerada com sucesso!");
-        // Emite para TODOS os jogadores conectados que o fundo está pronto
+        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de muitas cartas coloridas de jogo surrealistas e mágicas tipo Dixit");
         io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
     } catch (error) {
-        console.log("Falha ao gerar fundo dinâmico. Usando fundo de emergência colorido.");
         dynamicBackgroundUrl = 'https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg';
         io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
     }
@@ -41,7 +38,7 @@ async function generateAndEmitBackground() {
 async function initializeServer() {
     console.log("Inicializando servidor...");
     generateAndEmitBackground();
-    console.log("Carregando o Baú Mágico de cartas...");
+    console.log("Carregando o Baú Mágico de cartas na RAM...");
     refillBuffer(); 
 }
 
@@ -52,12 +49,9 @@ const gameRooms = {};
 io.on('connection', (socket) => {
   console.log(`Novo jogador conectado: ${socket.id}`);
 
-  // Assim que o jogador liga, se o servidor já tiver o fundo, envia imediatamente.
+  // Se o servidor já tiver o fundo mágico gerado, envia ao telemóvel!
   if (dynamicBackgroundUrl !== '') {
       socket.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
-  } else {
-      // Se ainda não tiver (está a gerar), pode pedir uma nova geração (segurança)
-      generateAndEmitBackground();
   }
 
   socket.on('validateRoom', ({ roomId }) => {
@@ -95,7 +89,7 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('playerJoined', { players: room.players });
       socket.emit('joinedSuccess', { roomId });
     } else {
-      socket.emit('joinError', { message: 'Sala não encontrada ou partida em andamento!' });
+      socket.emit('joinError', { message: 'Sala não encontrada!' });
     }
   });
 
@@ -104,13 +98,8 @@ io.on('connection', (socket) => {
     if (room) {
       room.status = 'NARRATOR_TURN';
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
-      
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      
-      room.players.forEach(p => {
-        p.hand = drawCards(5); 
-      });
-
+      room.players.forEach(p => { p.hand = drawCards(5); });
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
@@ -128,11 +117,9 @@ io.on('connection', (socket) => {
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
             if (cardsNeeded > 0) {
-                const newCards = drawCards(cardsNeeded);
-                p.hand.push(...newCards);
+                p.hand.push(...drawCards(cardsNeeded));
             }
         });
-
         io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
@@ -148,7 +135,6 @@ io.on('connection', (socket) => {
       const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
       if (!alreadyPlayed) {
         room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
-        
         if (isNarratorPlaying) {
             room.currentRound.narratorCard = cardUrl;
             room.currentRound.narratorPlayed = true;
@@ -212,12 +198,7 @@ io.on('connection', (socket) => {
               const isGameOver = room.players.some(p => p.score >= room.targetScore);
               const ranking = [...room.players].sort((a, b) => b.score - a.score);
 
-              io.to(roomId).emit('roundEnded', { 
-                  ranking, 
-                  isGameOver, 
-                  targetScore: room.targetScore,
-                  hostSocketId: room.hostSocketId
-              });
+              io.to(roomId).emit('roundEnded', { ranking, isGameOver, targetScore: room.targetScore, hostSocketId: room.hostSocketId });
           }
       }
   });
