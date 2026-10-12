@@ -22,10 +22,10 @@ Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qua
 
 REGRA DE REJEIÇÃO ABSOLUTA:
 - REJEITE qualquer imagem que mostre rostos humanos fotorrealistas ou proporções anatômicas realistas de pessoas.
-- REJEITE fotografias do mundo real.
+- REJEITE fotografias do mundo real, paisagens reais ou pessoas reais.
 
 CRITÉRIO DE APROVAÇÃO:
-- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos ou de fantasia.
+- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos, de fantasia, contos de fadas, ficção ou mitologia.
 
 Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
 
@@ -37,25 +37,32 @@ function embaralharArray(array) {
     return array;
 }
 
+// REDE AMPLIADA: Mais de 30 categorias para garantir milhares de possibilidades
 const temasBusca = [
-    "surreal abstract", "dream landscape", "fantasy illusion", 
-    "bizarre art", "mystical surrealism", "whimsical abstract", 
-    "dreamlike scene", "surrealism painting", "digital art surreal"
+    "surreal", "dream", "fantasy", "illusion", "bizarre",
+    "mystical", "whimsical", "magic", "fairytale", "wonderland",
+    "mythology", "steampunk", "space art", "psychedelic", 
+    "magical realism", "concept art", "otherworldly", "ethereal", 
+    "surrealism", "abstract", "imaginative", "optical illusion",
+    "enchanted forest", "alien landscape", "dreamscape", "surreal painting",
+    "digital art fantasy", "creepy art", "dreamy illustration", "cyberpunk city",
+    "time travel art", "parallel universe"
 ];
 
 async function buscarCartasPixabay() {
     try {
         const tema = temasBusca[Math.floor(Math.random() * temasBusca.length)];
-        // Retorna a incluir a página 1, mas navega até a página 15 aleatoriamente
-        const randomPage = Math.floor(Math.random() * 15) + 1; 
-        const query = encodeURIComponent(`${tema} -portrait -face -human`);
+        // Navega aleatoriamente entre as 30 primeiras páginas do Pixabay
+        const randomPage = Math.floor(Math.random() * 30) + 1; 
         
-        // MÁGICA AQUI: orientation=vertical garante que não venham imagens deitadas
+        // Removemos o -human para ampliar a busca, deixando o Juiz IA fazer o trabalho de barrar rostos reais
+        const query = encodeURIComponent(`${tema} -portrait -face -photo`);
+        
         const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=100&page=${randomPage}&safesearch=true`;
         
         const response = await axios.get(url);
         
-        // Filtra as imagens que já saíram em outras partidas
+        // Filtra as imagens que já saíram em outras partidas (nunca repete!)
         const urlsIneditas = response.data.hits
             .map(hit => hit.largeImageURL)
             .filter(url => !memoriaCartasGlobais.has(url));
@@ -90,12 +97,11 @@ async function preencherBau(codigo) {
     sala.preenchendo = true;
     
     try {
-        // Aumentado o limite do baú para 300 cartas como solicitado
         while (sala.bau.length < 300) {
             let urls = await buscarCartasPixabay();
             if (urls.length === 0) break;
             
-            urls = embaralharArray(urls).slice(0, 40); // Lotes de 40 pro Juiz não engasgar
+            urls = embaralharArray(urls).slice(0, 40);
             
             let aprovadas = await julgarCartas(urls);
             if (aprovadas.length === 0) continue;
