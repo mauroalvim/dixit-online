@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -10,13 +11,9 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Inicializa a IA do Gemini usando a variável de ambiente segura
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-
-// Estrutura de dados para gerenciar múltiplas salas simultâneas
 const salas = {};
 
-// Prompt Implacável - Versão 10.35 (Bloqueio estrito de fotorrealismo e humanos)
 const promptJuizIA = `Você é um curador de arte extremamente rigoroso para um jogo de tabuleiro estilo Dixit. 
 Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qualquer uma que viole as regras abaixo.
 
@@ -31,7 +28,6 @@ Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2
 
 async function buscarCartasPixabay() {
     try {
-        // Query de busca com termos negativos para filtrar fotos e humanos antes mesmo de chegar na IA
         const query = encodeURIComponent("surreal dream abstract -portrait -face -realistic -human -photo");
         const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&per_page=30&safesearch=true`;
         
@@ -44,7 +40,6 @@ async function buscarCartasPixabay() {
 }
 
 async function buscarCartasWikimedia() {
-    // Fallback de Segurança caso o Pixabay caia ou atinja o limite
     try {
         const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=images&titles=Surrealism&gimlimit=20&iiprop=url`;
         const response = await axios.get(url);
@@ -52,7 +47,6 @@ async function buscarCartasWikimedia() {
         return Object.values(pages).map(p => p.imageinfo[0].url).filter(url => url.match(/\.(jpeg|jpg|png)$/i));
     } catch (error) {
         console.error("Erro no Wikimedia:", error.message);
-        // Fallback de emergência (uma imagem genérica onírica garantida)
         return ["https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Shakespeare_The_Tempest_-_Project_Gutenberg_eText_18271.jpg/800px-Shakespeare_The_Tempest_-_Project_Gutenberg_eText_18271.jpg"];
     }
 }
@@ -94,7 +88,7 @@ io.on('connection', (socket) => {
                 bau: [],
                 mesa: [],
                 narradorIndex: 0,
-                estado: 'aguardando'
+                estado: 'aguardando' // Estado de Lobby
             };
             await reabastecerBau(codigo);
         }
@@ -105,15 +99,21 @@ io.on('connection', (socket) => {
         
         socket.join(codigo);
         
-        // Distribui 5 cartas iniciais para o jogador
+        // Distribui 5 cartas iniciais
         for(let i=0; i<5; i++) {
             if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
         }
         
         io.to(codigo).emit('atualizarSala', sala);
-        
-        // Dispara o reabastecimento do baú de forma assíncrona (não trava o jogo)
         reabastecerBau(codigo);
+    });
+
+    // Novo evento para o Host transitar do Lobby para o Jogo
+    socket.on('iniciarPartida', (codigo) => {
+        if(salas[codigo]) {
+            salas[codigo].estado = 'jogando';
+            io.to(codigo).emit('atualizarSala', salas[codigo]);
+        }
     });
 
     socket.on('jogarCarta', ({ codigo, cartaUrl }) => {
@@ -122,11 +122,12 @@ io.on('connection', (socket) => {
         
         const jogador = sala.jogadores.find(j => j.id === socket.id);
         if(jogador) {
-            // Remove a carta jogada da mão e coloca na mesa
             jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
             sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
             
-            // Puxa uma nova carta do baú
+            // Simulação simples de pontuação por jogar carta (apenas para alimentar o ranking visualmente por enquanto)
+            jogador.pontos += 10; 
+            
             if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
             
             io.to(codigo).emit('atualizarSala', sala);
@@ -137,12 +138,16 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         for (const codigo in salas) {
             salas[codigo].jogadores = salas[codigo].jogadores.filter(j => j.id !== socket.id);
-            io.to(codigo).emit('atualizarSala', salas[codigo]);
+            if(salas[codigo].jogadores.length === 0) {
+                delete salas[codigo]; // Limpa a sala se ficar vazia
+            } else {
+                io.to(codigo).emit('atualizarSala', salas[codigo]);
+            }
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Servidor Imagination (Dixit) rodando na porta ${PORT}`);
+    console.log(`Servidor Imagination rodando na porta ${PORT}`);
 });
