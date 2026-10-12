@@ -21,9 +21,10 @@ Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qua
 REGRA DE REJEIÇÃO ABSOLUTA:
 - REJEITE qualquer imagem que mostre rostos humanos fotorrealistas ou proporções anatômicas realistas.
 - REJEITE fotografias do mundo real.
+- REJEITE qualquer imagem com fundo transparente, objetos isolados em fundo branco/vazio ou imagens em formato de selo. A imagem DEVE ser uma obra de arte ou cena completa que preencha todo o quadro (sem áreas transparentes).
 
 CRITÉRIO DE APROVAÇÃO:
-- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos, de fantasia, contos de fadas, ficção ou mitologia.
+- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos, de fantasia, contos de fadas, ficção ou mitologia, com cenário completo.
 
 Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
 
@@ -43,10 +44,9 @@ const temasBusca = [
     "surrealism", "abstract", "imaginative", "optical illusion"
 ];
 
-// O SEGREDO DA DIVERSIDADE: Puxa 5 temas diferentes ao mesmo tempo e mistura!
 async function buscarCartasMisturadasPixabay(quantidadePorTema = 10) {
     try {
-        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); // Pega 5 temas diferentes
+        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); 
         const promessas = temasSorteados.map(async (tema) => {
             const randomPage = Math.floor(Math.random() * 10) + 1; 
             const query = encodeURIComponent(`${tema} -portrait -face -photo`);
@@ -60,15 +60,11 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 10) {
             }
         });
 
-        // Aguarda todas as buscas terminarem
         const arraysDeUrls = await Promise.all(promessas);
-        
-        // Junta todas as respostas num array só (A grande "salada")
         const todasUrls = arraysDeUrls.flat();
         
         const urlsIneditas = todasUrls.filter(url => !memoriaCartasGlobais.has(url));
             
-        // Embaralha a salada final para que temas fiquem espalhados
         return embaralharArray(urlsIneditas);
 
     } catch (error) {
@@ -99,10 +95,7 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        // Pede um lote diversificado (5 temas x 10 cartas = ~50 imagens misturadas)
         let urlsMisturadas = await buscarCartasMisturadasPixabay(10);
-        
-        // Pega as 30 primeiras dessa mistura para o Juiz IA analisar rápido
         let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
         
         if (aprovadas.length > 0) {
@@ -126,11 +119,9 @@ async function preencherBauLento(codigo) {
     sala.preenchendo = true;
     try {
         while (sala.bau.length < 150) { 
-            // Pede um lote forte de mistura (5 temas x 20 imagens = ~100 imagens misturadas)
             let urlsMisturadas = await buscarCartasMisturadasPixabay(20);
             if (urlsMisturadas.length === 0) break;
             
-            // Analisa de 30 em 30 para o Juiz não travar
             let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
             if (aprovadas.length === 0) continue;
             
@@ -185,7 +176,6 @@ io.on('connection', (socket) => {
             if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
             io.to(codigo).emit('atualizarSala', sala);
             
-            // Se o baú baixar de 50 (5 jogadores x 10 rodadas), enche de novo
             if(sala.bau.length < 50) preencherBauLento(codigo); 
         }
     });
