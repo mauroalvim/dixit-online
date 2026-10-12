@@ -20,16 +20,19 @@
             position: relative; 
         }
 
-        /* --- O FUNDO DINÂMICO (GERADO PELA SUA API DO GOOGLE) --- */
+        /* --- O FUNDO DINÂMICO --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            /* A imagem será inserida aqui via JavaScript */
-            background-color: #14122b; /* Fundo base enquanto a API não responde */
+            /* Fundo inicial escuro até a imagem da API carregar */
+            background-color: #14122b;
             background-size: cover;
-            filter: blur(6px); 
+            background-position: center;
+            /* Embaçado para não atrapalhar o texto */
+            filter: blur(8px); 
+            transition: background 1.5s ease; /* Transição suave quando a imagem chega */
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
@@ -165,27 +168,33 @@
     
     <!-- VERSÃO DO SITE -->
     <div class="version-footer">
-        Versão 10.3
+        Versão 10.4
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Pede a imagem de fundo gerada pela API do Google ao servidor
-        fetch('/api/background')
-            .then(response => response.json())
-            .then(data => {
-                if (data.backgroundUrl) {
-                    const style = document.createElement('style');
-                    style.innerHTML = `
-                        body::before {
-                            background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), 
-                                        url('${data.backgroundUrl}') no-repeat center center fixed;
-                            background-size: cover;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
-            });
+        // --- NOVA LÓGICA DE FUNDO DINÂMICO ---
+        // Fica perguntando ao servidor a cada 2 segundos até a API do Google devolver a imagem!
+        const fetchBackground = setInterval(() => {
+            fetch('/api/background')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.backgroundUrl && data.backgroundUrl !== '') {
+                        const style = document.createElement('style');
+                        // Aplica uma camada clara para as cores aparecerem bem sob o embaçado
+                        style.innerHTML = `
+                            body::before {
+                                background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), 
+                                            url('${data.backgroundUrl}') no-repeat center center fixed;
+                                background-size: cover;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                        clearInterval(fetchBackground); // Para de perguntar quando encontra a imagem
+                    }
+                })
+                .catch(err => console.log("Aguardando fundo dinâmico..."));
+        }, 2000);
 
         function showErr(msg) {
             let d = document.getElementById('errBanner');
