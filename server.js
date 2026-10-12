@@ -26,10 +26,21 @@ CRITÉRIO DE APROVAÇÃO:
 
 Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
 
+// Função para embaralhar as cartas (Fisher-Yates) - ISSO RESOLVE O PROBLEMA DO RANDOM
+function embaralharArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 async function buscarCartasPixabay() {
     try {
-        const query = encodeURIComponent("surreal dream abstract -portrait -face -realistic -human -photo");
-        const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&per_page=30&safesearch=true`;
+        // Adicionando um fator de página aleatória para trazer lotes diferentes do Pixabay
+        const randomPage = Math.floor(Math.random() * 5) + 1; 
+        const query = encodeURIComponent("surreal abstract -portrait -face -human");
+        const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&per_page=40&page=${randomPage}&safesearch=true`;
         
         const response = await axios.get(url);
         return response.data.hits.map(hit => hit.largeImageURL);
@@ -41,7 +52,7 @@ async function buscarCartasPixabay() {
 
 async function buscarCartasWikimedia() {
     try {
-        const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=images&titles=Surrealism&gimlimit=20&iiprop=url`;
+        const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=images&titles=Surrealism&gimlimit=30&iiprop=url`;
         const response = await axios.get(url);
         const pages = response.data.query.pages;
         return Object.values(pages).map(p => p.imageinfo[0].url).filter(url => url.match(/\.(jpeg|jpg|png)$/i));
@@ -62,20 +73,24 @@ async function julgarCartas(urls) {
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
         }
-        return urls.slice(0, 5); 
+        return urls.slice(0, 10); 
     } catch (error) {
         console.error("Erro no Juiz IA:", error.message);
-        return urls.slice(0, 5); 
+        return urls.slice(0, 10); 
     }
 }
 
 async function reabastecerBau(salaId) {
     const sala = salas[salaId];
-    if (sala.bau.length < 20) {
+    if (sala.bau.length < 25) {
         let urls = await buscarCartasPixabay();
-        if (urls.length === 0) urls = await buscarCartasWikimedia();
+        if (urls.length < 10) urls = urls.concat(await buscarCartasWikimedia());
         
-        const aprovadas = await julgarCartas(urls);
+        let aprovadas = await julgarCartas(urls);
+        
+        // Aplica o embaralhamento forte antes de colocar no baú da sala
+        aprovadas = embaralharArray(aprovadas);
+        
         sala.bau.push(...aprovadas);
     }
 }
@@ -88,7 +103,7 @@ io.on('connection', (socket) => {
                 bau: [],
                 mesa: [],
                 narradorIndex: 0,
-                estado: 'aguardando' // Estado de Lobby
+                estado: 'aguardando'
             };
             await reabastecerBau(codigo);
         }
@@ -99,7 +114,7 @@ io.on('connection', (socket) => {
         
         socket.join(codigo);
         
-        // Distribui 5 cartas iniciais
+        // Garante que o jogador receba 5 cartas aleatórias iniciais se o baú tiver cartas
         for(let i=0; i<5; i++) {
             if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
         }
@@ -108,9 +123,8 @@ io.on('connection', (socket) => {
         reabastecerBau(codigo);
     });
 
-    // Novo evento para o Host transitar do Lobby para o Jogo
     socket.on('iniciarPartida', (codigo) => {
-        if(salas[codigo]) {
+        if(salas[codigo] && salas[codigo].jogadores.length >= 2) {
             salas[codigo].estado = 'jogando';
             io.to(codigo).emit('atualizarSala', salas[codigo]);
         }
@@ -125,7 +139,7 @@ io.on('connection', (socket) => {
             jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
             sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
             
-            // Simulação simples de pontuação por jogar carta (apenas para alimentar o ranking visualmente por enquanto)
+            // Simulação de pontuação
             jogador.pontos += 10; 
             
             if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
@@ -139,7 +153,7 @@ io.on('connection', (socket) => {
         for (const codigo in salas) {
             salas[codigo].jogadores = salas[codigo].jogadores.filter(j => j.id !== socket.id);
             if(salas[codigo].jogadores.length === 0) {
-                delete salas[codigo]; // Limpa a sala se ficar vazia
+                delete salas[codigo]; 
             } else {
                 io.to(codigo).emit('atualizarSala', salas[codigo]);
             }
