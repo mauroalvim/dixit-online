@@ -20,26 +20,25 @@
             position: relative; 
         }
 
-        /* --- O FUNDO DINÂMICO --- */
+        /* --- O FUNDO INTELIGENTE (ESPERANDO A IA) --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            background-color: #14122b;
+            /* Se demorar muito, usa o Plano D automaticamente como textura base */
+            background: linear-gradient(rgba(20, 18, 43, 0.5), rgba(20, 18, 43, 0.8)), 
+                        url('https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
-            filter: blur(6px); 
+            filter: blur(8px); 
             transition: background 1.5s ease; 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
         
-        /* Efeito de Vidro */
         .glass-panel {
             background: rgba(20,20,35,.85); 
             backdrop-filter: blur(10px); 
-            -webkit-backdrop-filter: blur(10px);
             border-radius: 20px; 
             padding: 25px 20px; 
             border: 1px solid rgba(255,255,255,.1);
@@ -56,7 +55,7 @@
             box-shadow: 0 4px 15px rgba(110,142,251,.3); transition: .3s; margin-top: 15px; font-family: inherit;
         }
         button:hover { transform: translateY(-3px); }
-        .btn-cancel { background: linear-gradient(135deg, #ff416c, #ff4b2b); box-shadow: 0 4px 15px rgba(255,65,108,.3); }
+        .btn-cancel { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         
         input {
             width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
@@ -156,25 +155,24 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.5</div>
+    <div class="version-footer">Versão 10.7</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
 
-        // --- MÁGICA: O socket agora ESCUTA o fundo gerado pelo servidor! ---
+        // O Socket injeta a Imagem da IA (ou a imagem premium de segurança do Plano D)
         socket.on('updateBackground', (data) => {
             if (data.backgroundUrl && data.backgroundUrl !== '') {
                 const style = document.createElement('style');
                 style.innerHTML = `
                     body::before {
-                        background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), 
+                        background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.15)), 
                                     url('${data.backgroundUrl}') no-repeat center center fixed;
                         background-size: cover;
                     }
                 `;
                 document.head.appendChild(style);
-                console.log("Fundo dinâmico aplicado com sucesso via Socket!");
             }
         });
 
