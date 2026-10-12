@@ -17,24 +17,24 @@
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            position: relative; /* Necessário para o truque do fundo embaçado */
+            position: relative; 
         }
 
-        /* --- O NOVO FUNDO EMBACADO (BLUR) --- */
+        /* --- O NOVO FUNDO COLORIDO E EMBACADO --- */
         body::before {
             content: "";
             position: fixed;
-            /* Margem negativa evita que as bordas fiquem brancas por causa do blur */
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
             
-            /* Fundo escurecido com um mosaico surreal hospedado online para funcionar de imediato */
-            background: linear-gradient(rgba(20, 18, 43, 0.75), rgba(20, 18, 43, 0.9)), 
-                        url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&fit=crop') no-repeat center center fixed;
+            /* Em vez de tons super escuros, adicionei uma leve camada roxa translúcida, 
+               sobreposta a uma pintura super onírica de floresta surreal colorida. */
+            background: linear-gradient(rgba(45, 30, 70, 0.4), rgba(45, 30, 70, 0.6)), 
+                        url('https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg') no-repeat center center fixed;
             background-size: cover;
             
-            /* O efeito Blur (embaçado) */
-            filter: blur(8px); 
+            /* O efeito Blur (embaçado) agora menos agressivo para mostrar as cores */
+            filter: blur(5px); 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
@@ -170,7 +170,7 @@
     
     <!-- VERSÃO DO SITE -->
     <div class="version-footer">
-        Versão 10.0
+        Versão 10.1
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
