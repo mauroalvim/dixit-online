@@ -20,21 +20,22 @@
             position: relative; 
         }
 
-        /* --- O FUNDO CLÁSSICO DE MOSAICO DO DIXIT --- */
+        /* --- O FUNDO INFALÍVEL (GERADO COM SEED FIXO) --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
             
-            /* AQUI ESTÁ A IMAGEM EXATA DO MOSAICO! 
-               Com uma ligeira sombra escura (rgba) por cima para os botões sobressaírem. */
-            background: linear-gradient(rgba(20, 18, 43, 0.4), rgba(20, 18, 43, 0.6)), 
-                        url('https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg') no-repeat center center fixed;
+            /* Usamos um URL com "seed" fixo para garantir que a IA devolve sempre a mesma arte estilo Dixit, colorida e surreal */
+            background-image: url('https://image.pollinations.ai/prompt/collage%20of%20surreal%20dreamcore%20fantasy%20cards%20colorful%20dixit%20style%20masterpiece?width=1080&height=1920&nologo=true&seed=150');
+            background-color: rgba(20, 18, 43, 0.3); /* Película levemente escura para contraste */
+            background-blend-mode: multiply; /* Mistura a película com a imagem perfeitamente */
             background-size: cover;
+            background-position: center;
             
-            /* O desfoque mágico */
-            filter: blur(6px); 
+            /* Desfoque suave para ambiente de jogo */
+            filter: blur(5px); 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
@@ -159,7 +160,7 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.8</div>
+    <div class="version-footer">Versão 10.9</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
