@@ -26,13 +26,14 @@
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            /* FUNDO MÁGICO SEGURO E ESTÁTICO (Nunca é bloqueado) */
-            background-image: url('https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg');
+            /* Fundo Inicial Seguro (Noite Estrelada) enquanto o servidor não envia o novo */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg');
             background-color: rgba(255, 255, 255, 0.15);
             background-blend-mode: overlay;
             background-size: cover;
             background-position: center;
-            filter: blur(2px); 
+            filter: blur(3px) brightness(0.7); 
+            transition: background-image 2s ease-in-out;
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
@@ -162,7 +163,7 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.33 (Juiz Implacável + Sem Fotos)</div>
+    <div class="version-footer">Versão 10.34 (100% Seguro)</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -181,6 +182,13 @@
         const socket = io();
         socket.on('connect_error', e => showErr('Sem ligação com o servidor.'));
         socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
+
+        // ATUALIZAÇÃO DO FUNDO: O servidor envia, o ecrã atualiza
+        socket.on('updateBackground', ({ backgroundUrl }) => {
+            const style = document.createElement('style');
+            style.innerHTML = `body::before { background-image: url('${backgroundUrl}') !important; }`;
+            document.head.appendChild(style);
+        });
 
         let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
         let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
