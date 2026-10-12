@@ -20,7 +20,6 @@
             position: relative; 
         }
 
-        /* --- O FUNDO ALEGRE E COLORIDO DO JOGO --- */
         body::before {
             content: "";
             position: fixed;
@@ -36,7 +35,6 @@
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
         
-        /* Efeito de Vidro (Glassmorphism) */
         .glass-panel {
             background: rgba(20,20,35,.82); 
             backdrop-filter: blur(12px); 
@@ -67,7 +65,6 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- CARTA COM CORTE GEOMÉTRICO (OCULTA A LOGO) --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
@@ -101,30 +98,10 @@
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
         .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
         
-        .modal-img-container {
-            width: 100%;
-            max-height: 60vh;
-            aspect-ratio: 2 / 3;
-            overflow: hidden;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            position: relative;
-            background: #000;
-        }
-        .modal-img { 
-            width: 100%; 
-            height: 115%; 
-            object-fit: cover; 
-            object-position: center top; 
-        }
+        .modal-img-container { width: 100%; max-height: 60vh; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 12px; margin-bottom: 10px; position: relative; background: #000; }
+        .modal-img { width: 100%; height: 115%; object-fit: cover; object-position: center top; }
         
-        .version-footer {
-            margin-top: auto; 
-            padding-top: 20px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 1px;
-        }
+        .version-footer { margin-top: auto; padding-top: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.4); letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -180,8 +157,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.20 -->
-    <div class="version-footer">Versão 10.20</div>
+    <!-- VERSÃO 10.21 -->
+    <div class="version-footer">Versão 10.21</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -273,7 +250,6 @@
 
         function loadInto(cardDiv, url) {
             const img = new Image();
-            let attempts = 0;
             
             img.onload = () => { 
                 cardDiv.classList.remove('card-loading'); 
@@ -281,23 +257,9 @@
             };
             
             img.onerror = () => {
-                attempts++;
-                if (attempts < 3) {
-                    setTimeout(() => { 
-                        img.src = url + (url.includes('?') ? '&' : '?') + "retry=" + Date.now(); 
-                    }, 1500 * attempts);
-                } else {
-                    cardDiv.classList.remove('card-loading');
-                    cardDiv.style.backgroundColor = '#2a2a40';
-                }
+                cardDiv.classList.remove('card-loading');
+                cardDiv.style.backgroundColor = '#2a2a40';
             };
-            
-            // Retoma o carregamento automaticamente se o telemóvel voltar a focar a aba
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && cardDiv.classList.contains('card-loading')) {
-                    img.src = url + (url.includes('?') ? '&' : '?') + "focussed=" + Date.now();
-                }
-            });
 
             img.src = url;
         }
