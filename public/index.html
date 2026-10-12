@@ -67,12 +67,11 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- CARTA COM ZOOM REFORÇADO PARA OCULTAR A LOGO --- */
+        /* --- CARTA --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
-            background-color: #161b22; background-size: 115% 115%; background-position: center; /* Zoom reforçado corta qualquer marca d'água */
-            overflow: hidden; 
+            background-color: #161b22; background-size: cover; background-position: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -149,7 +148,6 @@
         </div>
         <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
         <div id="hand"></div>
-        <!-- BOTÃO DE RECARGA DE CARTAS (Caso alguma fique preta por falha de rede) -->
         <button id="reloadCardsBtn" onclick="reloadCurrentHand()" style="display:none; background: rgba(255,255,255,0.15); font-size: 13px; padding: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2);">🔄 Recarregar Cartas na Tela</button>
     </div>
 
@@ -161,7 +159,8 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.14</div>
+    <!-- VERSÃO 10.15 -->
+    <div class="version-footer">Versão 10.15</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -183,7 +182,7 @@
 
         let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
         let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
-        let currentStoredHand = []; // Guarda as URLs atuais da mão para o botão de recarga
+        let currentStoredHand = [];
         const $ = id => document.getElementById(id);
 
         function toggleHostMenu() { 
@@ -258,7 +257,6 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                // Tenta recarregar automaticamente após 2 segundos se falhar
                 setTimeout(() => { img.src = url + "&retry=" + new Date().getTime(); }, 2000);
             };
             img.src = url;
@@ -290,7 +288,6 @@
             $('hand').appendChild(cardDiv);
         }
 
-        // Função do Botão de Recarga Manual de Cartas (Caso alguma fique preta)
         function reloadCurrentHand() {
             if (currentStoredHand.length === 0) return;
             $('hand').innerHTML = '';
@@ -309,8 +306,8 @@
             if (!me) return;
             
             amINarrator = me.isNarrator;
-            currentStoredHand = me.hand; // Guarda as cartas na memória para o botão de reload
-            $('reloadCardsBtn').style.display = 'block'; // Mostra o botão de recarga
+            currentStoredHand = me.hand;
+            $('reloadCardsBtn').style.display = 'block';
             
             ins.innerHTML = amINarrator
                 ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
@@ -328,8 +325,8 @@
         });
 
         socket.on('startVotingPhase', ({ cards }) => {
-            $('hand').innerHTML = '';$('reloadCardsBtn').style.display = 'none'; // Esconde o botão durante a votação
-            $('actionInstruction').innerHTML = amINarrator
+            $('hand').innerHTML = '';
+            $('reloadCardsBtn').style.display = 'none';$('actionInstruction').innerHTML = amINarrator
                 ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde os jogadores votarem (Você não vota).'
                 : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
                 
