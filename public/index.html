@@ -10,7 +10,6 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Fundo simulando as cartas desfocadas do seu print */
             background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed;
             background-size: cover;
             color: white;
@@ -21,12 +20,11 @@
             overflow-x: hidden;
         }
 
-        /* Camada extra de desfoque para ficar idêntico ao print */
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(30, 30, 40, 0.4);
+            background: rgba(30, 30, 40, 0.5);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: -1;
@@ -62,7 +60,7 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Para o rodapé escuro ficar certinho */
+            overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
@@ -95,7 +93,6 @@
             gap: 15px;
         }
 
-        /* Inputs escuros e arredondados iguais ao print */
         input {
             background-color: #111115;
             border: 1px solid #2a2a35;
@@ -106,6 +103,7 @@
             text-align: center;
             outline: none;
             transition: border 0.3s;
+            width: calc(100% - 32px); /* Ajuste de padding */
         }
 
         input:focus {
@@ -114,7 +112,6 @@
 
         input::placeholder { color: #666; }
 
-        /* Botão Verde Avançar idêntico */
         button.btn-avancar {
             background: linear-gradient(90deg, #2ecc71, #229954);
             color: white;
@@ -127,11 +124,22 @@
             margin-top: 10px;
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
             transition: transform 0.2s;
+            width: 100%;
         }
 
         button.btn-avancar:active { transform: scale(0.96); }
 
-        /* Rodapé Criar Sala idêntico */
+        .btn-voltar {
+            background: transparent;
+            color: #aaa;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 5px;
+            padding: 10px;
+            text-decoration: underline;
+        }
+
         .login-footer {
             background-color: #14141c;
             padding: 25px;
@@ -141,9 +149,12 @@
             font-size: 1rem;
             cursor: pointer;
             border-top: 1px solid rgba(255, 255, 255, 0.02);
+            transition: background 0.3s;
         }
+        
+        .login-footer:active { background-color: #1a1a24; }
 
-        /* --- TELA DO JOGO (Adaptada para manter o visual Premium) --- */
+        /* --- TELA DO JOGO --- */
         .game-container {
             background-color: #1a1a24;
             border-radius: 20px;
@@ -204,24 +215,14 @@
             transition: 0.3s;
         }
 
-        .btn-acao:active { background: #2a2a35; }
+        .versao { margin-top: 20px; color: #888; font-size: 0.9rem; text-align: center; }
 
-        .versao {
-            margin-top: 20px;
-            color: #888;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        /* --- MODAL CARROSSEL (Versão 10.35) --- */
+        /* --- MODAL CARROSSEL --- */
         .modal {
             display: none;
             position: fixed;
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
+            left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(10, 10, 15, 0.95);
         }
         
@@ -232,117 +233,94 @@
         }
 
         .close {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            color: #fff;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1010;
+            position: absolute; top: 20px; right: 30px;
+            color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1010;
         }
 
         .carousel-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            width: 100%;
-            height: 65vh;
-            touch-action: pan-y;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; width: 100%; height: 65vh; touch-action: pan-y;
         }
 
         .modal-content {
-            max-width: 90%;
-            max-height: 100%;
-            border-radius: 15px;
-            object-fit: contain;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            max-width: 90%; max-height: 100%; border-radius: 15px;
+            object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             transition: opacity 0.2s ease-in-out;
         }
 
         .carousel-nav {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: none;
-            font-size: 2rem;
-            padding: 15px 10px;
-            cursor: pointer;
-            position: absolute;
-            z-index: 10;
-            border-radius: 8px;
-            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.1); color: white; border: none;
+            font-size: 2rem; padding: 15px 10px; cursor: pointer;
+            position: absolute; z-index: 10; border-radius: 8px; transition: 0.3s;
         }
 
-        .carousel-nav:active { background: rgba(255, 255, 255, 0.3); }
-        #prevBtn { left: 10px; }
-        #nextBtn { right: 10px; }
-
+        #prevBtn { left: 10px; } #nextBtn { right: 10px; }
         .zoom-action-container { text-align: center; margin-top: 30px; }
 
         #btnEscolherCarta {
-            background: linear-gradient(90deg, #2ecc71, #229954);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+            background: linear-gradient(90deg, #2ecc71, #229954); color: white;
+            font-size: 1.2rem; font-weight: bold; padding: 15px 40px; border: none;
+            border-radius: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
-        #btnEscolherCarta:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <!-- CABEÇALHO COM TÍTULO E BRILHOS -->
     <div class="main-title-container" id="tituloApp">
         <h1 class="main-title">Dixit Online</h1>
         <div class="sparkles">✨</div>
     </div>
 
-    <!-- TELA DE ENTRADA (IDÊNTICA AO PRINT) -->
+    <!-- TELA DE ENTRADA (Múltiplas Etapas) -->
     <div class="login-card" id="telaEntrada">
-        <div class="login-header">
-            <h3>🎮 Entrar na Partida</h3>
-            <p>Digite o seu nome e o código fornecido pelo Host.</p>
-        </div>
         
-        <div class="login-body">
-            <input type="text" id="nomeJogador" placeholder="Seu Nome (Ex: João)">
-            <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 1234)">
-            <button class="btn-avancar" onclick="entrarNaSala()">Avançar</button>
+        <!-- PASSO 1: Código da Sala (Para Convidados) -->
+        <div id="stepCodigo">
+            <div class="login-header">
+                <h3>🎮 Entrar na Partida</h3>
+                <p>Digite o código fornecido pelo Host.</p>
+            </div>
+            <div class="login-body">
+                <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 1234)">
+                <button class="btn-avancar" onclick="avancarParaNome(false)">Avançar</button>
+            </div>
+            <div class="login-footer" onclick="avancarParaNome(true)">
+                👑 Criar uma nova sala? Clique aqui ▼
+            </div>
         </div>
 
-        <div class="login-footer">
-            👑 Criar uma nova sala? Clique aqui ▼
+        <!-- PASSO 2: Nome do Jogador (Host ou Convidado) -->
+        <div id="stepNome" style="display: none;">
+            <div class="login-header">
+                <h3 id="tituloPassoNome">👤 Seu Perfil</h3>
+                <p id="subtituloPassoNome">Como os outros jogadores vão te chamar?</p>
+            </div>
+            <div class="login-body">
+                <input type="text" id="nomeJogador" placeholder="Seu Nome (Ex: João)">
+                <button class="btn-avancar" onclick="finalizarEntrada()">Entrar na Sala</button>
+                <button class="btn-voltar" onclick="voltarParaCodigo()">Voltar</button>
+            </div>
         </div>
+
     </div>
 
-    <!-- TELA DO JOGO (Oculta até logar) -->
+    <!-- TELA DO JOGO -->
     <div class="game-container" id="telaJogo" style="display: none;">
         <h2 class="destaque">Sala: <span id="displayCodigo"></span></h2>
-        
-        <div class="info-mesa">
-            <span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong>
-        </div>
-
+        <div class="info-mesa"><span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong></div>
         <div id="statusNarrador" style="margin-bottom: 20px;"></div>
-
         <div class="deck" id="deckCartas"></div>
-
         <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <div class="versao">Versão 10.35</div>
+    <div class="versao" id="versaoApp">Versão 10.35</div>
 
-    <!-- MODAL CARROSSEL / ZOOM DA VERSÃO 10.35 -->
+    <!-- MODAL CARROSSEL -->
     <div id="zoomModal" class="modal hidden">
         <span class="close" onclick="fecharModal()">&times;</span>
         <div class="carousel-container">
             <button id="prevBtn" class="carousel-nav" onclick="navegarCarrossel(-1)">&#10094;</button>
-            <img id="imgZoom" class="modal-content" src="" alt="Carta em Destaque">
+            <img id="imgZoom" class="modal-content" src="">
             <button id="nextBtn" class="carousel-nav" onclick="navegarCarrossel(1)">&#10095;</button>
         </div>
         <div class="zoom-action-container">
@@ -353,31 +331,63 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let meuId = null;
         let codigoAtual = null;
-        
-        // --- Variáveis do Carrossel (v10.35) ---
+        let isCriandoSala = false;
         let cartasNoDeckAtual = []; 
         let indiceCarrosselAtual = 0;
 
-        function entrarNaSala() {
+        // --- Lógica de Telas de Login ---
+        function avancarParaNome(criarNova) {
+            isCriandoSala = criarNova;
+            
+            if (!isCriandoSala) {
+                const cod = document.getElementById('codigoSala').value;
+                if (!cod) {
+                    alert('Digite o código da sala fornecido pelo Host!');
+                    return;
+                }
+                document.getElementById('tituloPassoNome').innerHTML = '👤 Seu Perfil';
+                document.getElementById('subtituloPassoNome').innerText = 'Como os outros jogadores vão te chamar?';
+            } else {
+                document.getElementById('tituloPassoNome').innerHTML = '👑 Criar Sala';
+                document.getElementById('subtituloPassoNome').innerText = 'Digite seu nome para ser o Host da nova sala.';
+            }
+
+            document.getElementById('stepCodigo').style.display = 'none';
+            document.getElementById('stepNome').style.display = 'block';
+        }
+
+        function voltarParaCodigo() {
+            document.getElementById('stepNome').style.display = 'none';
+            document.getElementById('stepCodigo').style.display = 'block';
+        }
+
+        function finalizarEntrada() {
             const nome = document.getElementById('nomeJogador').value;
-            const codigo = document.getElementById('codigoSala').value;
-            if(!nome || !codigo) {
-                alert("Por favor, preencha o seu nome e o código da sala.");
+            let codigo = document.getElementById('codigoSala').value;
+
+            if(!nome) {
+                alert("Por favor, preencha o seu nome.");
                 return;
             }
-            
+
+            // Se for criar sala, o sistema gera um código numérico aleatório de 4 dígitos
+            if(isCriandoSala) {
+                codigo = Math.floor(1000 + Math.random() * 9000).toString();
+            }
+
             codigoAtual = codigo;
             socket.emit('entrarSala', { nome, codigo });
             
-            // Oculta Login e Mostra Jogo
+            // Oculta tudo de Login e Mostra Jogo
             document.getElementById('telaEntrada').style.display = 'none';
             document.getElementById('tituloApp').style.display = 'none';
+            document.getElementById('versaoApp').style.display = 'none';
             document.getElementById('telaJogo').style.display = 'block';
             document.getElementById('displayCodigo').innerText = codigo;
         }
 
+        // --- Lógica do Servidor e Jogo ---
         socket.on('atualizarSala', (sala) => {
             const eu = sala.jogadores.find(j => j.id === socket.id);
             if(!eu) return;
@@ -414,11 +424,9 @@
             });
         }
 
-        function recarregarCartas() {
-            renderizarDeck();
-        }
+        function recarregarCartas() { renderizarDeck(); }
 
-        // --- Lógica do Carrossel e Swipe (v10.35) ---
+        // --- Lógica do Carrossel e Swipe ---
         function abrirZoom(indiceDaCartaClicada) {
             indiceCarrosselAtual = indiceDaCartaClicada;
             atualizarImagemCarrossel();
@@ -431,7 +439,6 @@
 
         function atualizarImagemCarrossel() {
             const imgZoom = document.getElementById('imgZoom');
-            
             imgZoom.style.opacity = '0.3';
             setTimeout(() => {
                 imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual];
@@ -455,28 +462,16 @@
             socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: cartaSelecionadaUrl });
         }
 
-        // Swipe (Arrastar)
-        let toqueInicialX = 0;
-        let toqueFinalX = 0;
+        let toqueInicialX = 0; let toqueFinalX = 0;
         const areaZoom = document.getElementById('imgZoom');
 
-        areaZoom.addEventListener('touchstart', (e) => {
-            toqueInicialX = e.changedTouches[0].screenX;
-        });
-
-        areaZoom.addEventListener('touchend', (e) => {
-            toqueFinalX = e.changedTouches[0].screenX;
-            processarSwipe();
-        });
+        areaZoom.addEventListener('touchstart', (e) => { toqueInicialX = e.changedTouches[0].screenX; });
+        areaZoom.addEventListener('touchend', (e) => { toqueFinalX = e.changedTouches[0].screenX; processarSwipe(); });
 
         function processarSwipe() {
             const limiteSwipe = 40;
-            if (toqueFinalX < toqueInicialX - limiteSwipe) {
-                navegarCarrossel(1);
-            }
-            if (toqueFinalX > toqueInicialX + limiteSwipe) {
-                navegarCarrossel(-1);
-            }
+            if (toqueFinalX < toqueInicialX - limiteSwipe) navegarCarrossel(1);
+            if (toqueFinalX > toqueInicialX + limiteSwipe) navegarCarrossel(-1);
         }
     </script>
 </body>
