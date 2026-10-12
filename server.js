@@ -5,9 +5,8 @@ const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
-// IMPORTANDO A SUA ENGENHARIA BRILHANTE
 const { refillBuffer, drawCards } = require('./cardBuffer');
-const { generateSurrealImage } = require('./googleApi'); // Importamos a sua API para o fundo
+const { generateSurrealImage } = require('./googleApi');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,40 +16,49 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Variável para guardar o fundo dinâmico gerado pela API
 let dynamicBackgroundUrl = '';
+let isGeneratingBackground = false;
+
+// Função inteligente que garante que o fundo é gerado e emitido para quem já está ligado
+async function generateAndEmitBackground() {
+    if (isGeneratingBackground) return;
+    isGeneratingBackground = true;
+    
+    console.log("A gerar imagem de fundo dinâmica com a API do Google...");
+    try {
+        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de ilustrações surrealistas estilo contos de fadas, muito colorido e mágico, estilo jogo de tabuleiro Dixit.");
+        console.log("Imagem de fundo gerada com sucesso!");
+        // Emite para TODOS os jogadores conectados que o fundo está pronto
+        io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
+    } catch (error) {
+        console.log("Falha ao gerar fundo dinâmico. Usando fundo de emergência colorido.");
+        dynamicBackgroundUrl = 'https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg';
+        io.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
+    }
+    isGeneratingBackground = false;
+}
 
 async function initializeServer() {
     console.log("Inicializando servidor...");
-    
-    // 1. Gera o fundo dinâmico usando a sua API do Google
-    try {
-        console.log("A gerar imagem de fundo dinâmica com a API do Google...");
-        // Um prompt específico para a API criar um mosaico colorido estilo Dixit
-        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de ilustrações surrealistas estilo contos de fadas, muito colorido e mágico, estilo jogo de tabuleiro Dixit.");
-        console.log("Imagem de fundo gerada com sucesso!");
-    } catch (error) {
-        console.log("Falha ao gerar fundo dinâmico. Usando fundo de emergência.");
-        dynamicBackgroundUrl = 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&fit=crop';
-    }
-
-    // 2. Carrega o Baú Mágico de cartas
+    generateAndEmitBackground();
     console.log("Carregando o Baú Mágico de cartas...");
     refillBuffer(); 
 }
 
-// Inicia a preparação do servidor
 initializeServer();
-
-// Rota para o telemóvel pedir a imagem de fundo atual
-app.get('/api/background', (req, res) => {
-    res.json({ backgroundUrl: dynamicBackgroundUrl });
-});
 
 const gameRooms = {}; 
 
 io.on('connection', (socket) => {
   console.log(`Novo jogador conectado: ${socket.id}`);
+
+  // Assim que o jogador liga, se o servidor já tiver o fundo, envia imediatamente.
+  if (dynamicBackgroundUrl !== '') {
+      socket.emit('updateBackground', { backgroundUrl: dynamicBackgroundUrl });
+  } else {
+      // Se ainda não tiver (está a gerar), pode pedir uma nova geração (segurança)
+      generateAndEmitBackground();
+  }
 
   socket.on('validateRoom', ({ roomId }) => {
       const room = gameRooms[roomId];
@@ -99,7 +107,6 @@ io.on('connection', (socket) => {
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
-      // Saca as 5 cartas iniciais do seu Buffer para cada jogador!
       room.players.forEach(p => {
         p.hand = drawCards(5); 
       });
@@ -118,7 +125,6 @@ io.on('connection', (socket) => {
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
-        // Repõe apenas as cartas que faltam usando o seu Buffer!
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
             if (cardsNeeded > 0) {
