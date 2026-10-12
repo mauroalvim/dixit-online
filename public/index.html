@@ -119,7 +119,7 @@
         <button class="btn-acao" onclick="pedirNovasCartas()">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <div class="versao" id="versaoApp">Versão 10.44</div>
+    <div class="versao" id="versaoApp"></div>
 
     <!-- ZOOM -->
     <div id="zoomModal" class="modal hidden">
@@ -136,6 +136,14 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // ==========================================
+        // CONFIGURAÇÕES DO CLIENTE
+        // Altere a versão aqui para refletir em toda a interface
+        const VERSAO_ATUAL = "10.48";
+        // ==========================================
+
+        document.getElementById('versaoApp').innerText = `Versão ${VERSAO_ATUAL}`;
+
         const socket = io();
         let codigoAtual = null;
         let isCriandoSala = false;
