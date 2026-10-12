@@ -17,14 +17,24 @@
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            /* O NOSSO FUNDO DE TELA BONITO E MÁGICO */
-            background-color: #14122b;
-            background-image:
-                radial-gradient(circle at 15% 10%, rgba(167,119,227,.45), transparent 45%),
-                radial-gradient(circle at 85% 30%, rgba(56,239,125,.18), transparent 40%),
-                radial-gradient(circle at 50% 100%, rgba(241,196,15,.22), transparent 50%),
-                linear-gradient(180deg, #1a1a2e, #0f0c24);
-            background-attachment: fixed;
+            position: relative; /* Necessário para o truque do fundo embaçado */
+        }
+
+        /* --- O NOVO FUNDO EMBACADO (BLUR) --- */
+        body::before {
+            content: "";
+            position: fixed;
+            /* Margem negativa evita que as bordas fiquem brancas por causa do blur */
+            top: -20px; left: -20px; right: -20px; bottom: -20px; 
+            z-index: -1;
+            
+            /* O SEU TRECHO ADAPTADO: Escurecido + Imagem do Mosaico */
+            background: linear-gradient(rgba(20, 18, 43, 0.75), rgba(20, 18, 43, 0.9)), 
+                        url('fundo-cartas.jpg') no-repeat center center fixed;
+            background-size: cover;
+            
+            /* O efeito Blur (embaçado) */
+            filter: blur(8px); 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
@@ -32,8 +42,8 @@
         /* Efeito de Vidro (Glassmorphism) para as caixas */
         .glass-panel {
             background: rgba(20,20,35,.85); 
-            backdrop-filter: blur(15px); 
-            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 20px; 
             padding: 25px 20px; 
             border: 1px solid rgba(255,255,255,.1);
@@ -95,10 +105,10 @@
 <body>
     <h1>Dixit Online ✨</h1>
 
-    <!-- 1. TELA PRINCIPAL (O CARA SÓ VÊ O CÓDIGO DA SALA PRIMEIRO) -->
+    <!-- 1. TELA PRINCIPAL (CONVIDADO PRIMEIRO) -->
     <div id="initialMenu" class="glass-panel">
         
-        <!-- Acesso Principal (Convidados) -->
+        <!-- Acesso Principal -->
         <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
             <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
             <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
@@ -106,12 +116,11 @@
             <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
         
-        <!-- Criação de Sala Escondidinha -->
+        <!-- Menu do Host (Criar Sala) -->
         <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,.05);" onclick="toggleHostMenu()">
             <h4 style="color: #f1c40f; margin: 0; font-size: 1em;">👑 Criar uma nova sala? Clique aqui ▼</h4>
         </div>
         
-        <!-- Menu do Host (Abre ao clicar em cima) -->
         <div id="hostMenu" style="display: none; background: rgba(0,0,0,.25); padding: 20px; border-radius: 15px; margin-top: 10px; border: 1px solid rgba(255,255,255,.05);">
             <input type="text" id="hostPlayerName" placeholder="Seu Apelido de Host">
             <label style="font-size: 13px; opacity: .8; display: block; margin-top: 15px; text-align: left; padding-left: 5px;">Pontos para Vencer (Ex: 30):</label>
@@ -120,7 +129,7 @@
         </div>
     </div>
 
-    <!-- 2. TELA DE NOME (Só aparece DEPOIS que ele acertou o código da sala) -->
+    <!-- 2. TELA DE NOME (Após validar código) -->
     <div id="joinNameForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
         <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
@@ -129,7 +138,7 @@
         <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
     </div>
 
-    <!-- 3. TELA DO JOGO (A Mesa Virtual) -->
+    <!-- 3. TELA DO JOGO (Mesa Virtual) -->
     <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
         <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
         <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
@@ -141,7 +150,7 @@
         <div id="hand"></div>
     </div>
 
-    <!-- MODAL DE VISUALIZAR A CARTA -->
+    <!-- MODAL -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="" alt="">
@@ -152,7 +161,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Banner de erro no topo caso o servidor caia
         function showErr(msg) {
             let d = document.getElementById('errBanner');
             if (!d) { 
@@ -173,7 +181,6 @@
         let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
         const $ = id => document.getElementById(id);
 
-        // A Mágica de abrir/fechar o menu de Criar Sala
         function toggleHostMenu() { 
             const m = $('hostMenu'); 
             m.style.display = m.style.display === 'none' ? 'block' : 'none'; 
@@ -185,17 +192,10 @@
             socket.emit('createRoom', { targetScore: $('targetScoreInput').value, playerName: name });
         }
         
-        // Tela bonita de loading enquanto a IA cria as cartas
-        socket.on('generatingDeck', () => {
-            $('initialMenu').style.display = 'none';
-            $('game').style.display = 'block';$('roomCodeDisplay').innerText = '🪄 A invocar a IA...';
-            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'A Inteligência Artificial está a criar o seu baralho infinito. Aguarde...';
-            $('playersList').innerHTML = '';$('startBtn').style.display = 'none';
-        });
-
         socket.on('roomCreated', ({ roomId, players }) => {
             myRoomId = roomId;
-            $('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
+            $('initialMenu').style.display = 'none';
+            $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
             $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'Aguardando jogadores entrarem...';
             updatePlayersList(players);
         });
@@ -208,7 +208,7 @@
         
         socket.on('roomValidated', ({ roomId }) => {
             pendingRoomIdToJoin = roomId;
-            $('initialMenu').style.display = 'none';$('joinNameForm').style.display = 'block'; // Vai para o passo 2
+            $('initialMenu').style.display = 'none';$('joinNameForm').style.display = 'block';
         });
         
         socket.on('joinError', ({ message }) => alert(message));
@@ -253,7 +253,6 @@
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
             img.onerror = () => {
-                // Tenta carregar a imagem novamente se falhar a internet
                 setTimeout(() => { img.src = url + "?retry=" + new Date().getTime(); }, 2000);
             };
             img.src = url;
