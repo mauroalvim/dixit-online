@@ -67,10 +67,12 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
+        /* --- CARTA COM O TRUQUE PARA OCULTAR A LOGO DA IA --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
-            background-color: #161b22; background-size: cover; background-position: center;
+            background-color: #161b22; background-size: 108% 108%; background-position: center;
+            overflow: hidden; /* Corta perfeitamente qualquer marca d'água nas bordas */
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -162,7 +164,7 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.11</div>
+    <div class="version-footer">Versão 10.13</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
