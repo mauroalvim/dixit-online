@@ -18,6 +18,7 @@
             flex-direction: column; 
             align-items: center;
             position: relative; 
+            /* Fundo limpo sem Pollinations */
             background: linear-gradient(135deg, #1f1c2c, #928DAB); 
         }
 
@@ -26,11 +27,8 @@
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            background-image: url('https://image.pollinations.ai/prompt/vibrant%20colorful%20surreal%20fantasy%20board%20game%20art%20collage%20cheerful%20masterpiece?width=1080&height=1920&nologo=true');
-            background-color: rgba(255, 255, 255, 0.15);
-            background-blend-mode: overlay;
-            background-size: cover;
-            background-position: center;
+            /* Fundo gerado localmente, à prova de falhas */
+            background: linear-gradient(135deg, #2b1055, #7597de);
             filter: blur(2px); 
         }
         
@@ -39,7 +37,6 @@
         .glass-panel {
             background: rgba(20,20,35,.82); 
             backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px);
             border-radius: 20px; 
             padding: 25px 20px; 
             border: 1px solid rgba(255,255,255,.15);
@@ -74,6 +71,9 @@
             background-position: center 30%; 
             background-repeat: no-repeat;
             overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -159,8 +159,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.28 -->
-    <div class="version-footer">Versão 10.28 (Baralho Assíncrono Ativo)</div>
+    <!-- VERSÃO 10.30 -->
+    <div class="version-footer">Versão 10.30 (Diagnóstico Definitivo)</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -250,17 +250,32 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // MÁQUINA DE CARREGAMENTO DIRETO E LIMPO
+        // MÁQUINA DE CARREGAMENTO (AGORA COM LIMITE DE TENTATIVAS!)
         function loadInto(cardDiv, url) {
             const img = new Image();
+            let attempts = 0;
 
             img.onload = () => { 
                 cardDiv.classList.remove('card-loading'); 
                 cardDiv.style.backgroundImage = `url('${url}')`; 
+                cardDiv.innerHTML = ''; // Limpa qualquer ícone
             };
 
             img.onerror = () => {
-                setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2000); 
+                attempts++;
+                // Se falhar a 1ª vez, tenta apenas mais uma!
+                if (attempts < 2) {
+                    setTimeout(() => { 
+                        const separator = url.includes('?') ? '&' : '?';
+                        img.src = url + separator + "retry=" + Date.now(); 
+                    }, 1500); 
+                } else {
+                    // SE FALHAR 2 VEZES, PARA O LOOP E MOSTRA UM ERRO VISUAL CLARO
+                    cardDiv.classList.remove('card-loading');
+                    cardDiv.style.backgroundColor = '#6e1010'; 
+                    cardDiv.style.backgroundImage = 'none';
+                    cardDiv.innerHTML = '<span style="font-size:32px;">❌</span>';
+                }
             };
 
             img.src = url; 
@@ -370,7 +385,6 @@
         });
 
         function openModal(url, action) {
-            // Garante que captura a URL limpa do background se o elemento for a div
             let currentBg = event.currentTarget.style.backgroundImage;
             if(currentBg && currentBg.includes('url(')) {
                 selectedCardUrl = currentBg.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
