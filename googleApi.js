@@ -8,33 +8,32 @@ if (process.env.GOOGLE_API_KEY) {
 }
 
 const imaginativeStyles = [
-    "charming children's book illustration, vibrant pastel watercolors, whimsical and heartwarming aesthetic",
-    "bright colorful cartoon fantasy, cute magical storybook style, soft friendly lighting, joyful atmosphere",
-    "magical papercraft and origami art style, colorful layers, creative storybook world",
-    "bright whimsical ink and watercolor painting, dreamy pastel tones, playful fairy-tale aesthetic",
-    "vibrant digital children's illustration, cute fantasy creatures, cheerful and bright colors"
+    "childrens book illustration, vibrant pastel watercolors, heartwarming aesthetic",
+    "bright colorful cartoon fantasy, cute magical storybook style, soft friendly lighting",
+    "magical papercraft and origami art style, colorful layers, creative world",
+    "bright whimsical ink and watercolor painting, dreamy pastel tones",
+    "vibrant digital illustration, cute fantasy creatures, cheerful colors"
 ];
 
 const subjects = [
-    "a clumsy baby dragon learning to fly", "a friendly giant turtle with a garden on its shell", 
-    "a tiny hedgehog carrying a glowing lantern", "a cheerful astronaut floating among colorful balloons", 
-    "a squirrel wearing a tiny baker's hat", "a glowing star-child riding a paper boat",
-    "a fluffy cloud shaped like a smiling whale", "a steampunk mechanical owl", "a curious raccoon wearing glasses",
-    "a porcelain marionette dancing on a music box", "a wise old tree spirit with glowing moss eyebrows", "a paper origami phoenix",
-    "a family of bears having a picnic on a giant lily pad", "a magical chameleon changing colors into rainbows"
+    "a clumsy baby dragon", "a friendly giant turtle", 
+    "a tiny hedgehog carrying a lantern", "a cheerful astronaut", 
+    "a squirrel wearing a tiny hat", "a glowing star child",
+    "a fluffy cloud shaped like a whale", "a steampunk mechanical owl",
+    "a porcelain marionette dancing", "a wise old tree spirit"
 ];
 
 const actions = [
-    "painting a giant rainbow across the sky", "catching floating bubbles filled with tiny galaxies",
-    "climbing a ladder made of colorful candy canes", "sleeping soundly inside a giant glowing tulip",
-    "releasing fireflies that turn into musical notes", "sailing a river of sparkling lemonade",
-    "balancing colorful planets on a wooden spoon", "reading a pop-up book that comes alive"
+    "painting a giant rainbow", "catching floating bubbles",
+    "climbing a ladder of candy", "sleeping inside a glowing tulip",
+    "releasing fireflies", "sailing a river of sparkling lemonade",
+    "balancing colorful planets", "reading a pop up book"
 ];
 
 const settings = [
-    "inside an upside-down treehouse village in a magical forest", "surrounded by giant singing mushrooms and fireflies",
-    "on a hill where grass glows in soft neon blues and pinks", "beneath a bright pastel sky with two smiling suns",
-    "inside a cozy candy-scented attic filled with old toys", "on top of a giant floating marshmallow island"
+    "in a magical forest", "surrounded by giant singing mushrooms",
+    "on a hill with glowing grass", "beneath a bright pastel sky",
+    "inside a cozy candy scented attic", "on a giant floating marshmallow"
 ];
 
 async function generateSurrealImage() {
@@ -43,16 +42,19 @@ async function generateSurrealImage() {
     try {
         if (genAI) {
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const instruction = "Invent a poetic, playful and cute surreal concept for an Imagination board game card. Child-friendly, magical, whimsical. Max 10 words. Only the description.";
+            const instruction = "Invent a playful and cute surreal concept for a board game card. Child-friendly, magical. Max 10 words. ONLY the description, no quotes, no formatting.";
             const result = await model.generateContent(instruction);
-            imagePrompt = result.response.text().trim();
-        } else {
-            const sub = subjects[Math.floor(Math.random() * subjects.length)];
-            const act = actions[Math.floor(Math.random() * actions.length)];
-            const set = settings[Math.floor(Math.random() * settings.length)];
-            imagePrompt = `${sub} ${act} ${set}`;
+            let text = result.response.text();
+            
+            // SANITIZAÇÃO RIGOROSA: Remove aspas, asteriscos, quebras de linha que quebram a URL
+            imagePrompt = text.replace(/[^a-zA-Z0-9\s,]/g, '').replace(/\s+/g, ' ').trim();
         }
     } catch (error) {
+        console.error("Erro no Gemini, usando fallback local.");
+    }
+
+    // Se o Gemini falhar ou retornar vazio, usa a lista local
+    if (!imagePrompt || imagePrompt.length < 5) {
         const sub = subjects[Math.floor(Math.random() * subjects.length)];
         const act = actions[Math.floor(Math.random() * actions.length)];
         const set = settings[Math.floor(Math.random() * settings.length)];
@@ -60,9 +62,11 @@ async function generateSurrealImage() {
     }
 
     const randomStyle = imaginativeStyles[Math.floor(Math.random() * imaginativeStyles.length)];
-    const uniqueSeed = Math.floor(Math.random() * 999999999) + Date.now() + Math.floor(Math.random() * 50000);
+    const uniqueSeed = Math.floor(Math.random() * 999999999) + Date.now();
     
-    const finalPrompt = encodeURIComponent(`${imagePrompt}, dynamic framing, ${randomStyle}, board game masterpiece art`);
+    // Monta a URL limpa e segura
+    const rawPrompt = `${imagePrompt}, ${randomStyle}, board game masterpiece art`;
+    const finalPrompt = encodeURIComponent(rawPrompt);
 
     const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=600&height=1000&nologo=true&seed=${uniqueSeed}`;
     
