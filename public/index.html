@@ -18,6 +18,7 @@
             flex-direction: column; 
             align-items: center;
             position: relative; 
+            background: linear-gradient(135deg, #1f1c2c, #928DAB); 
         }
 
         body::before {
@@ -65,33 +66,20 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- ESTILOS DO CARD NATIVO --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
             background-color: #161b22; 
+            background-size: 100% 115%; 
+            background-position: center 30%; 
+            background-repeat: no-repeat;
             overflow: hidden; 
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
-        .card-img-element {
-            position: absolute;
-            width: 100%;
-            height: 115%; /* Faz o corte da logo */
-            object-fit: cover;
-            object-position: center 30%;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-            pointer-events: none;
-        }
-        
         .card-loading {
-            background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
-            background-size: 200% 100%; animation: shimmer 1.5s infinite;
+            background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22) !important;
+            background-size: 200% 100% !important; animation: shimmer 1.5s infinite;
         }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         
@@ -171,8 +159,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.26 -->
-    <div class="version-footer">Versão 10.26</div>
+    <!-- VERSÃO 10.28 -->
+    <div class="version-footer">Versão 10.28 (Baralho Assíncrono Ativo)</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -262,26 +250,27 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        function loadInto(cardDiv, url, index) {
-            setTimeout(() => {
-                const img = new Image();
-                img.onload = () => { 
-                    cardDiv.classList.remove('card-loading'); 
-                    cardDiv.style.backgroundImage = `url('${url}')`; 
-                };
-                img.onerror = () => {
-                    setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2500);
-                };
-                img.src = url;
-            }, index * 600); 
+        // MÁQUINA DE CARREGAMENTO DIRETO E LIMPO
+        function loadInto(cardDiv, url) {
+            const img = new Image();
+
+            img.onload = () => { 
+                cardDiv.classList.remove('card-loading'); 
+                cardDiv.style.backgroundImage = `url('${url}')`; 
+            };
+
+            img.onerror = () => {
+                setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2000); 
+            };
+
+            img.src = url; 
         }
 
-        function appendCardToBoard(url, isVotingPhase = false, index = 0) {
+        function appendCardToBoard(url, isVotingPhase = false) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card card-loading';
             
-            // Chama a função de carregamento com a referência correta para a div
-            loadInto(cardDiv, url, index);
+            loadInto(cardDiv, url);
 
             if (isVotingPhase) {
                 if (amINarrator) {
@@ -308,7 +297,7 @@
             if (currentStoredHand.length === 0) return;
             $('hand').innerHTML = '';
             myHandElements = [];
-            currentStoredHand.forEach((url, i) => appendCardToBoard(url, false, i));
+            currentStoredHand.forEach(url => appendCardToBoard(url, false));
         }
 
         socket.on('gameStarted', ({ players }) => {
@@ -329,7 +318,7 @@
                 ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale a sua dica em voz alta e escolha uma carta.'
                 : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está a dar a dica. Olhe para as suas cartas entretanto!';
                 
-            me.hand.forEach((url, i) => appendCardToBoard(url, false, i));
+            me.hand.forEach(url => appendCardToBoard(url, false));
         });
 
         socket.on('narratorPlayed', () => {
@@ -350,7 +339,7 @@
                 ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde que os jogadores votem (Você não vota).'
                 : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
                 
-            cards.forEach((url, i) => appendCardToBoard(url, true, i));
+            cards.forEach(url => appendCardToBoard(url, true));
         });
 
         socket.on('roundEnded', ({ ranking, isGameOver, hostSocketId }) => {
@@ -381,9 +370,17 @@
         });
 
         function openModal(url, action) {
-            selectedCardUrl = url;
+            // Garante que captura a URL limpa do background se o elemento for a div
+            let currentBg = event.currentTarget.style.backgroundImage;
+            if(currentBg && currentBg.includes('url(')) {
+                selectedCardUrl = currentBg.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '');
+            } else {
+                selectedCardUrl = url;
+            }
+            
             modalAction = action;
-            $('modalImage').src = url;
+            $('modalImage').src = selectedCardUrl;
+            
             const b = $('btnConfirmModal');
             if (action === 'PLAY') { 
                 b.innerText = 'Enviar Carta para a Mesa'; 
