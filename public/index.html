@@ -20,34 +20,35 @@
             position: relative; 
         }
 
-        /* --- O FUNDO INFALÍVEL (GERADO COM SEED FIXO) --- */
+        /* --- O NOVO FUNDO ALEGRE, COLORIDO E SUAVEMENTE DESFOCADO --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
             
-            /* Usamos um URL com "seed" fixo para garantir que a IA devolve sempre a mesma arte estilo Dixit, colorida e surreal */
-            background-image: url('https://image.pollinations.ai/prompt/collage%20of%20surreal%20dreamcore%20fantasy%20cards%20colorful%20dixit%20style%20masterpiece?width=1080&height=1920&nologo=true&seed=150');
-            background-color: rgba(20, 18, 43, 0.3); /* Película levemente escura para contraste */
-            background-blend-mode: multiply; /* Mistura a película com a imagem perfeitamente */
+            /* Removemos o escuro pesado e deixamos a IA desenhar uma colagem vibrante e mágica */
+            background-image: url('https://image.pollinations.ai/prompt/vibrant%20colorful%20surreal%20fantasy%20board%20game%20art%20collage%20dixit%20style%20cheerful%20masterpiece?width=1080&height=1920&nologo=true');
+            background-color: rgba(255, 255, 255, 0.15); /* Película clara para realçar as cores */
+            background-blend-mode: overlay;
             background-size: cover;
             background-position: center;
             
-            /* Desfoque suave para ambiente de jogo */
-            filter: blur(5px); 
+            /* Blur muito mais leve (2px) para preservar as formas alegres das ilustrações */
+            filter: blur(2px); 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
         
-        /* Efeito de Vidro (Glassmorphism) */
+        /* Efeito de Vidro (Glassmorphism) limpo e elegante */
         .glass-panel {
-            background: rgba(20,20,35,.85); 
-            backdrop-filter: blur(10px); 
+            background: rgba(20,20,35,.82); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
             border-radius: 20px; 
             padding: 25px 20px; 
-            border: 1px solid rgba(255,255,255,.1);
-            box-shadow: 0 15px 40px rgba(0,0,0,.7); 
+            border: 1px solid rgba(255,255,255,.15);
+            box-shadow: 0 15px 40px rgba(0,0,0,.6); 
             width: 100%; 
             max-width: 420px; 
             margin-bottom: 20px;
@@ -160,7 +161,7 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.9</div>
+    <div class="version-footer">Versão 10.10</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -338,13 +339,13 @@
             });
             html += `</table>`;
             
-            const isHost = socket.id === hostSocketId;
+            , isHost = socket.id === hostSocketId;
             if (!isGameOver && isHost) {
                 html += `<button onclick="nextRound()" style="background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 18px; font-size: 1.1em; margin-top: 20px;">Próxima Rodada</button>`;
             } else if (!isGameOver) {
                 html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">Aguardando o Host iniciar a próxima rodada...</p>`;
             } else if (isHost) {
-                html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
+                html += `<button onclick="window.location.reload()" style="background: linear-gradient(11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
             }
             $('hand').innerHTML = html;
         });
