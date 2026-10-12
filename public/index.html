@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dixit Online</title>
     <style>
-        /* --- ESTILOS GLOBAIS E FUNDO DESFOCADO --- */
+        /* ESTILOS GLOBAIS E FUNDO (v10.38) */
         body {
             margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed;
@@ -17,69 +17,76 @@
             background: rgba(30, 30, 40, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: -1;
         }
 
-        /* --- TÍTULO PRINCIPAL --- */
+        /* TÍTULO (Oculto durante o jogo, visível no login) */
         .main-title-container { text-align: center; margin-top: 50px; margin-bottom: 20px; }
         .main-title { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: 1px; text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.6); }
         .sparkles { font-size: 2rem; margin-top: -10px; text-shadow: 0 0 15px rgba(241, 196, 15, 0.8); }
 
-        /* --- CARDS PADRÃO (LOGIN, LOBBY, JOGO) --- */
+        /* CARDS PADRÃO */
         .card-padrao {
             background-color: #1a1a24; border-radius: 20px; width: 90%; max-width: 450px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 20px;
         }
+        .game-container { max-width: 650px; padding: 25px; box-sizing: border-box; background-color: transparent; box-shadow: none; border: none; margin-top: 10px; }
 
-        /* TELA LOBBY & JOGO CONTAINER LARGO */
-        .game-container { max-width: 650px; padding: 25px; box-sizing: border-box; }
+        /* CABEÇALHOS DO JOGO (Idêntico ao print 4) */
+        .header-sala { text-align: center; margin-bottom: 15px; }
+        .header-sala h2 { color: #f1c40f; font-size: 1.8rem; margin: 0; }
+        .info-mesa {
+            background: #111115; padding: 12px 15px; border-radius: 12px; margin-bottom: 20px;
+            border: 1px solid #2a2a35; text-align: center; font-size: 1.1rem; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto;
+        }
 
+        /* LOGIN */
         .header { padding: 30px 20px 15px 20px; text-align: center; }
         .header h3 { color: #2ecc71; margin: 0; font-size: 1.4rem; }
         .header p { color: #d1d1d1; font-size: 0.95rem; margin-top: 15px; margin-bottom: 0; }
         .body-card { padding: 15px 25px 30px 25px; display: flex; flex-direction: column; gap: 15px; }
-
+        
         input {
             background-color: #111115; border: 1px solid #2a2a35; color: white; padding: 16px; border-radius: 12px;
             font-size: 1rem; text-align: center; outline: none; transition: border 0.3s; width: calc(100% - 32px);
         }
         input:focus { border: 1px solid #2ecc71; }
-        input::placeholder { color: #666; }
-
+        
         button.btn-avancar {
             background: linear-gradient(90deg, #2ecc71, #229954); color: white; border: none; padding: 16px; border-radius: 25px;
-            font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
-            transition: transform 0.2s; width: 100%;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); transition: transform 0.2s; width: 100%;
         }
         button.btn-avancar:active { transform: scale(0.96); }
-
+        button.btn-avancar:disabled { background: #555; box-shadow: none; cursor: not-allowed; color: #888; }
+        
         .btn-voltar { background: transparent; color: #aaa; border: none; font-size: 1rem; cursor: pointer; text-decoration: underline; }
         .footer-card { background-color: #14141c; padding: 25px; text-align: center; color: #f1c40f; font-weight: bold; cursor: pointer; border-top: 1px solid rgba(255, 255, 255, 0.02); }
 
-        /* --- CLASSIFICAÇÃO EVOLUÍDA --- */
-        .ranking-container {
-            background: #111115; border-radius: 12px; border: 1px solid #2a2a35; padding: 15px; margin-bottom: 20px;
-        }
-        .ranking-title { font-size: 1.1rem; color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-align: center; }
+        /* CLASSIFICAÇÃO (Idêntico ao print 3) */
+        .ranking-container { background: #111115; border-radius: 12px; border: 1px solid #2a2a35; padding: 15px; margin-bottom: 20px; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; }
+        .ranking-title { font-size: 1.1rem; color: #f1c40f; margin-bottom: 15px; font-weight: bold; text-align: center; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .jogador-rank {
             display: flex; justify-content: space-between; align-items: center; background: #1a1a24;
-            padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.05);
         }
-        .jogador-rank:nth-child(1) { border-left: 4px solid #f1c40f; } /* Destaque Ouro pro Líder */
-        .jogador-rank:nth-child(2) { border-left: 4px solid #bdc3c7; } /* Prata */
-        .jogador-rank:nth-child(3) { border-left: 4px solid #cd7f32; } /* Bronze */
+        .jogador-rank:nth-child(1) { border-left: 4px solid #f1c40f; }
 
-        /* --- MESA E CARTAS --- */
-        .destaque { color: #f1c40f; margin-top: 0; text-align: center;}
-        .deck { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; }
+        /* MESA E CARTAS (Grid como nos prints) */
+        .status-narrador { text-align: center; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
+        .narrador-titulo { color: #2ecc71; font-weight: bold; font-size: 1.4rem; text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;}
+        .narrador-subtitulo { color: #ccc; font-size: 0.95rem; }
+        
+        .deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-items: center; max-width: 320px; margin: 0 auto 30px auto; }
         .carta {
-            width: 105px; height: 155px; border-radius: 10px; object-fit: cover; cursor: pointer;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5); transition: transform 0.2s; border: 2px solid transparent;
+            width: 135px; height: 195px; border-radius: 12px; object-fit: cover; cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5); transition: transform 0.2s; border: 2px solid transparent;
         }
         .carta:hover { transform: scale(1.05); border: 2px solid #2ecc71; }
+        /* Centraliza a última carta (5ª carta) no grid */
+        .carta:nth-child(5) { grid-column: span 2; }
 
-        .btn-acao { background: #111115; border: 1px solid #2a2a35; color: white; padding: 15px; border-radius: 20px; margin-top: 25px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-acao { background: #111115; border: 1px solid #2a2a35; color: white; padding: 15px; border-radius: 20px; cursor: pointer; width: 100%; max-width: 400px; font-weight: bold; margin: 0 auto; display: block; }
         .versao { margin-top: 20px; color: #888; font-size: 0.9rem; text-align: center; }
 
-        /* --- MODAL CARROSSEL INFINITO --- */
+        /* MODAL CARROSSEL (Loop) */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 15, 0.95); }
         .modal:not(.hidden) { display: flex; flex-direction: column; justify-content: center; }
         .close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1010; }
@@ -98,7 +105,7 @@
         <div class="sparkles">✨</div>
     </div>
 
-    <!-- TELA DE ENTRADA -->
+    <!-- TELA DE LOGIN -->
     <div class="card-padrao" id="telaEntrada">
         <div id="stepCodigo">
             <div class="header"><h3>🎮 Entrar na Partida</h3><p>Digite o código fornecido pelo Host.</p></div>
@@ -109,7 +116,7 @@
             <div class="footer-card" onclick="avancarParaNome(true)">👑 Criar uma nova sala? Clique aqui ▼</div>
         </div>
         <div id="stepNome" style="display: none;">
-            <div class="header"><h3 id="tituloPassoNome">👤 Seu Perfil</h3><p id="subtituloPassoNome">Como os outros jogadores vão te chamar?</p></div>
+            <div class="header"><h3 id="tituloPassoNome">👤 Seu Perfil</h3><p id="subtituloPassoNome">Como os outros vão te chamar?</p></div>
             <div class="body-card">
                 <input type="text" id="nomeJogador" placeholder="Seu Nome (Ex: João)">
                 <button class="btn-avancar" onclick="finalizarEntrada()">Entrar no Lobby</button>
@@ -118,35 +125,44 @@
         </div>
     </div>
 
-    <!-- TELA DE LOBBY (Host aguarda jogadores) -->
-    <div class="card-padrao game-container" id="telaLobby" style="display: none;">
-        <h2 class="destaque">Sala: <span id="lobbyCodigoDisplay"></span></h2>
+    <!-- TELA DE LOBBY -->
+    <div class="card-padrao" id="telaLobby" style="display: none; background: transparent; border: none; box-shadow: none;">
+        <div class="header-sala"><h2>Sala: <span id="lobbyCodigoDisplay"></span></h2></div>
         
         <div class="ranking-container">
-            <div class="ranking-title">👥 Jogadores no Lobby</div>
+            <div class="ranking-title">👥 Jogadores no Lobby (<span id="qtdJogadores">1</span>/6)</div>
             <div id="listaLobby"></div>
         </div>
 
-        <div class="body-card">
-            <p id="msgAguardando" style="text-align: center; color: #f1c40f; font-weight: bold;">Aguardando o Host iniciar a partida...</p>
-            <button id="btnIniciarPartida" class="btn-avancar" onclick="iniciarPartidaJogo()" style="display: none;">▶️ Iniciar Partida</button>
+        <div class="body-card" style="background: #1a1a24; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+            <p id="msgAguardando" style="text-align: center; color: #f1c40f; font-weight: bold; font-size: 1.1rem;">Aguardando o Host ou mais jogadores...</p>
+            <button id="btnIniciarPartida" class="btn-avancar" onclick="iniciarPartidaJogo()" style="display: none;" disabled>▶️ Iniciar Partida (Mín: 2)</button>
         </div>
     </div>
 
-    <!-- TELA DO JOGO (Com Classificação Evoluída) -->
-    <div class="card-padrao game-container" id="telaJogo" style="display: none;">
+    <!-- TELA DO JOGO (Idêntico aos prints) -->
+    <div class="game-container" id="telaJogo" style="display: none;">
         
-        <div class="ranking-container">
+        <div class="header-sala" id="headerJogo">
+            <h2>Sala: <span id="jogoCodigoDisplay"></span></h2>
+        </div>
+
+        <div class="info-mesa">
+            <span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong>
+        </div>
+
+        <!-- Aparece caso a pessoa abra o Ranking -->
+        <div class="ranking-container" id="painelRanking" style="display: none;">
             <div class="ranking-title">🏆 Classificação Geral</div>
             <div id="painelClassificacao"></div>
         </div>
 
-        <div id="statusNarrador" style="margin-bottom: 15px; text-align: center;"></div>
+        <div id="statusNarrador" class="status-narrador"></div>
         <div class="deck" id="deckCartas"></div>
         <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <div class="versao" id="versaoApp">Versão 10.35</div>
+    <div class="versao" id="versaoApp">Versão 10.38</div>
 
     <!-- MODAL CARROSSEL -->
     <div id="zoomModal" class="modal hidden">
@@ -169,7 +185,6 @@
         let cartasNoDeckAtual = []; 
         let indiceCarrosselAtual = 0;
 
-        // --- TELAS DE LOGIN ---
         function avancarParaNome(criarNova) {
             isCriandoSala = criarNova;
             if (!isCriandoSala) {
@@ -196,12 +211,10 @@
             
             document.getElementById('telaEntrada').style.display = 'none';
             document.getElementById('tituloApp').style.display = 'none';
-            document.getElementById('versaoApp').style.display = 'none';
             document.getElementById('lobbyCodigoDisplay').innerText = codigo;
-            document.getElementById('telaLobby').style.display = 'flex'; // Vai pro Lobby
+            document.getElementById('telaLobby').style.display = 'block'; 
         }
 
-        // --- LÓGICA DE JOGO E LOBBY ---
         function iniciarPartidaJogo() {
             socket.emit('iniciarPartida', codigoAtual);
         }
@@ -210,12 +223,16 @@
             const eu = sala.jogadores.find(j => j.id === socket.id);
             if(!eu) return;
 
-            // Roteamento de Telas: Lobby vs Jogo
             if (sala.estado === 'aguardando') {
                 atualizarListaLobby(sala);
             } else if (sala.estado === 'jogando') {
                 document.getElementById('telaLobby').style.display = 'none';
-                document.getElementById('telaJogo').style.display = 'flex';
+                document.getElementById('telaJogo').style.display = 'block';
+                document.getElementById('jogoCodigoDisplay').innerText = codigoAtual;
+                
+                const nomesMesa = sala.jogadores.map(j => j.nome).join(', ');
+                document.getElementById('displayJogadores').innerText = nomesMesa;
+
                 atualizarClassificacao(sala);
                 atualizarMesaEJogo(sala, eu);
             }
@@ -223,44 +240,73 @@
 
         function atualizarListaLobby(sala) {
             const painelLobby = document.getElementById('listaLobby');
+            const qtd = sala.jogadores.length;
+            document.getElementById('qtdJogadores').innerText = qtd;
             painelLobby.innerHTML = '';
+            
             sala.jogadores.forEach((j, index) => {
-                const icone = (index === 0) ? '👑' : '👤'; // Primeiro a entrar é o Host
+                const icone = (index === 0) ? '👑' : '👤'; 
                 painelLobby.innerHTML += `<div class="jogador-rank">${icone} <strong>${j.nome}</strong></div>`;
             });
 
-            // Mostra o botão Start APENAS para o Host (primeiro jogador do array)
-            const isHost = sala.jogadores.length > 0 && sala.jogadores[0].id === socket.id;
+            // Lógica do Host e Bloqueio de Iniciar
+            const isHost = qtd > 0 && sala.jogadores[0].id === socket.id;
+            const btnIniciar = document.getElementById('btnIniciarPartida');
+            const msg = document.getElementById('msgAguardando');
+            
             if (isHost) {
-                document.getElementById('btnIniciarPartida').style.display = 'block';
-                document.getElementById('msgAguardando').style.display = 'none';
+                btnIniciar.style.display = 'block';
+                msg.style.display = 'none';
+                
+                // Habilita apenas se tiver 2 ou mais pessoas
+                if(qtd >= 2) {
+                    btnIniciar.disabled = false;
+                    btnIniciar.innerText = '▶️ Iniciar Partida';
+                } else {
+                    btnIniciar.disabled = true;
+                    btnIniciar.innerText = '⏳ Aguardando jogadores...';
+                }
+            } else {
+                btnIniciar.style.display = 'none';
+                msg.style.display = 'block';
             }
         }
 
         function atualizarClassificacao(sala) {
-            const painel = document.getElementById('painelClassificacao');
-            painel.innerHTML = '';
+            // Só mostra o ranking se já jogaram cartas (ou seja, tem pontos). Assim a tela fica limpa no início.
+            const alguemPontuou = sala.jogadores.some(j => j.pontos > 0);
+            const painelRanking = document.getElementById('painelRanking');
             
-            // Ordena do maior pro menor ponto
-            const ranking = [...sala.jogadores].sort((a, b) => b.pontos - a.pontos);
-            
-            ranking.forEach((j, i) => {
-                let medalha = '👤';
-                if(i===0) medalha = '🥇'; else if(i===1) medalha = '🥈'; else if(i===2) medalha = '🥉';
-                painel.innerHTML += `<div class="jogador-rank">
-                    <span>${medalha} <strong>${j.nome}</strong></span>
-                    <span style="color: #2ecc71; font-weight: bold;">${j.pontos} pts</span>
-                </div>`;
-            });
+            if(alguemPontuou) {
+                painelRanking.style.display = 'block';
+                const painel = document.getElementById('painelClassificacao');
+                painel.innerHTML = '';
+                
+                const ranking = [...sala.jogadores].sort((a, b) => b.pontos - a.pontos);
+                ranking.forEach((j, i) => {
+                    let medalha = '👤';
+                    if(i===0) medalha = '🥇'; else if(i===1) medalha = '🥈'; else if(i===2) medalha = '🥉';
+                    painel.innerHTML += `<div class="jogador-rank">
+                        <span>${medalha} <strong>${j.nome}</strong></span>
+                        <span style="color: #2ecc71; font-weight: bold;">${j.pontos} pts</span>
+                    </div>`;
+                });
+            } else {
+                painelRanking.style.display = 'none';
+            }
         }
 
         function atualizarMesaEJogo(sala, eu) {
             const souNarrador = sala.jogadores.findIndex(j => j.id === socket.id) === sala.narradorIndex;
             const statusDiv = document.getElementById('statusNarrador');
+            
             if (souNarrador) {
-                statusDiv.innerHTML = `<div style="color: #2ecc71; font-weight: bold; font-size: 1.2rem;">Você é o Narrador! 🗣️</div>`;
+                statusDiv.innerHTML = `
+                    <div class="narrador-titulo">VOCÊ É O NARRADOR! 🗣️</div>
+                    <div class="narrador-subtitulo">Fale a sua dica em voz alta e escolha uma carta.</div>
+                `;
             } else {
-                statusDiv.innerHTML = `<div style="color: #f1c40f; font-weight: bold; font-size: 1.1rem;">Aguardando Dica... ⏳</div>`;
+                statusDiv.innerHTML = `<div class="narrador-titulo" style="color: #f1c40f;">AGUARDANDO DICA... ⏳</div>`;
             }
             cartasNoDeckAtual = eu.mao;
             renderizarDeck();
@@ -278,7 +324,7 @@
         }
         function recarregarCartas() { renderizarDeck(); }
 
-        // --- CARROSSEL INFINITO (LOOP) ---
+        // --- CARROSSEL ---
         function abrirZoom(indice) {
             indiceCarrosselAtual = indice;
             atualizarImagemCarrossel();
@@ -290,26 +336,13 @@
         function atualizarImagemCarrossel() {
             const imgZoom = document.getElementById('imgZoom');
             imgZoom.style.opacity = '0.3';
-            setTimeout(() => {
-                imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual];
-                imgZoom.style.opacity = '1';
-            }, 100);
-            
-            // Os botões agora ficam SEMPRE visíveis para permitir o loop infinito
-            document.getElementById('prevBtn').style.display = 'block';
-            document.getElementById('nextBtn').style.display = 'block';
+            setTimeout(() => { imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual]; imgZoom.style.opacity = '1'; }, 100);
         }
 
         function navegarCarrossel(direcao) {
             indiceCarrosselAtual += direcao;
-            
-            // Loop Infinito!
-            if (indiceCarrosselAtual < 0) {
-                indiceCarrosselAtual = cartasNoDeckAtual.length - 1; // Volta pro final
-            } else if (indiceCarrosselAtual >= cartasNoDeckAtual.length) {
-                indiceCarrosselAtual = 0; // Volta pro início
-            }
-            
+            if (indiceCarrosselAtual < 0) indiceCarrosselAtual = cartasNoDeckAtual.length - 1;
+            else if (indiceCarrosselAtual >= cartasNoDeckAtual.length) indiceCarrosselAtual = 0;
             atualizarImagemCarrossel();
         }
 
@@ -319,7 +352,6 @@
             socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: carta });
         }
 
-        // Swipe Loop Infinito
         let toqueInicialX = 0; let toqueFinalX = 0;
         const areaZoom = document.getElementById('imgZoom');
         areaZoom.addEventListener('touchstart', (e) => { toqueInicialX = e.changedTouches[0].screenX; });
