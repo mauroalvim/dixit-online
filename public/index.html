@@ -4,199 +4,280 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dixit Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilo Profissional e Comercial Restaurado */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            background-color: #1a1a24;
-            color: #ffffff;
-            text-align: center;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Poppins', sans-serif; 
+            text-align: center; 
+            min-height: 100vh; 
+            color: white; 
+            padding: 20px;
+            display: flex; 
+            flex-direction: column; 
             align-items: center;
+            /* O NOSSO FUNDO DE TELA BONITO E MÁGICO */
+            background-color: #14122b;
+            background-image:
+                radial-gradient(circle at 15% 10%, rgba(167,119,227,.45), transparent 45%),
+                radial-gradient(circle at 85% 30%, rgba(56,239,125,.18), transparent 40%),
+                radial-gradient(circle at 50% 100%, rgba(241,196,15,.22), transparent 50%),
+                linear-gradient(180deg, #1a1a2e, #0f0c24);
+            background-attachment: fixed;
         }
-
-        #header-section { padding: 40px 20px 30px; width: 100%; }
-        h1 { font-size: 2.5em; color: #f1c40f; margin-bottom: 5px; font-weight: 700; }
-        .subtitle { color: #c0c0d0; font-size: 1.1em; font-weight: 400; }
-
-        .form-section {
-            background-color: #2a2a36;
-            width: 100%;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
+        
+        h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
+        
+        /* Efeito de Vidro (Glassmorphism) para as caixas */
+        .glass-panel {
+            background: rgba(20,20,35,.85); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px; 
+            padding: 25px 20px; 
+            border: 1px solid rgba(255,255,255,.1);
+            box-shadow: 0 15px 40px rgba(0,0,0,.7); 
+            width: 100%; 
+            max-width: 420px; 
+            margin-bottom: 20px;
         }
-
-        .input-group { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        
+        button {
+            background: linear-gradient(135deg, #6e8efb, #a777e3); 
+            color: white; border: none; border-radius: 25px;
+            padding: 14px 24px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(110,142,251,.3); transition: .3s; margin-top: 15px; font-family: inherit;
+        }
+        button:hover { transform: translateY(-3px); }
+        .btn-cancel { background: linear-gradient(135deg, #ff416c, #ff4b2b); box-shadow: 0 4px 15px rgba(255,65,108,.3); }
         
         input {
-            width: 100%; padding: 16px; font-size: 16px; background-color: #1a1a24;
-            border: 1px solid #3e3e50; border-radius: 8px; color: white; outline: none; transition: border-color 0.2s;
+            width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2);
+            background: rgba(0,0,0,.5); color: white; text-align: center; font-family: inherit; outline: none; transition: .3s; margin-top: 10px;
         }
-        input:focus { border-color: #9b59b6; }
-        input::placeholder { color: #6e6e80; }
-
-        button {
-            width: 100%; max-width: 400px; padding: 16px; font-size: 16px; font-weight: 600;
-            border: none; border-radius: 8px; cursor: pointer; color: white; transition: opacity 0.2s;
-        }
-        button:active { opacity: 0.8; transform: scale(0.98); }
-
-        .btn-purple { background-color: #9b59b6; margin-bottom: 20px; }
-        .btn-green { background-color: #2ecc71; }
-        .btn-red { background-color: #e74c3c; margin-top: 10px;}
-        .btn-yellow { background-color: #f1c40f; color: #1a1a24; margin-top: 20px; }
-
-        .divider { color: #6e6e80; margin: 10px 0 20px 0; font-size: 14px; text-transform: uppercase; }
-
-        #game { display: none; width: 100%; max-width: 800px; padding: 20px; }
-        #roomCodeDisplay { font-size: 1.5em; color: #f1c40f; margin-bottom: 15px; }
+        input:focus { border-color: #a777e3; background: rgba(0,0,0,.7); }
         
-        .status-box { background-color: #2a2a36; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1em; border: 1px solid #3e3e50; }
-
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
+        
         .card {
-            width: calc(33.33% - 15px); max-width: 150px; aspect-ratio: 2 / 3; border-radius: 10px; cursor: pointer;
-            border: 2px solid transparent; background-color: #1a1a24; background-size: cover; background-position: center;
-            transition: transform 0.2s, border-color 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
+            background-color: #161b22; background-size: cover; background-position: center;
         }
-        .card:hover { transform: translateY(-5px); border-color: #9b59b6; }
-        .locked-card { opacity: 0.5; filter: grayscale(50%); cursor: not-allowed; }
-        .locked-card:hover { transform: none; border-color: transparent; }
-
-        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #2a2a36; border-radius: 8px; overflow: hidden; }
-        .ranking-table th, .ranking-table td { padding: 12px; border-bottom: 1px solid #3e3e50; text-align: center; }
-        .ranking-table th { background: #1a1a24; color: #9b59b6; }
+        .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); padding: 20px; overflow-y: auto; }
-        .modal-content { margin: auto; background: #2a2a36; padding: 20px; border-radius: 12px; max-width: 400px; border: 1px solid #3e3e50; }
-        .modal-img { width: 100%; border-radius: 8px; margin-bottom: 15px; }
+        .card-loading {
+            background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        .my-card-disabled { opacity: .3; cursor: not-allowed; border-color: #ff4b2b !important; transform: none !important; }
+        .narrator-card-view { cursor: default; }
+        .narrator-card-view:hover { transform: none; border-color: transparent; }
+        .locked-card { opacity: .7; filter: grayscale(30%); }
+        .locked-card:hover { transform: none; border-color: transparent; cursor: wait; }
+        
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(0,0,0,.6); border-radius: 12px; overflow: hidden; }
+        .ranking-table th, .ranking-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.05); }
+        .ranking-table th { background: rgba(255,255,255,.1); color: #a777e3; font-size: 14px; text-transform: uppercase; }
+        
+        .status-text { margin-bottom: 15px; font-size: 1.1em; line-height: 1.4; text-shadow: 1px 1px 3px rgba(0,0,0,.8); }
+        .winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241,196,15,.6); animation: pulse 2s infinite; margin: 20px 0; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
+        .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
+        .modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <!-- LOBBY INICIAL -->
-    <div id="initialMenu" style="width: 100%; display: flex; flex-direction: column; align-items: center; flex: 1;">
-        <div id="header-section">
-            <h1>🎩 Dixit Online</h1>
-            <p class="subtitle">Um jogo de imaginação e sonhos</p>
+    <h1>Dixit Online ✨</h1>
+
+    <!-- 1. TELA PRINCIPAL (O CARA SÓ VÊ O CÓDIGO DA SALA PRIMEIRO) -->
+    <div id="initialMenu" class="glass-panel">
+        
+        <!-- Acesso Principal (Convidados) -->
+        <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
+            <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
+            <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
+            <input type="number" id="roomIdCheck" placeholder="Código da Sala (Ex: 1234)">
+            <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
-        <div class="form-section">
-            <div class="input-group">
-                <input type="text" id="playerName" placeholder="Digite seu Nickname">
-            </div>
-            <button class="btn-purple" onclick="handleCreateRoom()">Criar Nova Sala</button>
-            <div class="divider">OU</div>
-            <div class="input-group">
-                <input type="text" id="roomCode" placeholder="Código da Sala">
-            </div>
-            <button class="btn-green" onclick="handleJoinRoom()">Entrar na Sala</button>
+        
+        <!-- Criação de Sala Escondidinha -->
+        <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,.05);" onclick="toggleHostMenu()">
+            <h4 style="color: #f1c40f; margin: 0; font-size: 1em;">👑 Criar uma nova sala? Clique aqui ▼</h4>
+        </div>
+        
+        <!-- Menu do Host (Abre ao clicar em cima) -->
+        <div id="hostMenu" style="display: none; background: rgba(0,0,0,.25); padding: 20px; border-radius: 15px; margin-top: 10px; border: 1px solid rgba(255,255,255,.05);">
+            <input type="text" id="hostPlayerName" placeholder="Seu Apelido de Host">
+            <label style="font-size: 13px; opacity: .8; display: block; margin-top: 15px; text-align: left; padding-left: 5px;">Pontos para Vencer (Ex: 30):</label>
+            <input type="number" id="targetScoreInput" value="30">
+            <button onclick="showCreateRoom()" style="background: rgba(255,255,255,.1); box-shadow: none; border: 1px solid rgba(255,255,255,.2);">Criar Sala</button>
         </div>
     </div>
 
-    <!-- TELA DE JOGO -->
-    <div id="game">
-        <h2 id="roomCodeDisplay"></h2>
-        <div class="status-box">
-            <div id="playersList" style="margin-bottom: 10px; font-weight: bold; color: #9b59b6;"></div>
-            <div id="actionInstruction">Aguardando jogadores...</div>
+    <!-- 2. TELA DE NOME (Só aparece DEPOIS que ele acertou o código da sala) -->
+    <div id="joinNameForm" class="glass-panel" style="display:none;">
+        <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
+        <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
+        <input type="text" id="guestPlayerName" placeholder="Digite seu Apelido">
+        <button onclick="joinRoom()" style="background: linear-gradient(135deg, #a777e3, #6e8efb);">Entrar no Jogo</button>
+        <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
+    </div>
+
+    <!-- 3. TELA DO JOGO (A Mesa Virtual) -->
+    <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
+        <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
+        <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
+        <div id="dynamicMessages">
+            <h3 id="waitingMessage" style="color: #38ef7d; display:none;">Aguardando jogadores entrarem...</h3>
+            <div id="actionInstruction" class="status-text"></div>
         </div>
-        <button id="startBtn" class="btn-green" style="display:none; max-width: 100%;" onclick="startGame()">Iniciar Partida</button>
+        <button id="startBtn" style="display:none;" onclick="startGame()">Iniciar Partida</button>
         <div id="hand"></div>
     </div>
 
-    <!-- MODAL DE ZOOM NA CARTA -->
+    <!-- MODAL DE VISUALIZAR A CARTA -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
-            <img id="modalImage" class="modal-img" src="" alt="Carta Ampliada">
-            <button id="btnConfirmModal" class="btn-green" onclick="handleConfirmModal()">Confirmar</button>
-            <button class="btn-red" onclick="closeModal()">Cancelar</button>
+            <img id="modalImage" class="modal-img" src="" alt="">
+            <button id="btnConfirmModal" onclick="handleConfirmModal()">Confirmar</button>
+            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Banner de erro no topo caso o servidor caia
+        function showErr(msg) {
+            let d = document.getElementById('errBanner');
+            if (!d) { 
+                d = document.createElement('div'); d.id = 'errBanner';
+                d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#c0392b;color:#fff;padding:8px;font-size:13px';
+                document.body.appendChild(d); 
+            }
+            d.textContent = msg;
+            setTimeout(() => { if(d) d.remove(); }, 5000);
+        }
+        window.addEventListener('error', e => showErr('Erro no jogo: ' + e.message));
+
         const socket = io();
-        let myRoomId = '', selectedCardUrl = '', myPlayedCardUrl = '';
+        socket.on('connect_error', e => showErr('Sem conexão com o servidor.'));
+        socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
+
+        let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
         let modalAction = 'PLAY', myHandElements = [], amINarrator = false, narratorHasPlayed = false;
-        
         const $ = id => document.getElementById(id);
 
-        function handleCreateRoom() {
-            const name = $('playerName').value.trim();
-            if (!name) return alert("Por favor, digite seu Nickname primeiro!");
-            socket.emit('createRoom', { targetScore: 30, playerName: name });
+        // A Mágica de abrir/fechar o menu de Criar Sala
+        function toggleHostMenu() { 
+            const m = $('hostMenu'); 
+            m.style.display = m.style.display === 'none' ? 'block' : 'none'; 
         }
 
-        function handleJoinRoom() {
-            const name = $('playerName').value.trim();
-            const code = $('roomCode').value.trim();
-            if (!name) return alert("Por favor, digite seu Nickname!");
-            if (!code) return alert("Por favor, digite o Código da Sala!");
-            socket.emit('joinRoom', { roomId: code, playerName: name });
+        function showCreateRoom() {
+            const name = $('hostPlayerName').value;
+            if (!name) return alert("Por favor, digite seu apelido de Host!");
+            socket.emit('createRoom', { targetScore: $('targetScoreInput').value, playerName: name });
         }
-
-        socket.on('joinError', ({ message }) => alert(message));
-
+        
+        // Tela bonita de loading enquanto a IA cria as cartas
         socket.on('generatingDeck', () => {
             $('initialMenu').style.display = 'none';
-            $('game').style.display = 'block';
-            $('roomCodeDisplay').innerText = '🪄 A invocar a IA...';
-            $('actionInstruction').innerHTML = '<span style="color:#2ecc71;">A criar um baralho infinito de arte surreal. Aguarde...</span>';
-            $('playersList').innerHTML = '';
-            $('startBtn').style.display = 'none';
+            $('game').style.display = 'block';$('roomCodeDisplay').innerText = '🪄 A invocar a IA...';
+            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'A Inteligência Artificial está a criar o seu baralho infinito. Aguarde...';
+            $('playersList').innerHTML = '';$('startBtn').style.display = 'none';
         });
 
-        socket.on('roomCreated', ({ roomId, players }) => enterGameScreen(roomId, players));
-        socket.on('joinedSuccess', ({ roomId }) => enterGameScreen(roomId, []));
-
-        function enterGameScreen(roomId, players) {
+        socket.on('roomCreated', ({ roomId, players }) => {
             myRoomId = roomId;
-            $('initialMenu').style.display = 'none';
-            $('game').style.display = 'block';
-            $('roomCodeDisplay').innerText = 'Sala: ' + roomId;
-            $('actionInstruction').innerHTML = 'Aguardando jogadores...';
-            if(players.length > 0) updatePlayersList(players);
-        }
+            $('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
+            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'Aguardando jogadores entrarem...';
+            updatePlayersList(players);
+        });
 
+        function checkRoom() {
+            const room = $('roomIdCheck').value;
+            if (!room) return alert("Digite o código da sala!");
+            socket.emit('validateRoom', { roomId: room });
+        }
+        
+        socket.on('roomValidated', ({ roomId }) => {
+            pendingRoomIdToJoin = roomId;
+            $('initialMenu').style.display = 'none';$('joinNameForm').style.display = 'block'; // Vai para o passo 2
+        });
+        
+        socket.on('joinError', ({ message }) => alert(message));
+
+        function joinRoom() {
+            const name = $('guestPlayerName').value;
+            if (!name) return alert("Por favor, digite seu apelido para entrar!");
+            socket.emit('joinRoom', { roomId: pendingRoomIdToJoin, playerName: name });
+        }
+        
+        socket.on('joinedSuccess', ({ roomId }) => {
+            myRoomId = roomId;
+            $('joinNameForm').style.display = 'none';
+            $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Sala: ' + roomId;
+            $('waitingMessage').style.display = 'none';
+        });
+        
+        function backToMenu() {
+            $('joinNameForm').style.display = 'none';$('initialMenu').style.display = 'block';
+            pendingRoomIdToJoin = '';
+        }
+        
         socket.on('playerJoined', ({ players }) => {
             updatePlayersList(players);
             if (players.length > 1) {
-                if ($('roomCodeDisplay').innerText.includes('Sala:')) $('startBtn').style.display = 'block';
+                $('waitingMessage').style.display = 'none';
+                if ($('roomCodeDisplay').innerText.includes('Código da Sala:')) $('startBtn').style.display = 'block';
             }
         });
-
+        
         function updatePlayersList(players) {
-            $('playersList').innerHTML = 'Jogadores: ' + players.map(p => p.name).join(', ');
+            $('playersList').innerHTML = '<strong>Na Mesa:</strong> ' + players.map(p => p.name).join(', ');
         }
 
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
+        function loadInto(cardDiv, url) {
+            const img = new Image();
+            img.onload = () => { 
+                cardDiv.classList.remove('card-loading'); 
+                cardDiv.style.backgroundImage = `url('${url}')`; 
+            };
+            img.onerror = () => {
+                // Tenta carregar a imagem novamente se falhar a internet
+                setTimeout(() => { img.src = url + "?retry=" + new Date().getTime(); }, 2000);
+            };
+            img.src = url;
+        }
+
         function appendCardToBoard(url, isVotingPhase = false) {
             const cardDiv = document.createElement('div');
-            cardDiv.className = 'card';
-            
-            const img = new Image();
-            img.onload = () => { cardDiv.style.backgroundImage = `url('${url}')`; };
-            img.onerror = () => { cardDiv.style.backgroundImage = `url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&fit=crop')`; };
-            img.src = url;
+            cardDiv.className = 'card card-loading';
+            loadInto(cardDiv, url);
 
             if (isVotingPhase) {
-                if (amINarrator || url === myPlayedCardUrl) {
-                    cardDiv.classList.add('locked-card');
-                    cardDiv.onclick = () => alert(amINarrator ? "Narrador não vota!" : "Não pode votar na própria carta!");
+                if (amINarrator) {
+                    cardDiv.classList.add('narrator-card-view');
+                    cardDiv.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
+                } else if (url === myPlayedCardUrl) {
+                    cardDiv.classList.add('my-card-disabled');
+                    cardDiv.onclick = () => alert("Você não pode votar na sua própria carta!");
                 } else {
                     cardDiv.onclick = () => openModal(url, 'VOTE');
                 }
             } else {
                 if (!amINarrator && !narratorHasPlayed) cardDiv.classList.add('locked-card');
                 cardDiv.onclick = () => {
-                    if (!amINarrator && !narratorHasPlayed) return alert("Aguarde o Narrador jogar a carta dele!");
+                    if (!amINarrator && !narratorHasPlayed) return alert("Calma! Espere o Narrador falar a dica e jogar primeiro.");
                     openModal(url, 'PLAY');
                 };
                 myHandElements.push(cardDiv);
@@ -205,16 +286,20 @@
         }
 
         socket.on('gameStarted', ({ players }) => {
-            $('startBtn').style.display = 'none';$('hand').innerHTML = '';
-            myHandElements = []; narratorHasPlayed = false; myPlayedCardUrl = '';
+            $('startBtn').style.display = 'none';$('waitingMessage').style.display = 'none';
+            const ins = $('actionInstruction');$('hand').innerHTML = '';
+            myHandElements = [];
+            narratorHasPlayed = false;
+            myPlayedCardUrl = '';
             
             const me = players.find(p => p.id === socket.id);
             if (!me) return;
             
             amINarrator = me.isNarrator;
-            $('actionInstruction').innerHTML = amINarrator
-                ? '<span style="color:#2ecc71;">Sua vez! Fale a dica em voz alta e escolha sua carta.</span>'
-                : '<span style="color:#f1c40f;">Aguarde o Narrador dar a dica e jogar a carta.</span>';
+            
+            ins.innerHTML = amINarrator
+                ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
+                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe as suas cartas enquanto isso!';
                 
             me.hand.forEach(url => appendCardToBoard(url, false));
         });
@@ -222,52 +307,75 @@
         socket.on('narratorPlayed', () => {
             narratorHasPlayed = true;
             if (!amINarrator) {
-                $('actionInstruction').innerHTML = '<span style="color:#9b59b6;">O Narrador jogou! Escolha a sua carta para confundir os outros.</span>';
+                $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">Sua Vez!</span><br>O Narrador deu a dica. Escolha a sua carta que mais combina com a dica.';
                 myHandElements.forEach(d => d.classList.remove('locked-card'));
             }
         });
 
         socket.on('startVotingPhase', ({ cards }) => {
             $('hand').innerHTML = '';$('actionInstruction').innerHTML = amINarrator
-                ? '<span style="color:#f1c40f;">Hora da votação. Aguarde os jogadores.</span>'
-                : '<span style="color:#2ecc71;">Votação! Qual é a carta do narrador?</span>';
+                ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde os jogadores votarem (Você não vota).'
+                : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
+                
             cards.forEach(url => appendCardToBoard(url, true));
         });
 
         socket.on('roundEnded', ({ ranking, isGameOver, hostSocketId }) => {
-            $('actionInstruction').innerHTML = isGameOver ? '🏆 Fim de Jogo!' : 'Fim da Rodada!';
+            $('actionInstruction').innerHTML = '';
             
-            let html = `<table class="ranking-table"><tr><th>Pos.</th><th>Jogador</th><th>Pts</th></tr>`;
+            let html = isGameOver
+                ? `<div class="winner-title">🏆 ${ranking[0].name} VENCEU! 🏆</div>`
+                : `<h3 style="color: #a777e3; margin-bottom: 10px; font-size: 1.5em;">Fim da Rodada!</h3>`;
+                
+            html += `<table class="ranking-table"><tr><th>Pos.</th><th>Jogador</th><th>Pts</th></tr>`;
+            
             ranking.forEach((p, i) => {
-                const nar = p.isNarrator ? ' (Narrador)' : '';
-                html += `<tr><td>${i + 1}º</td><td>${p.name}${nar}</td><td>${p.score}</td></tr>`;
+                const rowStyle = i === 0 ? 'color:#f1c40f; font-weight:bold; background:rgba(241,196,15,.2);' : '';
+                const nar = p.isNarrator ? '<br><span style="font-size:12px; color:#38ef7d; font-weight:normal;">(Narrador)</span>' : '';
+                html += `<tr style="${rowStyle}"><td style="font-size:1.2em;">${i + 1}º</td><td>${p.name} ${nar}</td><td style="font-size:1.4em;">${p.score}</td></tr>`;
             });
             html += `</table>`;
             
-            if (socket.id === hostSocketId) {
-                if (!isGameOver) html += `<button class="btn-yellow" onclick="nextRound()">Próxima Rodada</button>`;
-                else html += `<button class="btn-green" style="margin-top:20px;" onclick="window.location.reload()">Jogar Novamente</button>`;
+            const isHost = socket.id === hostSocketId;
+            if (!isGameOver && isHost) {
+                html += `<button onclick="nextRound()" style="background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 18px; font-size: 1.1em; margin-top: 20px;">Próxima Rodada</button>`;
+            } else if (!isGameOver) {
+                html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">Aguardando o Host iniciar a próxima rodada...</p>`;
+            } else if (isHost) {
+                html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
             }
             $('hand').innerHTML = html;
         });
 
         function openModal(url, action) {
-            selectedCardUrl = url; modalAction = action; $('modalImage').src = url;
-            $('btnConfirmModal').innerText = action === 'PLAY' ? 'Jogar esta carta' : 'Confirmar Voto';
+            selectedCardUrl = url;
+            modalAction = action;
+            $('modalImage').src = url;
+            const b = $('btnConfirmModal');
+            if (action === 'PLAY') { 
+                b.innerText = 'Enviar Carta para a Mesa'; 
+                b.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)'; 
+            } else { 
+                b.innerText = 'Confirmar Voto'; 
+                b.style.background = 'linear-gradient(135deg, #a777e3, #6e8efb)'; 
+            }
             $('cardModal').style.display = 'block';
         }
         
-        function closeModal() { $('cardModal').style.display = 'none'; selectedCardUrl = ''; }
+        function closeModal() { 
+            $('cardModal').style.display = 'none'; 
+            selectedCardUrl = ''; 
+        }
 
         function handleConfirmModal() {
             if (!selectedCardUrl) return;
             if (modalAction === 'PLAY') {
                 myPlayedCardUrl = selectedCardUrl;
                 socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = 'Carta jogada! Aguardando os outros...';
+                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#38ef7d; font-size:1.2em;">Carta na mesa!</span><br>Aguardando os outros jogadores...';
             } else {
                 socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = 'Voto registrado! Aguardando apuração...';
+                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-size:1.2em;">Voto registrado!</span><br>Aguardando apuração...';
             }
             closeModal();
         }
