@@ -72,6 +72,9 @@
             background-size: 100% 115%; 
             background-position: center 30%; 
             overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -157,8 +160,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.23 -->
-    <div class="version-footer">Versão 10.23</div>
+    <!-- VERSÃO 10.24 -->
+    <div class="version-footer">Versão 10.24</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -248,23 +251,43 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        function loadInto(cardDiv, url) {
-            const img = new Image();
-            img.onload = () => { 
-                cardDiv.classList.remove('card-loading'); 
-                cardDiv.style.backgroundImage = `url('${url}')`; 
-            };
-            img.onerror = () => {
-                cardDiv.classList.remove('card-loading');
-                cardDiv.style.backgroundColor = '#2a2a40';
-            };
-            img.src = url;
+        // Fila de carregamento anti-bloqueio com retentativas inteligentes
+        function loadInto(cardDiv, url, index) {
+            setTimeout(() => {
+                const img = new Image();
+                let attempts = 0;
+                const maxAttempts = 4;
+                
+                const tryLoad = (currentUrl) => { img.src = currentUrl; };
+
+                img.onload = () => { 
+                    cardDiv.classList.remove('card-loading'); 
+                    cardDiv.style.backgroundImage = `url('${img.src}')`; 
+                    cardDiv.innerHTML = ''; 
+                };
+                
+                img.onerror = () => {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        const retryUrl = url + (url.includes('?') ? '&' : '?') + "retry=" + Date.now();
+                        setTimeout(() => tryLoad(retryUrl), 1500 * attempts);
+                    } else {
+                        cardDiv.classList.remove('card-loading');
+                        cardDiv.style.border = '2px dashed #ff4b2b';
+                        cardDiv.innerHTML = '<span style="font-size:24px;">⚠️</span>';
+                    }
+                };
+
+                tryLoad(url);
+            }, index * 600); // 600 milissegundos de intervalo entre cada carta gerada
         }
 
-        function appendCardToBoard(url, isVotingPhase = false) {
+        function appendCardToBoard(url, isVotingPhase = false, index = 0) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card card-loading';
-            loadInto(cardDiv, url);
+            $('hand').appendChild(cardDiv);
+
+            loadInto(cardDiv, url, index);
 
             if (isVotingPhase) {
                 if (amINarrator) {
@@ -284,14 +307,13 @@
                 };
                 myHandElements.push(cardDiv);
             }
-            $('hand').appendChild(cardDiv);
         }
 
         function reloadCurrentHand() {
             if (currentStoredHand.length === 0) return;
             $('hand').innerHTML = '';
             myHandElements = [];
-            currentStoredHand.forEach(url => appendCardToBoard(url, false));
+            currentStoredHand.forEach((url, i) => appendCardToBoard(url, false, i));
         }
 
         socket.on('gameStarted', ({ players }) => {
@@ -312,7 +334,7 @@
                 ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
                 : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe as suas cartas enquanto isso!';
                 
-            me.hand.forEach(url => appendCardToBoard(url, false));
+            me.hand.forEach((url, i) => appendCardToBoard(url, false, i));
         });
 
         socket.on('narratorPlayed', () => {
@@ -333,7 +355,7 @@
                 ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde os jogadores votarem (Você não vota).'
                 : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
                 
-            cards.forEach(url => appendCardToBoard(url, true));
+            cards.forEach((url, i) => appendCardToBoard(url, true, i));
         });
 
         socket.on('roundEnded', ({ ranking, isGameOver, hostSocketId }) => {
