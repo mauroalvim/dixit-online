@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Imagination - Dixit Online</title>
     <style>
-        /* Estilos Globais e Fundo Estático */
+        /* Estilos Globais e Fundo Elegante (Estilo v3.30+) */
         body {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed;
-            background-size: cover;
-            color: white;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            background-attachment: fixed;
+            color: #fff;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -20,82 +20,146 @@
             overflow-x: hidden;
         }
 
+        /* Glassmorphism Cards */
         .container {
-            background: rgba(20, 20, 30, 0.85);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px 20px;
             width: 90%;
-            max-width: 600px;
-            margin-top: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            max-width: 500px;
+            margin-top: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             text-align: center;
         }
 
-        h1, h2, h3 { margin: 10px 0; }
-        
-        .destaque { color: #f1c40f; }
-        .narrador-texto { color: #2ecc71; font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            background: -webkit-linear-gradient(#f1c40f, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 4px 10px rgba(241, 196, 15, 0.3);
+        }
+
+        p.subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        /* Tela de Entrada Refinada */
+        #loginScreen {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        input {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border: 1px solid #f1c40f;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        input::placeholder { color: #888; }
+
+        button.primario {
+            background: linear-gradient(135deg, #f1c40f, #e67e22);
+            color: #111;
+            font-weight: bold;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button.primario:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
+        }
+
+        /* Tela de Jogo */
+        .destaque { color: #f1c40f; font-size: 1.5rem; margin-bottom: 15px;}
+        .narrador-texto { color: #2ecc71; font-weight: bold; font-size: 1.3rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
 
         .info-mesa {
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .deck {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
             margin-top: 20px;
         }
 
         .carta {
-            width: 100px;
-            height: 150px;
-            border-radius: 10px;
+            width: 110px;
+            height: 160px;
+            border-radius: 12px;
             object-fit: cover;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
             border: 2px solid transparent;
         }
 
         .carta:hover {
-            transform: scale(1.05);
+            transform: translateY(-5px) scale(1.05);
             border: 2px solid #f1c40f;
+            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.3);
         }
 
         .btn-acao {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #ddd;
+            padding: 12px 20px;
             border-radius: 20px;
-            margin-top: 20px;
+            margin-top: 25px;
             cursor: pointer;
             width: 100%;
             font-weight: bold;
+            transition: background 0.3s;
         }
 
-        .versao {
-            margin-top: 20px;
-            color: #888;
-            font-size: 0.9rem;
-        }
+        .btn-acao:hover { background: rgba(255, 255, 255, 0.2); }
 
-        /* --- Estilos do Novo Modal Carrossel (Versão 10.35) --- */
+        .versao { margin-top: 20px; color: #666; font-size: 0.9rem; }
+
+        /* --- Modal Carrossel --- */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(15, 15, 20, 0.95); /* Fundo um pouco mais escuro para focar na arte */
+            background-color: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(5px);
         }
         
         .modal:not(.hidden) {
@@ -108,11 +172,12 @@
             position: absolute;
             top: 20px;
             right: 30px;
-            color: #f1f1f1;
+            color: #fff;
             font-size: 40px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 101;
+            z-index: 1010;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .carousel-container {
@@ -122,7 +187,7 @@
             position: relative;
             width: 100%;
             height: 65vh;
-            touch-action: pan-y; /* Previne scroll nativo durante o swipe horizontal */
+            touch-action: pan-y;
         }
 
         .modal-content {
@@ -130,34 +195,32 @@
             max-height: 100%;
             border-radius: 15px;
             object-fit: contain;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             transition: opacity 0.2s ease-in-out;
         }
 
         .carousel-nav {
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
             color: white;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.2);
             font-size: 2rem;
-            padding: 15px 10px;
+            padding: 15px 12px;
             cursor: pointer;
             position: absolute;
             z-index: 10;
-            border-radius: 8px;
+            border-radius: 50%;
             transition: 0.3s;
         }
 
-        .carousel-nav:active { background: rgba(0, 0, 0, 0.9); }
-        #prevBtn { left: 10px; }
-        #nextBtn { right: 10px; }
+        .carousel-nav:active { background: rgba(255, 255, 255, 0.3); }
+        #prevBtn { left: 15px; }
+        #nextBtn { right: 15px; }
 
-        .zoom-action-container {
-            text-align: center;
-            margin-top: 20px;
-        }
+        .zoom-action-container { text-align: center; margin-top: 30px; }
 
         #btnEscolherCarta {
-            background-color: #2ecc71;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
             color: white;
             font-size: 1.2rem;
             font-weight: bold;
@@ -165,47 +228,22 @@
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
             transition: transform 0.2s;
         }
 
         #btnEscolherCarta:active { transform: scale(0.95); }
-
-        /* Telas de Entrada */
-        #loginScreen {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        input {
-            padding: 12px;
-            border-radius: 5px;
-            border: none;
-            font-size: 1rem;
-            text-align: center;
-        }
-        button.primario {
-            background: #f1c40f;
-            color: #111;
-            font-weight: bold;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.1rem;
-        }
     </style>
 </head>
 <body>
 
     <!-- Tela de Entrada -->
     <div class="container" id="telaEntrada">
-        <h1 class="destaque">✨ Imagination ✨</h1>
-        <p>Um jogo de cartas surreal online.</p>
+        <h1>✨ Imagination ✨</h1>
+        <p class="subtitle">Um jogo de cartas surreal online.</p>
         <div id="loginScreen">
             <input type="text" id="nomeJogador" placeholder="Seu Nome de Jogador">
-            <input type="text" id="codigoSala" placeholder="Código da Sala (Ex: 3040)">
+            <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 3040)">
             <button class="primario" onclick="entrarNaSala()">Entrar na Sala</button>
         </div>
     </div>
@@ -215,7 +253,7 @@
         <h2 class="destaque">Código da Sala: <span id="displayCodigo"></span></h2>
         
         <div class="info-mesa">
-            <strong>Na Mesa:</strong> <span id="displayJogadores"></span>
+            <span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong>
         </div>
 
         <div id="statusNarrador" style="margin-bottom: 20px;">
@@ -228,10 +266,10 @@
 
         <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
         
-        <div class="versao">Versão 10.35 (100% Seguro)</div>
+        <div class="versao">Versão 10.35 (Interface Premium + Carrossel)</div>
     </div>
 
-    <!-- Modal de Visualização (O Novo Carrossel) -->
+    <!-- Modal de Visualização (Carrossel Interativo) -->
     <div id="zoomModal" class="modal hidden">
         <span class="close" onclick="fecharModal()">&times;</span>
         <div class="carousel-container">
@@ -250,7 +288,7 @@
         let meuId = null;
         let codigoAtual = null;
         
-        // --- Variáveis Globais de Estado do Jogo e Carrossel ---
+        // Estado do Carrossel
         let cartasNoDeckAtual = []; 
         let indiceCarrosselAtual = 0;
 
@@ -258,7 +296,7 @@
             const nome = document.getElementById('nomeJogador').value;
             const codigo = document.getElementById('codigoSala').value;
             if(!nome || !codigo) {
-                alert("Por favor, preencha o seu nome e o código da sala.");
+                alert("Por favor, preencha o seu nome e o código numérico da sala.");
                 return;
             }
             
@@ -274,24 +312,21 @@
             const eu = sala.jogadores.find(j => j.id === socket.id);
             if(!eu) return;
 
-            // Atualiza jogadores conectados na mesa
             const nomesMesa = sala.jogadores.map(j => j.nome).join(', ');
             document.getElementById('displayJogadores').innerText = nomesMesa;
 
-            // Define UI do Narrador
             const souNarrador = sala.jogadores.findIndex(j => j.id === socket.id) === sala.narradorIndex;
             const statusDiv = document.getElementById('statusNarrador');
             
             if (souNarrador) {
                 statusDiv.innerHTML = `
                     <div class="narrador-texto">Você é o Narrador!</div>
-                    <div style="font-size: 0.95rem;">Fale a sua dica em voz alta e escolha uma carta.</div>
+                    <div style="font-size: 0.95rem; color: #ccc;">Fale a sua dica em voz alta e escolha uma carta.</div>
                 `;
             } else {
-                statusDiv.innerHTML = `<div style="font-size: 1.1rem; color: #f39c12;">Aguardando o Narrador falar a dica...</div>`;
+                statusDiv.innerHTML = `<div style="font-size: 1.1rem; color: #f39c12; font-weight: bold;">Aguardando o Narrador falar a dica...</div>`;
             }
 
-            // Atualiza o Deck local e desenha as cartas
             cartasNoDeckAtual = eu.mao;
             renderizarDeck();
         });
@@ -304,8 +339,6 @@
                 const img = document.createElement('img');
                 img.src = cartaUrl;
                 img.className = 'carta';
-                
-                // O clique agora abre o Zoom interativo, em vez de jogar direto
                 img.onclick = () => abrirZoom(index);
                 deckDiv.appendChild(img);
             });
@@ -315,9 +348,7 @@
             renderizarDeck();
         }
 
-        // ==========================================
-        //  LÓGICA DO CARROSSEL E SELEÇÃO DE CARTAS
-        // ==========================================
+        // --- Lógica do Carrossel e Swipe ---
 
         function abrirZoom(indiceDaCartaClicada) {
             indiceCarrosselAtual = indiceDaCartaClicada;
@@ -332,35 +363,30 @@
         function atualizarImagemCarrossel() {
             const imgZoom = document.getElementById('imgZoom');
             
-            // Efeito de fade suave ao trocar a imagem
-            imgZoom.style.opacity = '0.5';
+            imgZoom.style.opacity = '0.3';
             setTimeout(() => {
                 imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual];
                 imgZoom.style.opacity = '1';
             }, 100);
             
-            // Oculta setas se estiver nos limites da mão
             document.getElementById('prevBtn').style.display = (indiceCarrosselAtual === 0) ? 'none' : 'block';
             document.getElementById('nextBtn').style.display = (indiceCarrosselAtual === cartasNoDeckAtual.length - 1) ? 'none' : 'block';
         }
 
         function navegarCarrossel(direcao) {
             indiceCarrosselAtual += direcao;
-            // Prevenção de estouro de array
             if (indiceCarrosselAtual < 0) indiceCarrosselAtual = 0;
             if (indiceCarrosselAtual >= cartasNoDeckAtual.length) indiceCarrosselAtual = cartasNoDeckAtual.length - 1;
-            
             atualizarImagemCarrossel();
         }
 
         function confirmarCartaDoZoom() {
             const cartaSelecionadaUrl = cartasNoDeckAtual[indiceCarrosselAtual];
             fecharModal();
-            // Dispara o evento original enviando a carta para a mesa no Backend
             socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: cartaSelecionadaUrl });
         }
 
-        // --- Suporte a "Swipe" (Arrastar imagem com o dedo no celular) ---
+        // Eventos de Toque (Swipe)
         let toqueInicialX = 0;
         let toqueFinalX = 0;
         const areaZoom = document.getElementById('imgZoom');
@@ -375,12 +401,12 @@
         });
 
         function processarSwipe() {
-            const limiteSwipe = 40; // Distância mínima sensível ao toque
+            const limiteSwipe = 40;
             if (toqueFinalX < toqueInicialX - limiteSwipe) {
-                navegarCarrossel(1); // Deslizou para a esquerda -> Mostra Próxima
+                navegarCarrossel(1);
             }
             if (toqueFinalX > toqueInicialX + limiteSwipe) {
-                navegarCarrossel(-1); // Deslizou para a direita -> Mostra Anterior
+                navegarCarrossel(-1);
             }
         }
     </script>
