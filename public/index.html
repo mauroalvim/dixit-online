@@ -26,18 +26,16 @@
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            /* Fundo inicial escuro até a imagem da API carregar */
             background-color: #14122b;
             background-size: cover;
             background-position: center;
-            /* Embaçado para não atrapalhar o texto */
-            filter: blur(8px); 
-            transition: background 1.5s ease; /* Transição suave quando a imagem chega */
+            filter: blur(6px); 
+            transition: background 1.5s ease; 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
         
-        /* Efeito de Vidro (Glassmorphism) para as caixas */
+        /* Efeito de Vidro */
         .glass-panel {
             background: rgba(20,20,35,.85); 
             backdrop-filter: blur(10px); 
@@ -99,7 +97,6 @@
         .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
         .modal-img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; margin-bottom: 10px; }
         
-        /* Estilo para a versão do site */
         .version-footer {
             margin-top: auto; 
             padding-top: 20px;
@@ -112,10 +109,7 @@
 <body>
     <h1>Dixit Online ✨</h1>
 
-    <!-- 1. TELA PRINCIPAL (CONVIDADO PRIMEIRO) -->
     <div id="initialMenu" class="glass-panel">
-        
-        <!-- Acesso Principal -->
         <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
             <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
             <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
@@ -123,7 +117,6 @@
             <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
         
-        <!-- Menu do Host (Criar Sala) -->
         <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,.05);" onclick="toggleHostMenu()">
             <h4 style="color: #f1c40f; margin: 0; font-size: 1em;">👑 Criar uma nova sala? Clique aqui ▼</h4>
         </div>
@@ -136,7 +129,6 @@
         </div>
     </div>
 
-    <!-- 2. TELA DE NOME (Após validar código) -->
     <div id="joinNameForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
         <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
@@ -145,7 +137,6 @@
         <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
     </div>
 
-    <!-- 3. TELA DO JOGO (Mesa Virtual) -->
     <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
         <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
         <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
@@ -157,7 +148,6 @@
         <div id="hand"></div>
     </div>
 
-    <!-- MODAL -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="" alt="">
@@ -166,35 +156,27 @@
         </div>
     </div>
     
-    <!-- VERSÃO DO SITE -->
-    <div class="version-footer">
-        Versão 10.4
-    </div>
+    <div class="version-footer">Versão 10.5</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- NOVA LÓGICA DE FUNDO DINÂMICO ---
-        // Fica perguntando ao servidor a cada 2 segundos até a API do Google devolver a imagem!
-        const fetchBackground = setInterval(() => {
-            fetch('/api/background')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.backgroundUrl && data.backgroundUrl !== '') {
-                        const style = document.createElement('style');
-                        // Aplica uma camada clara para as cores aparecerem bem sob o embaçado
-                        style.innerHTML = `
-                            body::before {
-                                background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), 
-                                            url('${data.backgroundUrl}') no-repeat center center fixed;
-                                background-size: cover;
-                            }
-                        `;
-                        document.head.appendChild(style);
-                        clearInterval(fetchBackground); // Para de perguntar quando encontra a imagem
+        const socket = io();
+
+        // --- MÁGICA: O socket agora ESCUTA o fundo gerado pelo servidor! ---
+        socket.on('updateBackground', (data) => {
+            if (data.backgroundUrl && data.backgroundUrl !== '') {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    body::before {
+                        background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), 
+                                    url('${data.backgroundUrl}') no-repeat center center fixed;
+                        background-size: cover;
                     }
-                })
-                .catch(err => console.log("Aguardando fundo dinâmico..."));
-        }, 2000);
+                `;
+                document.head.appendChild(style);
+                console.log("Fundo dinâmico aplicado com sucesso via Socket!");
+            }
+        });
 
         function showErr(msg) {
             let d = document.getElementById('errBanner');
@@ -208,7 +190,6 @@
         }
         window.addEventListener('error', e => showErr('Erro no jogo: ' + e.message));
 
-        const socket = io();
         socket.on('connect_error', e => showErr('Sem conexão com o servidor.'));
         socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
 
