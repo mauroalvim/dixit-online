@@ -7,11 +7,11 @@ let isGenerating = false;
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-// O NOVO PLANO DE EMERGÊNCIA DO BAÚ (ZERO FOTOS)
+// OBRAS DE ARTE GARANTIDAS PARA EMERGÊNCIAS
 const magicalFallbacks = [
-    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMDktYWV3LTAxM18xLmpwZw.jpg",
-    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdi01MzYtbWFjcm92ZWN0b3ItMDcxXzEuanBn.jpg",
-    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjQxNC1tYWNyby0yMWEuanBn.jpg"
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/600px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Henri_Rousseau_-_The_Dream_-_MoMA.jpg/600px-Henri_Rousseau_-_The_Dream_-_MoMA.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/El_jard%C3%ADn_de_las_Delicias%2C_de_El_Bosco.jpg/600px-El_jard%C3%ADn_de_las_Delicias%2C_de_El_Bosco.jpg"
 ];
 
 async function refillBuffer() {
@@ -38,7 +38,7 @@ async function refillBuffer() {
     }
 
     isGenerating = false;
-    console.log("[Buffer] Reposição concluída. Baú cheio de obras-primas.");
+    console.log("[Buffer] Reposição concluída.");
 }
 
 function drawCards(count) {
