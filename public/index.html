@@ -3,103 +3,283 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dixit Online - Gerador de Cartas</title>
+  <title>Dixit Online</title>
+  
+  <!-- Importando o cliente do Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <style>
+    :root {
+      --primary: #8e44ad;
+      --secondary: #9b59b6;
+      --bg: #1e1e2f;
+      --text: #ecf0f1;
+    }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
-      background-color: #1e1e2f;
-      color: #fff;
+      background-color: var(--bg);
+      color: var(--text);
       margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #f1c40f;
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+    }
+
+    /* Container do Lobby */
+    #lobby-container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      margin-top: 30px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    /* Container do Jogo (Oculto inicialmente) */
+    #game-container {
+      display: none;
+      width: 100%;
+      max-width: 1200px;
       padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
     }
-    h1 { color: #f1c40f; }
-    .controles { margin: 20px 0; }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
     input {
+      width: 100%;
       padding: 12px;
-      width: 300px;
-      border-radius: 5px;
-      border: none;
+      border-radius: 8px;
+      border: 1px solid #555;
+      background: #2c2c44;
+      color: white;
       font-size: 16px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
     }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
     button {
-      padding: 12px 20px;
+      width: 100%;
+      padding: 14px;
       font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      background-color: #e74c3c;
+      background-color: var(--primary);
       color: white;
       border: none;
-      border-radius: 5px;
-      transition: 0.3s;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+      margin-bottom: 10px;
     }
-    button:hover { background-color: #c0392b; }
-    button:disabled { background-color: #7f8c8d; cursor: wait; }
-    #status { margin: 15px; font-style: italic; color: #bdc3c7; }
-    #galeria {
+
+    button:hover {
+      background-color: var(--secondary);
+    }
+
+    .btn-secondary {
+      background-color: #27ae60;
+    }
+
+    .btn-secondary:hover {
+      background-color: #2ecc71;
+    }
+
+    .divider {
+      margin: 20px 0;
+      color: #7f8c8d;
+      font-size: 14px;
+    }
+
+    /* Área das Cartas */
+    .mao-jogador {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 15px;
       margin-top: 30px;
     }
-    img {
-      width: 200px;
+
+    .carta {
+      width: 150px;
+      height: 225px; /* Proporção de carta */
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      animation: fadeIn 1s;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background-color: #2c2c44; /* Placeholder enquanto carrega */
+      object-fit: cover;
     }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .carta:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 25px rgba(241, 196, 15, 0.4);
+    }
+
+    #room-info {
+      background: #2c2c44;
+      padding: 10px 20px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>🎨 Fábrica de Cartas Dixit</h1>
-  
-  <div class="controles">
-    <input type="text" id="cena" placeholder="Ex: um relógio derretendo no deserto">
-    <button id="btn-gerar" onclick="pedirCarta()">Criar Carta</button>
+  <header>
+    <h1>🎩 Dixit Online</h1>
+    <p id="subtitle">Um jogo de imaginação e sonhos</p>
+  </header>
+
+  <!-- TELA 1: LOBBY -->
+  <div id="lobby-container">
+    <div class="form-group">
+      <input type="text" id="player-name" placeholder="Digite seu Nickname" autocomplete="off">
+    </div>
+
+    <button onclick="criarSala()">Criar Nova Sala</button>
+    
+    <div class="divider">OU</div>
+
+    <div class="form-group">
+      <input type="text" id="room-id" placeholder="Código da Sala" autocomplete="off">
+    </div>
+    <button class="btn-secondary" onclick="entrarSala()">Entrar na Sala</button>
   </div>
 
-  <div id="status">Digite uma cena e clique em Criar Carta...</div>
-  
-  <div id="galeria"></div>
+  <!-- TELA 2: MESA DE JOGO -->
+  <div id="game-container">
+    <div id="room-info">
+      Sala: <strong id="display-room">---</strong> | Jogador: <strong id="display-name">---</strong>
+    </div>
+
+    <h2>Sua Mão</h2>
+    <p id="loading-msg">Aguardando cartas do servidor...</p>
+    
+    <div class="mao-jogador" id="minha-mao">
+      <!-- As cartas vão aparecer aqui via JavaScript -->
+    </div>
+    
+    <!-- Botão de teste para pedir mais uma carta durante o jogo -->
+    <button onclick="comprarCarta()" style="width: auto; padding: 10px 30px; margin-top: 30px; background-color: #e67e22;">
+      Comprar +1 Carta
+    </button>
+  </div>
 
   <script>
-    async function pedirCarta() {
-      const btn = document.getElementById('btn-gerar');
-      const status = document.getElementById('status');
-      const input = document.getElementById('cena').value || 'a magical forest with glowing mushrooms';
+    // Inicializa a conexão com o servidor WebSocket
+    const socket = io();
 
-      btn.disabled = true;
-      status.style.color = '#f1c40f';
-      status.innerText = 'A IA está pintando a sua carta... (Pode levar uns 15 segundos)';
+    // Elementos da interface
+    const lobbyContainer = document.getElementById('lobby-container');
+    const gameContainer = document.getElementById('game-container');
+    const playerNameInput = document.getElementById('player-name');
+    const roomIdInput = document.getElementById('room-id');
+    const maoContainer = document.getElementById('minha-mao');
+    const loadingMsg = document.getElementById('loading-msg');
 
-      try {
-        // Chama o nosso backend em Node.js
-        const resposta = await fetch(`/api/gerar-carta?cena=${encodeURIComponent(input)}`);
-        const dados = await resposta.json();
+    // Função para gerar um código aleatório para a sala nova
+    function gerarCodigoSala() {
+      return Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
 
-        if (dados.sucesso) {
-          // Se deu certo, cria a imagem na tela
-          const img = document.createElement('img');
-          img.src = dados.url;
-          
-          // Adiciona a imagem nova no começo da galeria
-          const galeria = document.getElementById('galeria');
-          galeria.insertBefore(img, galeria.firstChild);
-          
-          status.style.color = '#2ecc71';
-          status.innerText = 'Carta criada com sucesso!';
-        } else {
-          status.style.color = '#e74c3c';
-          status.innerText = 'Erro: ' + dados.erro;
-        }
-      } catch (erro) {
-        status.style.color = '#e74c3c';
-        status.innerText = 'Falha na conexão com o servidor.';
-      }
+    // Ação: Criar Sala
+    function criarSala() {
+      const nome = playerNameInput.value.trim();
+      if (!nome) return alert('Por favor, digite seu nome primeiro!');
 
-      btn.disabled = false;
+      const novaSalaId = gerarCodigoSala();
+      iniciarPartida(nome, novaSalaId);
+    }
+
+    // Ação: Entrar em Sala Existente
+    function entrarSala() {
+      const nome = playerNameInput.value.trim();
+      const salaId = roomIdInput.value.trim().toUpperCase();
+
+      if (!nome) return alert('Por favor, digite seu nome!');
+      if (!salaId) return alert('Por favor, digite o código da sala!');
+
+      iniciarPartida(nome, salaId);
+    }
+
+    // Lógica para mudar a tela e conectar à sala no servidor
+    function iniciarPartida(nome, salaId) {
+      // Esconde o lobby e mostra o jogo
+      lobbyContainer.style.display = 'none';
+      gameContainer.style.display = 'block';
+      document.getElementById('subtitle').style.display = 'none';
+
+      // Atualiza os dados na tela
+      document.getElementById('display-name').innerText = nome;
+      document.getElementById('display-room').innerText = salaId;
+
+      // Avisa o servidor Node.js que queremos entrar nessa sala
+      // Isso vai acionar o evento 'joinRoom' que criamos no server.js
+      socket.emit('joinRoom', salaId);
+    }
+
+    // Ação: Pedir uma carta extra (Simulação de fim de turno)
+    function comprarCarta() {
+      socket.emit('drawSingleCard');
+    }
+
+    // ==========================================
+    // EVENTOS RECEBIDOS DO SERVIDOR
+    // ==========================================
+
+    // Quando o servidor enviar a mão inicial de cartas
+    socket.on('receiveInitialHand', (cartas) => {
+      loadingMsg.style.display = 'none'; // Some com a mensagem de carregando
+      
+      cartas.forEach(urlDaCarta => {
+        adicionarCartaNaTela(urlDaCarta);
+      });
+    });
+
+    // Quando o servidor enviar uma nova carta (após comprar)
+    socket.on('receiveNewCard', (urlDaCarta) => {
+      adicionarCartaNaTela(urlDaCarta);
+    });
+
+    // Função auxiliar para criar a imagem HTML da carta
+    function adicionarCartaNaTela(url) {
+      if (!url) return; // Prevenção contra cartas vazias
+      
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = 'carta';
+      
+      // Quando clicar na carta, podemos no futuro adicionar a lógica de jogá-la na mesa
+      img.onclick = () => {
+        alert("Você selecionou esta carta! (Lógica de jogar a carta será implementada depois)");
+      };
+
+      maoContainer.appendChild(img);
     }
   </script>
 
