@@ -7,39 +7,41 @@ if (process.env.GOOGLE_API_KEY) {
     catch (e) { console.log("Modo offline ativo para o Gemini."); }
 }
 
-// Estilos artísticos massivamente diversificados (Imita diferentes expansões e pintores)
+// Estilos artísticos muito mais lúdicos, infantis e mágicos (Menos sombrios, mais coloridos)
 const imaginativeStyles = [
-    "vibrant digital illustration, clean vector art style, bright pastel colors, magical atmosphere",
-    "classic oil painting texture, rich dramatic lighting, renaissance fantasy surrealism",
-    "whimsical watercolor and ink sketch, dreamy pastel tones, elegant storybook aesthetic",
-    "gothic surrealism, dark fantasy concept art, glowing neon magical elements, intricate details",
-    "impressionist vibrant painting, thick expressive brushstrokes, poetic and atmospheric",
-    "minimalist artistic fantasy, soft warm lighting, ethereal and surreal design",
-    "retro 1970s fantasy illustration, vibrant warm colors, nostalgic fairy-tale vibe"
+    "charming children's book illustration, vibrant pastel watercolors, whimsical and heartwarming aesthetic",
+    "bright colorful cartoon fantasy, cute magical storybook style, soft friendly lighting, joyful atmosphere",
+    "magical papercraft and origami art style, colorful layers, creative storybook world",
+    "bright whimsical ink and watercolor painting, dreamy pastel tones, playful fairy-tale aesthetic",
+    "vibrant digital children's illustration, cute fantasy creatures, cheerful and bright colors",
+    "retro 1970s whimsical fairy-tale art, warm golden sunlight, nostalgic and joyful storybook vibe",
+    "soft claymation style fantasy, cute rounded shapes, warm cozy lighting, magical atmosphere"
 ];
 
-// Listas massivas para combinação estocástica (Garante milhares de temas únicos sem repetição)
+// Listas massivas e variadas para garantir zero repetição (Animais diversos, objetos mágicos, cenários amplos)
 const subjects = [
-    "a sleeping crystal dragon", "an ancient stone giant", "a tiny mechanical hummingbird", 
-    "a lonely astronaut", "a fox wearing a monarch crown", "a child made of starlight",
-    "a floating floating island", "a steampunk airship", "a mysterious librarian",
-    "a porcelain marionette", "a glowing spirit fox", "an origami phoenix",
-    "a cosmic turtle carrying a library", "a musician playing a cello of light"
+    "a clumsy baby dragon learning to fly", "a friendly giant turtle with a garden on its shell", 
+    "a tiny hedgehog carrying a glowing lantern", "a cheerful astronaut floating among colorful balloons", 
+    "a squirrel wearing a tiny baker's hat", "a glowing star-child riding a paper boat",
+    "a fluffy cloud shaped like a smiling whale", "a steampunk mechanical owl", "a curious raccoon wearing glasses",
+    "a porcelain marionette dancing on a music box", "a wise old tree spirit with glowing moss eyebrows", "a paper origami phoenix",
+    "a family of bears having a picnic on a giant lily pad", "a magical chameleon changing colors into rainbows"
 ];
 
 const actions = [
-    "painting the aurora borealis with a brush", "holding a miniature galaxy inside a glass jar",
-    "climbing a staircase made of floating playing cards", "sleeping peacefully inside a giant blooming lotus",
-    "releasing flocks of glowing butterflies into a dark room", "navigating a river of liquid silver",
-    "balancing planets on the tips of its fingers", "reading a book whose pages turn into birds",
-    "sewing patches of the night sky onto a winter coat", "whispering secrets to a golden mirror"
+    "painting a giant rainbow across the sky", "catching floating bubbles filled with tiny galaxies",
+    "climbing a ladder made of colorful candy canes", "sleeping soundly inside a giant glowing tulip",
+    "releasing fireflies that turn into musical notes", "sailing a river of sparkling lemonade",
+    "balancing colorful planets on a wooden spoon", "reading a pop-up book that comes alive",
+    "sewing patches of golden sunlight onto a quilt", "whispering secrets to a friendly mirror",
+    "blowing bubbles that contain miniature forests", "building a castle out of wooden toy blocks"
 ];
 
 const settings = [
-    "inside an upside-down city floating in the clouds", "surrounded by a forest of giant singing crystals",
-    "on a desert where dunes are made of crushed pearls", "beneath a purple sky with three glowing moons",
-    "inside a vast clockwork library of infinite doors", "on top of a towering stack of glowing books",
-    "within an underwater kingdom of neon coral", "floating through the rings of a pastel-colored saturn"
+    "inside an upside-down treehouse village in a magical forest", "surrounded by giant singing mushrooms and fireflies",
+    "on a hill where grass glows in soft neon blues and pinks", "beneath a bright pastel sky with two smiling suns",
+    "inside a cozy candy-scented attic filled with old toys", "on top of a giant floating marshmallow island",
+    "within a secret garden of crystal flowers and butterflies", "floating gently through a pastel-colored dreamland"
 ];
 
 async function generateSurrealImage() {
@@ -48,11 +50,10 @@ async function generateSurrealImage() {
     try {
         if (genAI) {
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const instruction = "Invent a poetic, highly creative and completely unique surreal concept for an Imagination board game card. Max 12 words. Only the description.";
+            const instruction = "Invent a poetic, playful and cute surreal concept for an Imagination board game card. Child-friendly, magical, whimsical. Max 10 words. Only the description.";
             const result = await model.generateContent(instruction);
             imagePrompt = result.response.text().trim();
         } else {
-            // Mistura matemática estocástica para garantir zero repetição de cenários
             const sub = subjects[Math.floor(Math.random() * subjects.length)];
             const act = actions[Math.floor(Math.random() * actions.length)];
             const set = settings[Math.floor(Math.random() * settings.length)];
@@ -66,9 +67,10 @@ async function generateSurrealImage() {
     }
 
     const randomStyle = imaginativeStyles[Math.floor(Math.random() * imaginativeStyles.length)];
-    const uniqueSeed = Math.floor(Math.random() * 999999999) + Date.now() % 10000;
+    // Semente ultra aleatória combinando Math.random, timestamp e um fator estocástico extra
+    const uniqueSeed = Math.floor(Math.random() * 999999999) + Date.now() + Math.floor(Math.random() * 50000);
     
-    const finalPrompt = encodeURIComponent(`${imagePrompt}, cinematic framing, surrealism, ${randomStyle}, board game masterpiece art`);
+    const finalPrompt = encodeURIComponent(`${imagePrompt}, dynamic framing, ${randomStyle}, board game masterpiece art`);
 
     const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=600&height=1000&nologo=true&seed=${uniqueSeed}`;
     
