@@ -7,6 +7,7 @@ require('dotenv').config();
 
 // IMPORTANDO A SUA ENGENHARIA BRILHANTE
 const { refillBuffer, drawCards } = require('./cardBuffer');
+const { generateSurrealImage } = require('./googleApi'); // Importamos a sua API para o fundo
 
 const app = express();
 const server = http.createServer(app);
@@ -16,9 +17,35 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializa o seu Baú de Cartas em Background!
-console.log("Inicializando servidor. Carregando o Baú Mágico de cartas...");
-refillBuffer(); 
+// Variável para guardar o fundo dinâmico gerado pela API
+let dynamicBackgroundUrl = '';
+
+async function initializeServer() {
+    console.log("Inicializando servidor...");
+    
+    // 1. Gera o fundo dinâmico usando a sua API do Google
+    try {
+        console.log("A gerar imagem de fundo dinâmica com a API do Google...");
+        // Um prompt específico para a API criar um mosaico colorido estilo Dixit
+        dynamicBackgroundUrl = await generateSurrealImage("Mosaico de ilustrações surrealistas estilo contos de fadas, muito colorido e mágico, estilo jogo de tabuleiro Dixit.");
+        console.log("Imagem de fundo gerada com sucesso!");
+    } catch (error) {
+        console.log("Falha ao gerar fundo dinâmico. Usando fundo de emergência.");
+        dynamicBackgroundUrl = 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&fit=crop';
+    }
+
+    // 2. Carrega o Baú Mágico de cartas
+    console.log("Carregando o Baú Mágico de cartas...");
+    refillBuffer(); 
+}
+
+// Inicia a preparação do servidor
+initializeServer();
+
+// Rota para o telemóvel pedir a imagem de fundo atual
+app.get('/api/background', (req, res) => {
+    res.json({ backgroundUrl: dynamicBackgroundUrl });
+});
 
 const gameRooms = {}; 
 
@@ -43,7 +70,6 @@ io.on('connection', (socket) => {
       targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
-      // Não precisamos mais de um "deck" fixo na sala, o seu Buffer fornece cartas infinitas!
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
@@ -73,7 +99,7 @@ io.on('connection', (socket) => {
       
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
       
-      // AQUI A MÁGICA ACONTECE: Saca as 5 cartas iniciais do seu Buffer para cada jogador!
+      // Saca as 5 cartas iniciais do seu Buffer para cada jogador!
       room.players.forEach(p => {
         p.hand = drawCards(5); 
       });
