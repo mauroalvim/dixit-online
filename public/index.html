@@ -65,18 +65,29 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
+        /* --- ESTILOS DO CARD NATIVO --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
             background-color: #161b22; 
-            background-size: 100% 115%; 
-            background-position: center 30%; 
             overflow: hidden; 
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
+        
+        .card-img-element {
+            position: absolute;
+            width: 100%;
+            height: 115%; /* Faz o corte da logo */
+            object-fit: cover;
+            object-position: center 30%;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
         
         .card-loading {
             background-image: linear-gradient(90deg, #161b22, #3b2a50, #161b22);
@@ -160,8 +171,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.24 -->
-    <div class="version-footer">Versão 10.24</div>
+    <!-- VERSÃO 10.25 -->
+    <div class="version-footer">Versão 10.25</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -178,7 +189,7 @@
         window.addEventListener('error', e => showErr('Erro no jogo: ' + e.message));
 
         const socket = io();
-        socket.on('connect_error', e => showErr('Sem conexão com o servidor.'));
+        socket.on('connect_error', e => showErr('Sem ligação com o servidor.'));
         socket.on('connect', () => { const b = document.getElementById('errBanner'); if (b) b.remove(); });
 
         let myRoomId = '', pendingRoomIdToJoin = '', selectedCardUrl = '', myPlayedCardUrl = '';
@@ -193,7 +204,7 @@
 
         function showCreateRoom() {
             const name = $('hostPlayerName').value;
-            if (!name) return alert("Por favor, digite seu apelido de Host!");
+            if (!name) return alert("Por favor, digite o seu apelido de Host!");
             socket.emit('createRoom', { targetScore: $('targetScoreInput').value, playerName: name });
         }
         
@@ -201,7 +212,7 @@
             myRoomId = roomId;
             $('initialMenu').style.display = 'none';
             $('game').style.display = 'block';$('roomCodeDisplay').innerText = 'Código da Sala: ' + roomId;
-            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'Aguardando jogadores entrarem...';
+            $('waitingMessage').style.display = 'block';$('waitingMessage').innerText = 'A aguardar que os jogadores entrem...';
             updatePlayersList(players);
         });
 
@@ -220,7 +231,7 @@
 
         function joinRoom() {
             const name = $('guestPlayerName').value;
-            if (!name) return alert("Por favor, digite seu apelido para entrar!");
+            if (!name) return alert("Por favor, digite o seu apelido para entrar!");
             socket.emit('joinRoom', { roomId: pendingRoomIdToJoin, playerName: name });
         }
         
@@ -251,43 +262,30 @@
         function startGame() { socket.emit('startGame', { roomId: myRoomId }); }
         function nextRound() { socket.emit('nextRound', { roomId: myRoomId }); }
 
-        // Fila de carregamento anti-bloqueio com retentativas inteligentes
-        function loadInto(cardDiv, url, index) {
-            setTimeout(() => {
-                const img = new Image();
-                let attempts = 0;
-                const maxAttempts = 4;
-                
-                const tryLoad = (currentUrl) => { img.src = currentUrl; };
-
-                img.onload = () => { 
-                    cardDiv.classList.remove('card-loading'); 
-                    cardDiv.style.backgroundImage = `url('${img.src}')`; 
-                    cardDiv.innerHTML = ''; 
-                };
-                
-                img.onerror = () => {
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        const retryUrl = url + (url.includes('?') ? '&' : '?') + "retry=" + Date.now();
-                        setTimeout(() => tryLoad(retryUrl), 1500 * attempts);
-                    } else {
-                        cardDiv.classList.remove('card-loading');
-                        cardDiv.style.border = '2px dashed #ff4b2b';
-                        cardDiv.innerHTML = '<span style="font-size:24px;">⚠️</span>';
-                    }
-                };
-
-                tryLoad(url);
-            }, index * 600); // 600 milissegundos de intervalo entre cada carta gerada
-        }
-
         function appendCardToBoard(url, isVotingPhase = false, index = 0) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card card-loading';
+            
+            // TAG IMG NATIVA: Mais robusto e gerido diretamente pelo navegador
+            const img = document.createElement('img');
+            img.className = 'card-img-element';
+            
+            img.onload = () => {
+                cardDiv.classList.remove('card-loading');
+                img.style.opacity = '1';
+            };
+            
+            img.onerror = () => {
+                setTimeout(() => { img.src = url + "&retry=" + Date.now(); }, 2500);
+            };
+
+            cardDiv.appendChild(img);
             $('hand').appendChild(cardDiv);
 
-            loadInto(cardDiv, url, index);
+            // FILA INTELIGENTE: Pede as imagens à API com 500ms de diferença entre si
+            setTimeout(() => {
+                img.src = url;
+            }, index * 500);
 
             if (isVotingPhase) {
                 if (amINarrator) {
@@ -295,14 +293,14 @@
                     cardDiv.onclick = () => alert("Você é o narrador! Apenas observe a votação.");
                 } else if (url === myPlayedCardUrl) {
                     cardDiv.classList.add('my-card-disabled');
-                    cardDiv.onclick = () => alert("Você não pode votar na sua própria carta!");
+                    cardDiv.onclick = () => alert("Não pode votar na sua própria carta!");
                 } else {
                     cardDiv.onclick = () => openModal(url, 'VOTE');
                 }
             } else {
                 if (!amINarrator && !narratorHasPlayed) cardDiv.classList.add('locked-card');
                 cardDiv.onclick = () => {
-                    if (!amINarrator && !narratorHasPlayed) return alert("Calma! Espere o Narrador falar a dica e jogar primeiro.");
+                    if (!amINarrator && !narratorHasPlayed) return alert("Calma! Espere que o Narrador fale a dica e jogue primeiro.");
                     openModal(url, 'PLAY');
                 };
                 myHandElements.push(cardDiv);
@@ -331,8 +329,8 @@
             $('reloadCardsBtn').style.display = 'block';
             
             ins.innerHTML = amINarrator
-                ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale sua dica em voz alta e escolha uma carta.'
-                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está dando a dica. Olhe as suas cartas enquanto isso!';
+                ? '<span style="color:#38ef7d; font-weight:800; font-size:1.4em;">Você é o Narrador!</span><br>Fale a sua dica em voz alta e escolha uma carta.'
+                : '<span style="color:#f1c40f; font-weight:600; font-size:1.2em;">Aguarde...</span><br>O Narrador está a dar a dica. Olhe para as suas cartas entretanto!';
                 
             me.hand.forEach((url, i) => appendCardToBoard(url, false, i));
         });
@@ -340,7 +338,7 @@
         socket.on('narratorPlayed', () => {
             narratorHasPlayed = true;
             if (!amINarrator) {
-                $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">Sua Vez!</span><br>O Narrador deu a dica. Escolha a sua carta que mais combina com a dica.';
+                $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">A Sua Vez!</span><br>O Narrador deu a dica. Escolha a carta que mais combina com a dica.';
                 myHandElements.forEach(d => {
                     d.classList.remove('locked-card');
                     d.style.opacity = '1';
@@ -352,7 +350,7 @@
         socket.on('startVotingPhase', ({ cards }) => {
             $('hand').innerHTML = '';
             $('reloadCardsBtn').style.display = 'none';$('actionInstruction').innerHTML = amINarrator
-                ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde os jogadores votarem (Você não vota).'
+                ? '<span style="color:#f1c40f; font-weight:800; font-size:1.3em;">Hora da Votação!</span><br>Aguarde que os jogadores votem (Você não vota).'
                 : '<span style="color:#a777e3; font-weight:800; font-size:1.4em;">Votação!</span><br>Qual destas é a carta do narrador?';
                 
             cards.forEach((url, i) => appendCardToBoard(url, true, i));
@@ -378,7 +376,7 @@
             if (!isGameOver && isHost) {
                 html += `<button onclick="nextRound()" style="background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 18px; font-size: 1.1em; margin-top: 20px;">Próxima Rodada</button>`;
             } else if (!isGameOver) {
-                html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">Aguardando o Host iniciar a próxima rodada...</p>`;
+                html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">A aguardar que o Host inicie a próxima rodada...</p>`;
             } else if (isHost) {
                 html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
             }
@@ -410,10 +408,10 @@
             if (modalAction === 'PLAY') {
                 myPlayedCardUrl = selectedCardUrl;
                 socket.emit('playCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#38ef7d; font-size:1.2em;">Carta na mesa!</span><br>Aguardando os outros jogadores...';
+                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#38ef7d; font-size:1.2em;">Carta na mesa!</span><br>A aguardar os outros jogadores...';
             } else {
                 socket.emit('voteCard', { roomId: myRoomId, cardUrl: selectedCardUrl });
-                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-size:1.2em;">Voto registrado!</span><br>Aguardando apuração...';
+                $('hand').innerHTML = '';$('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-size:1.2em;">Voto registado!</span><br>A aguardar apuração...';
             }
             closeModal();
         }
