@@ -7,6 +7,7 @@ if (process.env.GOOGLE_API_KEY) {
     catch (e) { console.log("Modo offline ativo para o Gemini."); }
 }
 
+// Estilos visuais altamente diversificados inspirados no Dixit
 const dixitStyles = [
     "whimsical watercolor painting, pastel and bright cheerful colors, fairytale illustration style",
     "classic oil painting, rich textures, surrealism, mysterious and poetic board game art",
@@ -16,19 +17,20 @@ const dixitStyles = [
     "gothic surrealism, dark fantasy illustration, glowing elements, intricate details"
 ];
 
-// Foco total em personagens centrais marcantes e expressivos
-const centralCharacters = [
-    "A close-up portrait of a mysterious clockmaker", "A whimsical wizard holding a glowing glass orb",
-    "A lonely astronaut sitting on a crescent moon", "A curious fox wearing elegant Victorian clothing",
-    "A magical child surrounded by floating origami birds", "An ancient tree spirit with a wise, kind face",
-    "A theatrical jester juggling planets", "A graceful ballerina dancing on a floating cloud",
-    "A friendly giant holding a tiny glowing village", "A detective cat with a magnifying glass examining a star"
-];
-
-const surrealActions = [
-    "weaving threads of starlight into a blanket", "painting a door that opens into a vibrant galaxy",
-    "listening to secrets whispered by a magical seashell", "releasing a flock of glowing butterflies from a vintage lantern",
-    "balancing a fragile miniature world on the palm of their hand", "playing a haunting melody on a crystal flute"
+// ENQUADRAMENTOS E CENÁRIOS VARIADOS (Adeus aos retratos repetidos de pessoas de frente!)
+const diverseConcepts = [
+    "A tiny paper boat sailing across an ocean made of glowing musical sheets",
+    "An antique pocket watch floating in mid-air, opening up to reveal a miniature forest",
+    "A giant sleepy whale with a cozy little village built upon its back",
+    "A lonely red umbrella walking itself along a misty cobblestone bridge",
+    "A magnificent tree whose leaves are glowing glass lanterns lighting up the night",
+    "A vintage locomotive flying through rings of Saturn made of colorful ribbons",
+    "A mischievous fox wearing a top hat whispering secrets to an ancient stone owl",
+    "An endless staircase spiraling up into a sky filled with pastel-colored planets",
+    "A grand piano abandoned in a quiet meadow, sprouting wildflowers from its keys",
+    "A glowing key resting on a cloud, unlocking a door floating in the open sky",
+    "A silhouetted traveler standing before a giant mirror reflecting a completely different magical world",
+    "A school of luminous fish swimming through the branches of an underwater autumn tree"
 ];
 
 async function generateSurrealImage() {
@@ -37,27 +39,24 @@ async function generateSurrealImage() {
     try {
         if (genAI) {
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const instruction = "Invent a poetic, surreal concept for a Dixit card focusing on a prominent central character (max 10 words). Only the description.";
-            const result = await model.generateContent(instruction);
-            imagePrompt = result.response.text().trim();
+            const instruction = "Invent a poetic, highly imaginative concept for a Dixit card focusing on objects, landscapes, or surreal animals (no simple front-facing portraits). Max 12 words. Only the description.";
+            const result = model.generateContent(instruction);
+            imagePrompt = (await result).response.text().trim();
         } else {
-            const char = centralCharacters[Math.floor(Math.random() * centralCharacters.length)];
-            const act = surrealActions[Math.floor(Math.random() * surrealActions.length)];
-            imagePrompt = `${char} ${act}`;
+            imagePrompt = diverseConcepts[Math.floor(Math.random() * diverseConcepts.length)];
         }
     } catch (error) {
-        const char = centralCharacters[Math.floor(Math.random() * centralCharacters.length)];
-        const act = surrealActions[Math.floor(Math.random() * surrealActions.length)];
-        imagePrompt = `${char} ${act}`;
+        imagePrompt = diverseConcepts[Math.floor(Math.random() * diverseConcepts.length)];
     }
 
     const randomStyle = dixitStyles[Math.floor(Math.random() * dixitStyles.length)];
     const uniqueSeed = Math.floor(Math.random() * 99999999) + Date.now() % 1000;
     
-    // Pedimos explicitamente um plano centralizado ("centered composition, close-up") para afastar a logo das bordas
-    const finalPrompt = encodeURIComponent(`${imagePrompt}, centered composition, close-up, ${randomStyle}, dixit board game masterpiece`);
+    // Adicionamos comandos para afastar o assunto das bordas e garantir planos abertos/panorâmicos
+    const finalPrompt = encodeURIComponent(`${imagePrompt}, wide angle shot, cinematic composition, surrealism, ${randomStyle}, dixit board game art`);
 
-    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=600&height=900&nologo=true&seed=${uniqueSeed}`;
+    // URL com nologo explícito e proporção ajustada para afastar qualquer rodapé da área visível
+    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=500&height=800&nologo=true&seed=${uniqueSeed}`;
     
     return imageUrl;
 }
