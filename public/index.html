@@ -5,31 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dixit Online</title>
     <style>
-        body {
-            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed;
-            background-size: cover; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden;
-        }
-
-        body::before {
-            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(30, 30, 40, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: -1;
-        }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 40, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: -1; }
 
         .main-title-container { text-align: center; margin-top: 50px; margin-bottom: 20px; }
         .main-title { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: 1px; text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.6); }
         .sparkles { font-size: 2rem; margin-top: -10px; text-shadow: 0 0 15px rgba(241, 196, 15, 0.8); }
 
-        .card-padrao {
-            background-color: #1a1a24; border-radius: 20px; width: 90%; max-width: 450px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 20px;
-        }
+        .card-padrao { background-color: #1a1a24; border-radius: 20px; width: 90%; max-width: 450px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 20px; }
         .game-container { max-width: 650px; padding: 25px; box-sizing: border-box; background-color: transparent; box-shadow: none; border: none; margin-top: 10px; }
 
         .header-sala { text-align: center; margin-bottom: 15px; }
         .header-sala h2 { color: #f1c40f; font-size: 1.8rem; margin: 0; }
-        .info-mesa { background: #111115; padding: 12px 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #2a2a35; text-align: center; font-size: 1.1rem; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; }
 
         .header { padding: 30px 20px 15px 20px; text-align: center; }
         .header h3 { color: #2ecc71; margin: 0; font-size: 1.4rem; }
@@ -57,31 +44,18 @@
         
         .deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-items: center; max-width: 320px; margin: 0 auto 30px auto; }
         
-        /* CARTAS NA TELA: Mantém a proporção nativa, preenchendo sutilmente o espaço */
-        .carta {
-            width: 145px; height: 210px; border-radius: 12px; object-fit: cover; cursor: pointer;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.5); transition: transform 0.2s; border: 2px solid transparent;
-        }
+        .carta { width: 145px; height: 210px; border-radius: 12px; object-fit: cover; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.5); transition: transform 0.2s; border: 2px solid transparent; }
         .carta:hover { transform: scale(1.05); border: 2px solid #2ecc71; }
         .carta:nth-child(5) { grid-column: span 2; }
 
         .btn-acao { background: #111115; border: 1px solid #2a2a35; color: white; padding: 15px; border-radius: 20px; cursor: pointer; width: 100%; max-width: 400px; font-weight: bold; margin: 0 auto; display: block; }
         .versao { margin-top: 20px; color: #888; font-size: 0.9rem; text-align: center; }
 
-        /* MODAL CARROSSEL: Exibe a imagem vertical na sua totalidade */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 15, 0.95); }
         .modal:not(.hidden) { display: flex; flex-direction: column; justify-content: center; }
         .close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1010; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         .carousel-container { display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 75vh; touch-action: pan-y; }
-        
-        .modal-content { 
-            max-width: 90%; 
-            max-height: 100%; 
-            object-fit: contain; /* Garante que a imagem vertical nunca seja cortada no zoom */
-            border-radius: 15px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9); 
-            transition: opacity 0.2s ease-in-out; 
-        }
+        .modal-content { max-width: 90%; max-height: 100%; object-fit: contain; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); transition: opacity 0.2s ease-in-out; }
         
         .carousel-nav { background: rgba(255, 255, 255, 0.1); color: white; border: none; font-size: 2rem; padding: 15px 10px; cursor: pointer; position: absolute; z-index: 10; border-radius: 8px; transition: 0.3s; }
         #prevBtn { left: 10px; } #nextBtn { right: 10px; }
@@ -96,6 +70,7 @@
         <div class="sparkles">✨</div>
     </div>
 
+    <!-- LOGIN -->
     <div class="card-padrao" id="telaEntrada">
         <div id="stepCodigo">
             <div class="header"><h3>🎮 Entrar na Partida</h3><p>Digite o código fornecido pelo Host.</p></div>
@@ -115,11 +90,13 @@
         </div>
     </div>
 
+    <!-- LOBBY -->
     <div class="card-padrao" id="telaLobby" style="display: none; background: transparent; border: none; box-shadow: none;">
         <div class="header-sala"><h2>Sala: <span id="lobbyCodigoDisplay"></span></h2></div>
         
         <div class="ranking-container">
-            <div class="ranking-title">👥 Jogadores no Lobby (<span id="qtdJogadores">1</span>/6)</div>
+            <!-- REMOVIDO o limite de "/6" (Print 6 corrigido) -->
+            <div class="ranking-title">👥 <span id="qtdJogadores">1</span> Jogador(es) no Lobby</div>
             <div id="listaLobby"></div>
         </div>
 
@@ -129,9 +106,11 @@
         </div>
     </div>
 
+    <!-- JOGO -->
     <div class="game-container" id="telaJogo" style="display: none;">
         <div class="header-sala" id="headerJogo"><h2>Sala: <span id="jogoCodigoDisplay"></span></h2></div>
-        <div class="info-mesa"><span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong></div>
+        
+        <!-- REMOVIDO: A info-mesa que mostrava os nomes "Na Mesa: Mauro, Michele" (Print 5 corrigido) -->
 
         <div class="ranking-container" id="painelRanking" style="display: none;">
             <div class="ranking-title">🏆 Classificação Geral</div>
@@ -140,11 +119,12 @@
 
         <div id="statusNarrador" class="status-narrador"></div>
         <div class="deck" id="deckCartas"></div>
-        <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
+        <button class="btn-acao" onclick="pedirNovasCartas()">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <div class="versao" id="versaoApp">Versão 10.40</div>
+    <div class="versao" id="versaoApp">Versão 10.42</div>
 
+    <!-- ZOOM -->
     <div id="zoomModal" class="modal hidden">
         <span class="close" onclick="fecharModal()">&times;</span>
         <div class="carousel-container">
@@ -196,10 +176,16 @@
         }
 
         function iniciarPartidaJogo() { socket.emit('iniciarPartida', codigoAtual); }
+        function pedirNovasCartas() { socket.emit('pedirCartas', codigoAtual); }
 
         socket.on('atualizarSala', (sala) => {
             const eu = sala.jogadores.find(j => j.id === socket.id);
             if(!eu) return;
+
+            // BUGFIX: Se o servidor acabou de mandar cartas novas (e eu tenho menos que 5), eu pego
+            if (eu.mao.length < 5 && sala.bau.length > 0) {
+                 socket.emit('pedirCartas', codigoAtual);
+            }
 
             if (sala.estado === 'aguardando') {
                 atualizarListaLobby(sala);
@@ -208,9 +194,6 @@
                 document.getElementById('telaJogo').style.display = 'block';
                 document.getElementById('jogoCodigoDisplay').innerText = codigoAtual;
                 
-                const nomesMesa = sala.jogadores.map(j => j.nome).join(', ');
-                document.getElementById('displayJogadores').innerText = nomesMesa;
-
                 atualizarClassificacao(sala);
                 atualizarMesaEJogo(sala, eu);
             }
@@ -219,7 +202,7 @@
         function atualizarListaLobby(sala) {
             const painelLobby = document.getElementById('listaLobby');
             const qtd = sala.jogadores.length;
-            document.getElementById('qtdJogadores').innerText = qtd;
+            document.getElementById('qtdJogadores').innerText = qtd; // Não mostra mais o "/6"
             painelLobby.innerHTML = '';
             
             sala.jogadores.forEach((j, index) => {
@@ -286,14 +269,18 @@
         function renderizarDeck() {
             const deckDiv = document.getElementById('deckCartas');
             deckDiv.innerHTML = '';
-            cartasNoDeckAtual.forEach((cartaUrl, index) => {
-                const img = document.createElement('img');
-                img.src = cartaUrl; img.className = 'carta';
-                img.onclick = () => abrirZoom(index);
-                deckDiv.appendChild(img);
-            });
+            
+            if(cartasNoDeckAtual.length === 0) {
+                 deckDiv.innerHTML = '<p style="color: #888; grid-column: span 2; text-align: center;">Carregando cartas no servidor... Por favor aguarde um momento e clique em Recarregar.</p>';
+            } else {
+                cartasNoDeckAtual.forEach((cartaUrl, index) => {
+                    const img = document.createElement('img');
+                    img.src = cartaUrl; img.className = 'carta';
+                    img.onclick = () => abrirZoom(index);
+                    deckDiv.appendChild(img);
+                });
+            }
         }
-        function recarregarCartas() { renderizarDeck(); }
 
         function abrirZoom(indice) {
             indiceCarrosselAtual = indice;
