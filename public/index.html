@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Imagination - Dixit Online</title>
+    <title>Dixit Online</title>
     <style>
-        /* Estilos Globais e Fundo Elegante (Estilo v3.30+) */
+        /* --- ESTILOS GLOBAIS E FUNDO DESFOCADO (Estilo v10.10) --- */
         body {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            background-attachment: fixed;
-            color: #fff;
+            /* Fundo simulando as cartas desfocadas do seu print */
+            background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -20,136 +21,199 @@
             overflow-x: hidden;
         }
 
-        /* Glassmorphism Cards */
-        .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Camada extra de desfoque para ficar idêntico ao print */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(30, 30, 40, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: -1;
+        }
+
+        /* --- TÍTULO PRINCIPAL --- */
+        .main-title-container {
+            text-align: center;
+            margin-top: 50px;
+            margin-bottom: 20px;
+        }
+        
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: 1px;
+            text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .sparkles {
+            font-size: 2rem;
+            margin-top: -10px;
+            text-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+        }
+
+        /* --- CARD DE LOGIN IDÊNTICO AO PRINT --- */
+        .login-card {
+            background-color: #1a1a24;
             border-radius: 20px;
-            padding: 30px 20px;
             width: 90%;
-            max-width: 500px;
-            margin-top: 40px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            max-width: 400px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Para o rodapé escuro ficar certinho */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .login-header {
+            padding: 30px 20px 15px 20px;
             text-align: center;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-            background: -webkit-linear-gradient(#f1c40f, #f39c12);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0px 4px 10px rgba(241, 196, 15, 0.3);
+        .login-header h3 {
+            color: #2ecc71;
+            margin: 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        p.subtitle {
-            color: #aaa;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
+        .login-header p {
+            color: #d1d1d1;
+            font-size: 0.95rem;
+            margin-top: 15px;
+            margin-bottom: 0;
         }
 
-        /* Tela de Entrada Refinada */
-        #loginScreen {
+        .login-body {
+            padding: 15px 25px 30px 25px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
+        /* Inputs escuros e arredondados iguais ao print */
         input {
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.2);
-            color: #fff;
-            font-size: 1.1rem;
+            background-color: #111115;
+            border: 1px solid #2a2a35;
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1rem;
             text-align: center;
             outline: none;
             transition: border 0.3s;
         }
 
         input:focus {
-            border: 1px solid #f1c40f;
-            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #2ecc71;
         }
 
-        input::placeholder { color: #888; }
+        input::placeholder { color: #666; }
 
-        button.primario {
-            background: linear-gradient(135deg, #f1c40f, #e67e22);
-            color: #111;
-            font-weight: bold;
-            padding: 15px;
+        /* Botão Verde Avançar idêntico */
+        button.btn-avancar {
+            background: linear-gradient(90deg, #2ecc71, #229954);
+            color: white;
             border: none;
-            border-radius: 10px;
-            cursor: pointer;
+            padding: 16px;
+            border-radius: 25px;
             font-size: 1.2rem;
-            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+            transition: transform 0.2s;
         }
 
-        button.primario:active {
-            transform: scale(0.97);
-            box-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
+        button.btn-avancar:active { transform: scale(0.96); }
+
+        /* Rodapé Criar Sala idêntico */
+        .login-footer {
+            background-color: #14141c;
+            padding: 25px;
+            text-align: center;
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
         }
 
-        /* Tela de Jogo */
-        .destaque { color: #f1c40f; font-size: 1.5rem; margin-bottom: 15px;}
-        .narrador-texto { color: #2ecc71; font-weight: bold; font-size: 1.3rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        /* --- TELA DO JOGO (Adaptada para manter o visual Premium) --- */
+        .game-container {
+            background-color: #1a1a24;
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 30px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .destaque { color: #f1c40f; margin-top: 0;}
+        .narrador-texto { color: #2ecc71; font-weight: bold; font-size: 1.3rem; margin-bottom: 5px; text-transform: uppercase;}
 
         .info-mesa {
-            background: rgba(0,0,0,0.3);
+            background: #111115;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 1.1rem;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid #2a2a35;
         }
 
         .deck {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             margin-top: 20px;
         }
 
         .carta {
-            width: 110px;
-            height: 160px;
-            border-radius: 12px;
+            width: 105px;
+            height: 155px;
+            border-radius: 10px;
             object-fit: cover;
             cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.6);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
             border: 2px solid transparent;
         }
 
         .carta:hover {
-            transform: translateY(-5px) scale(1.05);
-            border: 2px solid #f1c40f;
-            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.3);
+            transform: scale(1.05);
+            border: 2px solid #2ecc71;
         }
 
         .btn-acao {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #ddd;
-            padding: 12px 20px;
+            background: #111115;
+            border: 1px solid #2a2a35;
+            color: white;
+            padding: 15px;
             border-radius: 20px;
             margin-top: 25px;
             cursor: pointer;
             width: 100%;
             font-weight: bold;
-            transition: background 0.3s;
+            transition: 0.3s;
         }
 
-        .btn-acao:hover { background: rgba(255, 255, 255, 0.2); }
+        .btn-acao:active { background: #2a2a35; }
 
-        .versao { margin-top: 20px; color: #666; font-size: 0.9rem; }
+        .versao {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            text-align: center;
+        }
 
-        /* --- Modal Carrossel --- */
+        /* --- MODAL CARROSSEL (Versão 10.35) --- */
         .modal {
             display: none;
             position: fixed;
@@ -159,7 +223,6 @@
             width: 100%;
             height: 100%;
             background-color: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(5px);
         }
         
         .modal:not(.hidden) {
@@ -177,7 +240,6 @@
             font-weight: bold;
             cursor: pointer;
             z-index: 1010;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         .carousel-container {
@@ -201,26 +263,25 @@
 
         .carousel-nav {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
             color: white;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: none;
             font-size: 2rem;
-            padding: 15px 12px;
+            padding: 15px 10px;
             cursor: pointer;
             position: absolute;
             z-index: 10;
-            border-radius: 50%;
+            border-radius: 8px;
             transition: 0.3s;
         }
 
         .carousel-nav:active { background: rgba(255, 255, 255, 0.3); }
-        #prevBtn { left: 15px; }
-        #nextBtn { right: 15px; }
+        #prevBtn { left: 10px; }
+        #nextBtn { right: 10px; }
 
         .zoom-action-container { text-align: center; margin-top: 30px; }
 
         #btnEscolherCarta {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            background: linear-gradient(90deg, #2ecc71, #229954);
             color: white;
             font-size: 1.2rem;
             font-weight: bold;
@@ -228,48 +289,55 @@
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
-
         #btnEscolherCarta:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <!-- Tela de Entrada -->
-    <div class="container" id="telaEntrada">
-        <h1>✨ Imagination ✨</h1>
-        <p class="subtitle">Um jogo de cartas surreal online.</p>
-        <div id="loginScreen">
-            <input type="text" id="nomeJogador" placeholder="Seu Nome de Jogador">
-            <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 3040)">
-            <button class="primario" onclick="entrarNaSala()">Entrar na Sala</button>
+    <!-- CABEÇALHO COM TÍTULO E BRILHOS -->
+    <div class="main-title-container" id="tituloApp">
+        <h1 class="main-title">Dixit Online</h1>
+        <div class="sparkles">✨</div>
+    </div>
+
+    <!-- TELA DE ENTRADA (IDÊNTICA AO PRINT) -->
+    <div class="login-card" id="telaEntrada">
+        <div class="login-header">
+            <h3>🎮 Entrar na Partida</h3>
+            <p>Digite o seu nome e o código fornecido pelo Host.</p>
+        </div>
+        
+        <div class="login-body">
+            <input type="text" id="nomeJogador" placeholder="Seu Nome (Ex: João)">
+            <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 1234)">
+            <button class="btn-avancar" onclick="entrarNaSala()">Avançar</button>
+        </div>
+
+        <div class="login-footer">
+            👑 Criar uma nova sala? Clique aqui ▼
         </div>
     </div>
 
-    <!-- Tela do Jogo -->
-    <div class="container" id="telaJogo" style="display: none;">
-        <h2 class="destaque">Código da Sala: <span id="displayCodigo"></span></h2>
+    <!-- TELA DO JOGO (Oculta até logar) -->
+    <div class="game-container" id="telaJogo" style="display: none;">
+        <h2 class="destaque">Sala: <span id="displayCodigo"></span></h2>
         
         <div class="info-mesa">
             <span style="color:#aaa;">Na Mesa:</span> <strong id="displayJogadores"></strong>
         </div>
 
-        <div id="statusNarrador" style="margin-bottom: 20px;">
-            <!-- Preenchido dinamicamente via JS -->
-        </div>
+        <div id="statusNarrador" style="margin-bottom: 20px;"></div>
 
-        <div class="deck" id="deckCartas">
-            <!-- Cartas inseridas dinamicamente via JS -->
-        </div>
+        <div class="deck" id="deckCartas"></div>
 
         <button class="btn-acao" onclick="recarregarCartas()">🔄 Recarregar Cartas na Tela</button>
-        
-        <div class="versao">Versão 10.35 (Interface Premium + Carrossel)</div>
     </div>
 
-    <!-- Modal de Visualização (Carrossel Interativo) -->
+    <div class="versao">Versão 10.35</div>
+
+    <!-- MODAL CARROSSEL / ZOOM DA VERSÃO 10.35 -->
     <div id="zoomModal" class="modal hidden">
         <span class="close" onclick="fecharModal()">&times;</span>
         <div class="carousel-container">
@@ -288,7 +356,7 @@
         let meuId = null;
         let codigoAtual = null;
         
-        // Estado do Carrossel
+        // --- Variáveis do Carrossel (v10.35) ---
         let cartasNoDeckAtual = []; 
         let indiceCarrosselAtual = 0;
 
@@ -296,14 +364,16 @@
             const nome = document.getElementById('nomeJogador').value;
             const codigo = document.getElementById('codigoSala').value;
             if(!nome || !codigo) {
-                alert("Por favor, preencha o seu nome e o código numérico da sala.");
+                alert("Por favor, preencha o seu nome e o código da sala.");
                 return;
             }
             
             codigoAtual = codigo;
             socket.emit('entrarSala', { nome, codigo });
             
+            // Oculta Login e Mostra Jogo
             document.getElementById('telaEntrada').style.display = 'none';
+            document.getElementById('tituloApp').style.display = 'none';
             document.getElementById('telaJogo').style.display = 'block';
             document.getElementById('displayCodigo').innerText = codigo;
         }
@@ -321,10 +391,10 @@
             if (souNarrador) {
                 statusDiv.innerHTML = `
                     <div class="narrador-texto">Você é o Narrador!</div>
-                    <div style="font-size: 0.95rem; color: #ccc;">Fale a sua dica em voz alta e escolha uma carta.</div>
+                    <div style="font-size: 0.95rem; color: #aaa;">Fale a sua dica em voz alta e escolha uma carta.</div>
                 `;
             } else {
-                statusDiv.innerHTML = `<div style="font-size: 1.1rem; color: #f39c12; font-weight: bold;">Aguardando o Narrador falar a dica...</div>`;
+                statusDiv.innerHTML = `<div style="font-size: 1.1rem; color: #f1c40f; font-weight: bold;">Aguardando o Narrador...</div>`;
             }
 
             cartasNoDeckAtual = eu.mao;
@@ -348,8 +418,7 @@
             renderizarDeck();
         }
 
-        // --- Lógica do Carrossel e Swipe ---
-
+        // --- Lógica do Carrossel e Swipe (v10.35) ---
         function abrirZoom(indiceDaCartaClicada) {
             indiceCarrosselAtual = indiceDaCartaClicada;
             atualizarImagemCarrossel();
@@ -386,7 +455,7 @@
             socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: cartaSelecionadaUrl });
         }
 
-        // Eventos de Toque (Swipe)
+        // Swipe (Arrastar)
         let toqueInicialX = 0;
         let toqueFinalX = 0;
         const areaZoom = document.getElementById('imgZoom');
