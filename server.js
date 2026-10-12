@@ -3,23 +3,17 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const https = require('https');
-const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { 
-    cors: { origin: "*", methods: ["GET", "POST"] } 
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(cors());
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const gameRooms = {}; 
 
 // =========================================================================
-// 🤖 GERADOR DE BARALHO INFINITO (LEXICA.ART / STABLE DIFFUSION)
+// 🤖 GERADOR DE BARALHO INFINITO (LEXICA.ART)
 // =========================================================================
 async function fetchAIImages() {
     return new Promise((resolve) => {
@@ -65,22 +59,19 @@ function getFallbackDeck() {
 // =========================================================================
 
 io.on('connection', (socket) => {
-  console.log(`Novo jogador conectado: ${socket.id}`);
-
   socket.on('validateRoom', ({ roomId }) => {
       const room = gameRooms[roomId];
       if (room && room.status === 'LOBBY') {
           socket.emit('roomValidated', { roomId });
       } else {
-          socket.emit('joinError', { message: 'Sala não encontrada ou partida já em andamento!' });
+          socket.emit('joinError', { message: 'Sala não encontrada ou partida em andamento!' });
       }
   });
 
   socket.on('createRoom', async ({ targetScore, playerName }) => {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
-    const hostPlayer = { id: socket.id, name: playerName || `Host-${roomId}`, score: 0, hand: [], isNarrator: false };
+    const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
 
-    // Informa o cliente que o baralho inteligente está a ser criado
     socket.emit('generatingDeck');
 
     let aiDeck = await fetchAIImages();
@@ -99,20 +90,17 @@ io.on('connection', (socket) => {
     
     socket.join(roomId);
     socket.emit('roomCreated', { roomId, players: gameRooms[roomId].players });
-    console.log(`Sala ${roomId} criada por ${hostPlayer.name}`);
   });
 
   socket.on('joinRoom', ({ roomId, playerName }) => {
     const room = gameRooms[roomId];
     if (room && room.status === 'LOBBY') {
-      const name = playerName || `Jogador-${socket.id.substring(0,4)}`;
-      const newPlayer = { id: socket.id, name: name, score: 0, hand: [], isNarrator: false };
+      const newPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
       room.players.push(newPlayer);
       socket.join(roomId);
       
       io.to(roomId).emit('playerJoined', { players: room.players });
       socket.emit('joinedSuccess', { roomId });
-      console.log(`${name} entrou na sala ${roomId}`);
     } else {
       socket.emit('joinError', { message: 'Sala não encontrada ou partida em andamento!' });
     }
@@ -123,13 +111,8 @@ io.on('connection', (socket) => {
     if (room) {
       room.status = 'NARRATOR_TURN';
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
-      
-      // Define o primeiro jogador como Narrador
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      
-      // Distribui 5 cartas do Buffer para cada jogador
       room.players.forEach(p => { p.hand = room.deck.splice(0, 5); });
-      
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
@@ -150,7 +133,7 @@ io.on('connection', (socket) => {
                 if (room.deck.length > 0) {
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 } else {
-                    room.deck = getFallbackDeck(); // Recarrega o buffer se acabar
+                    room.deck = getFallbackDeck();
                     p.hand.push(room.deck.splice(0, 1)[0]);
                 }
             }
@@ -190,7 +173,7 @@ io.on('connection', (socket) => {
       const room = gameRooms[roomId];
       if (room) {
           const isNarrator = room.players.find(p => p.id === socket.id)?.isNarrator;
-          if (isNarrator) return; // Narrador não vota
+          if (isNarrator) return;
 
           room.currentRound.votes.push({ playerId: socket.id, votedCardUrl: cardUrl });
           const expectedVotes = room.players.length - 1; 
@@ -202,7 +185,6 @@ io.on('connection', (socket) => {
               let acertos = 0;
               room.currentRound.votes.forEach(v => { if(v.votedCardUrl === narratorCard) acertos++; });
 
-              // Regra Oficial Dixit
               if (acertos === 0 || acertos === expectedVotes) {
                   room.players.forEach(p => { if(!p.isNarrator) p.score += 2; });
               } else {
@@ -215,7 +197,6 @@ io.on('connection', (socket) => {
                   });
               }
 
-              // Ponto extra para quem enganou
               room.currentRound.votes.forEach(v => {
                   if (v.votedCardUrl !== narratorCard) {
                       const ownerOfCard = room.currentRound.playedCards.find(c => c.cardUrl === v.votedCardUrl);
@@ -226,7 +207,6 @@ io.on('connection', (socket) => {
                   }
               });
 
-              // Remove as cartas jogadas da mão
               room.players.forEach(p => {
                   const pCard = room.currentRound.playedCards.find(c => c.playerId === p.id);
                   if (pCard) { p.hand = p.hand.filter(h => h !== pCard.cardUrl); }
@@ -245,11 +225,7 @@ io.on('connection', (socket) => {
           }
       }
   });
-  
-  socket.on('disconnect', () => {
-      console.log('Jogador desconectado:', socket.id);
-  });
 });
 
-const port = process.env.PORT || 3000;
-server.listen(port, () => console.log(`Servidor Dixit Online rodando na porta ${port}`));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Servidor Dixit Online rodando na porta ${PORT}`));
