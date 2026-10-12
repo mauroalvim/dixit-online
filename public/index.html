@@ -26,7 +26,12 @@
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            background: linear-gradient(135deg, #2b1055, #7597de);
+            /* FUNDO MÁGICO SEGURO E ESTÁTICO (Nunca é bloqueado) */
+            background-image: url('https://images.rawpixel.com/image_1300/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMTEtYmctMDgteC5qcGc.jpg');
+            background-color: rgba(255, 255, 255, 0.15);
+            background-blend-mode: overlay;
+            background-size: cover;
+            background-position: center;
             filter: blur(2px); 
         }
         
@@ -157,8 +162,7 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.32 -->
-    <div class="version-footer">Versão 10.32 (Juiz IA + Pixabay)</div>
+    <div class="version-footer">Versão 10.33 (Juiz Implacável + Sem Fotos)</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
