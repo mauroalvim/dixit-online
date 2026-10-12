@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dixit Online</title>
+    <title>Imagination ✨</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,13 +20,13 @@
             position: relative; 
         }
 
-        /* --- O FUNDO ALEGRE E COLORIDO DO DIXIT --- */
+        /* --- O FUNDO ALEGRE E COLORIDO DO JOGO --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            background-image: url('https://image.pollinations.ai/prompt/vibrant%20colorful%20surreal%20fantasy%20board%20game%20art%20collage%20dixit%20style%20cheerful%20masterpiece?width=1080&height=1920&nologo=true');
+            background-image: url('https://image.pollinations.ai/prompt/vibrant%20colorful%20surreal%20fantasy%20board%20game%20art%20collage%20cheerful%20masterpiece?width=1080&height=1920&nologo=true');
             background-color: rgba(255, 255, 255, 0.15);
             background-blend-mode: overlay;
             background-size: cover;
@@ -67,13 +67,13 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- CARTA COM CORTE GEOMÉTRICO (OCULTA A LOGO NA MÃO E NA MESA) --- */
+        /* --- CARTA COM CORTE GEOMÉTRICO (OCULTA A LOGO) --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
             background-color: #161b22; 
-            background-size: 112% 122%; /* Aplica zoom expansivo para empurrar o rodapé para fora */
-            background-position: center 38%; /* Centraliza o corte afastando a base */
+            background-size: 100% 115%; 
+            background-position: center 30%; 
             overflow: hidden; 
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
@@ -98,7 +98,6 @@
         .winner-title { font-size: 2em; color: #f1c40f; text-shadow: 0 0 20px rgba(241,196,15,.6); animation: pulse 2s infinite; margin: 20px 0; }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         
-        /* --- MODAL COM MÁSCARA DE CORTE NA IMAGEM (REMOVE A LOGO MESMO NO ZOOM) --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.95); backdrop-filter: blur(8px); padding: 20px; overflow-y: auto; }
         .modal-content { position: relative; top: 50%; transform: translateY(-50%); background: #161b22; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; margin: 0 auto; box-shadow: 0 20px 50px rgba(0,0,0,.8); border: 1px solid rgba(255,255,255,.1); }
         
@@ -106,7 +105,7 @@
             width: 100%;
             max-height: 60vh;
             aspect-ratio: 2 / 3;
-            overflow: hidden; /* Corta qualquer conteúdo que passe das margens do cartão no modal */
+            overflow: hidden;
             border-radius: 12px;
             margin-bottom: 10px;
             position: relative;
@@ -114,9 +113,9 @@
         }
         .modal-img { 
             width: 100%; 
-            height: 115%; /* Estica o conteúdo para baixo, empurrando o rodapé para fora da view */
+            height: 115%; 
             object-fit: cover; 
-            object-position: center top; /* Mantém o foco no topo/centro da arte e corta a base onde está a logo */
+            object-position: center top; 
         }
         
         .version-footer {
@@ -129,7 +128,7 @@
     </style>
 </head>
 <body>
-    <h1>Dixit Online ✨</h1>
+    <h1>Imagination ✨</h1>
 
     <div id="initialMenu" class="glass-panel">
         <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
@@ -171,7 +170,6 @@
         <button id="reloadCardsBtn" onclick="reloadCurrentHand()" style="display:none; background: rgba(255,255,255,0.15); font-size: 13px; padding: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2);">🔄 Recarregar Cartas na Tela</button>
     </div>
 
-    <!-- MODAL ATUALIZADO COM CONTROLO DE CORTE DE RODAPÉ -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <div class="modal-img-container">
@@ -182,8 +180,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.17 -->
-    <div class="version-footer">Versão 10.17</div>
+    <!-- VERSÃO 10.18 -->
+    <div class="version-footer">Versão 10.18</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -402,7 +400,6 @@
             $('cardModal').style.display = 'block';
         }
         
-        boxModalClose = closeModal;
         function closeModal() { 
             $('cardModal').style.display = 'none'; 
             selectedCardUrl = ''; 
