@@ -7,7 +7,6 @@ if (process.env.GOOGLE_API_KEY) {
     catch (e) { console.log("Modo offline ativo para o Gemini."); }
 }
 
-// Estilos visuais altamente diversificados inspirados no Dixit
 const dixitStyles = [
     "whimsical watercolor painting, pastel and bright cheerful colors, fairytale illustration style",
     "classic oil painting, rich textures, surrealism, mysterious and poetic board game art",
@@ -17,7 +16,6 @@ const dixitStyles = [
     "gothic surrealism, dark fantasy illustration, glowing elements, intricate details"
 ];
 
-// ENQUADRAMENTOS E CENÁRIOS VARIADOS (Adeus aos retratos repetidos de pessoas de frente!)
 const diverseConcepts = [
     "A tiny paper boat sailing across an ocean made of glowing musical sheets",
     "An antique pocket watch floating in mid-air, opening up to reveal a miniature forest",
@@ -39,7 +37,7 @@ async function generateSurrealImage() {
     try {
         if (genAI) {
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const instruction = "Invent a poetic, highly imaginative concept for a Dixit card focusing on objects, landscapes, or surreal animals (no simple front-facing portraits). Max 12 words. Only the description.";
+            const instruction = "Invent a poetic, highly imaginative concept for a Dixit card focusing on objects, landscapes, or surreal animals. Max 12 words. Only the description.";
             const result = model.generateContent(instruction);
             imagePrompt = (await result).response.text().trim();
         } else {
@@ -52,11 +50,10 @@ async function generateSurrealImage() {
     const randomStyle = dixitStyles[Math.floor(Math.random() * dixitStyles.length)];
     const uniqueSeed = Math.floor(Math.random() * 99999999) + Date.now() % 1000;
     
-    // Adicionamos comandos para afastar o assunto das bordas e garantir planos abertos/panorâmicos
     const finalPrompt = encodeURIComponent(`${imagePrompt}, wide angle shot, cinematic composition, surrealism, ${randomStyle}, dixit board game art`);
 
-    // URL com nologo explícito e proporção ajustada para afastar qualquer rodapé da área visível
-    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=500&height=800&nologo=true&seed=${uniqueSeed}`;
+    // Ajustado para forçar espaço livre nas bordas e ignorar qualquer marca d'água
+    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=600&height=1000&nologo=true&seed=${uniqueSeed}`;
     
     return imageUrl;
 }
