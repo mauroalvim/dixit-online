@@ -1,65 +1,39 @@
+// server.js (Seu arquivo principal do Node.js)
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
+const http = require('http');
+const socketIo = require('socket.io');
+const { refillBuffer, drawCards } = require('./cardBuffer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = socketIo(server);
 
-// Configura o Gemini com a chave de API que você vai colocar no Render
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODELO = process.env.GEMINI_MODELO || 'gemini-2.5-flash-image';
+// 1. INÍCIO DO JOGO: Dispara o preenchimento do buffer assim que ligar o servidor
+console.log("Inicializando servidor. Carregando cartas no buffer...");
+refillBuffer(); 
 
-// Cria a pasta public/cartas caso não exista
-const PASTA_CARTAS = path.join(__dirname, 'public', 'cartas');
-if (!fs.existsSync(PASTA_CARTAS)) {
-  fs.mkdirSync(PASTA_CARTAS, { recursive: true });
-}
+io.on('connection', (socket) => {
+    console.log('Novo jogador conectado:', socket.id);
 
-// Estilo base do Dixit
-const ESTILO_DIXIT = 'surreal dreamlike illustration, whimsical fairy-tale storybook art, soft muted pastel palette, hand-painted texture, magical melancholic atmosphere, vertical card composition, no text, no letters, no watermark';
-
-// Rota da API para gerar a carta
-app.get('/api/gerar-carta', async (req, res) => {
-  // Pega a cena digitada pelo usuário ou usa uma padrão
-  const cena = req.query.cena || 'a magical forest with glowing mushrooms';
-  const prompt = `${cena}, ${ESTILO_DIXIT}`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: MODELO,
-      contents: prompt,
-      config: {
-        responseModalities: ['IMAGE'],
-        imageConfig: { aspectRatio: '2:3' },
-      },
+    // Quando o jogador entra na sala, ele pede a mão inicial
+    socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+        
+        // Saca 6 cartas imediatamente da memória RAM do servidor (Latência ZERO)
+        const initialHand = drawCards(6);
+        
+        // Envia as cartas prontas para o jogador
+        socket.emit('receiveInitialHand', initialHand);
     });
 
-    // Procura a imagem na resposta do Google
-    const part = response.candidates[0].content.parts.find(p => p.inlineData);
-    
-    if (part) {
-      // Cria um nome de arquivo único baseado na data/hora
-      const nomeArquivo = `carta-${Date.now()}.png`;
-      const arquivo = path.join(PASTA_CARTAS, nomeArquivo);
-      
-      // Salva a imagem na pasta
-      fs.writeFileSync(arquivo, Buffer.from(part.inlineData.data, 'base64'));
-      
-      // Retorna o link da imagem para o HTML
-      res.json({ sucesso: true, url: `/cartas/${nomeArquivo}` });
-    } else {
-      res.status(500).json({ sucesso: false, erro: 'A resposta não continha imagem.' });
-    }
-  } catch (error) {
-    console.error('Erro na API:', error);
-    res.status(500).json({ sucesso: false, erro: error.message });
-  }
+    // Quando o jogador usa uma carta e precisa comprar outra no fim do turno
+    socket.on('drawSingleCard', () => {
+        const newCard = drawCards(1);
+        socket.emit('receiveNewCard', newCard[0]);
+    });
 });
 
-// Serve os arquivos estáticos (HTML, CSS, Imagens)
-app.use(express.static('public'));
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
