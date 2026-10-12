@@ -20,27 +20,23 @@
             position: relative; 
         }
 
-        /* --- O NOVO FUNDO ALEGRE, COLORIDO E SUAVEMENTE DESFOCADO --- */
+        /* --- O FUNDO ALEGRE E COLORIDO DO DIXIT --- */
         body::before {
             content: "";
             position: fixed;
             top: -20px; left: -20px; right: -20px; bottom: -20px; 
             z-index: -1;
-            
-            /* Removemos o escuro pesado e deixamos a IA desenhar uma colagem vibrante e mágica */
             background-image: url('https://image.pollinations.ai/prompt/vibrant%20colorful%20surreal%20fantasy%20board%20game%20art%20collage%20dixit%20style%20cheerful%20masterpiece?width=1080&height=1920&nologo=true');
-            background-color: rgba(255, 255, 255, 0.15); /* Película clara para realçar as cores */
+            background-color: rgba(255, 255, 255, 0.15);
             background-blend-mode: overlay;
             background-size: cover;
             background-position: center;
-            
-            /* Blur muito mais leve (2px) para preservar as formas alegres das ilustrações */
             filter: blur(2px); 
         }
         
         h1 { font-weight: 800; font-size: 2.8em; text-shadow: 0 4px 15px rgba(0,0,0,.9); margin: 20px 0; letter-spacing: 2px; }
         
-        /* Efeito de Vidro (Glassmorphism) limpo e elegante */
+        /* Efeito de Vidro (Glassmorphism) */
         .glass-panel {
             background: rgba(20,20,35,.82); 
             backdrop-filter: blur(12px); 
@@ -115,6 +111,7 @@
     <h1>Dixit Online ✨</h1>
 
     <div id="initialMenu" class="glass-panel">
+        <!-- Acesso Principal: Convidado -->
         <div style="background: rgba(0,0,0,.3); padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,.1);">
             <h3 style="color: #38ef7d; margin-bottom: 15px; font-size: 1.4em;">🎮 Entrar na Partida</h3>
             <p style="font-size: 14px; opacity: .9; margin-bottom: 15px;">Digite o código fornecido pelo Host.</p>
@@ -122,6 +119,7 @@
             <button onclick="checkRoom()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 16px; font-size: 1.1em;">Avançar</button>
         </div>
         
+        <!-- Menu Retrátil do Host -->
         <div style="background: rgba(0,0,0,.2); padding: 20px; border-radius: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,.05);" onclick="toggleHostMenu()">
             <h4 style="color: #f1c40f; margin: 0; font-size: 1em;">👑 Criar uma nova sala? Clique aqui ▼</h4>
         </div>
@@ -130,10 +128,11 @@
             <input type="text" id="hostPlayerName" placeholder="Seu Apelido de Host">
             <label style="font-size: 13px; opacity: .8; display: block; margin-top: 15px; text-align: left; padding-left: 5px;">Pontos para Vencer (Ex: 30):</label>
             <input type="number" id="targetScoreInput" value="30">
-            <button onclick="showCreateRoom()" style="background: rgba(255,255,255,.1); box-shadow: none; border: 1px solid rgba(255,255,255,.2);">Criar Sala</button>
+            <button onclick="showCreateRoom()" style="background: linear-gradient(135deg, #6e8efb, #a777e3);">Criar Sala</button>
         </div>
     </div>
 
+    <!-- Ecrã intermédio para inserir apelido do convidado -->
     <div id="joinNameForm" class="glass-panel" style="display:none;">
         <h3 style="margin-bottom: 15px; color: #a777e3;">Sala Encontrada! 🎉</h3>
         <p style="font-size: 14px; opacity: .9; margin-bottom: 20px;">Como os jogadores devem te chamar?</p>
@@ -142,6 +141,7 @@
         <button onclick="backToMenu()" class="btn-cancel">Cancelar</button>
     </div>
 
+    <!-- Ecrã de Jogo -->
     <div id="game" class="glass-panel" style="display:none; max-width: 650px;">
         <h2 id="roomCodeDisplay" style="color: #f1c40f; margin-bottom: 10px;"></h2>
         <div id="playersList" style="margin-bottom: 20px; font-size: 15px; background: rgba(0,0,0,.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.05);"></div>
@@ -153,6 +153,7 @@
         <div id="hand"></div>
     </div>
 
+    <!-- Modal de Carta -->
     <div id="cardModal" class="modal">
         <div class="modal-content">
             <img id="modalImage" class="modal-img" src="" alt="">
@@ -161,7 +162,7 @@
         </div>
     </div>
     
-    <div class="version-footer">Versão 10.10</div>
+    <div class="version-footer">Versão 10.11</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -339,13 +340,13 @@
             });
             html += `</table>`;
             
-            , isHost = socket.id === hostSocketId;
+            const isHost = socket.id === hostSocketId;
             if (!isGameOver && isHost) {
                 html += `<button onclick="nextRound()" style="background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 18px; font-size: 1.1em; margin-top: 20px;">Próxima Rodada</button>`;
             } else if (!isGameOver) {
                 html += `<p style="margin-top:20px; font-size:15px; opacity:.9;">Aguardando o Host iniciar a próxima rodada...</p>`;
             } else if (isHost) {
-                html += `<button onclick="window.location.reload()" style="background: linear-gradient(11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
+                html += `<button onclick="window.location.reload()" style="background: linear-gradient(135deg, #11998e, #38ef7d); padding: 18px; font-size: 1.1em; margin-top: 20px;">Jogar Novamente</button>`;
             }
             $('hand').innerHTML = html;
         });
