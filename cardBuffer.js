@@ -1,11 +1,18 @@
 const { generateSurrealImage } = require('./googleApi');
 
 const buffer = [];
-const MAX_BUFFER_SIZE = 50; // Baixámos para 50 para poupar memória do servidor gratuito
+const MAX_BUFFER_SIZE = 50; 
 const REFILL_THRESHOLD = 30;
 let isGenerating = false;
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
+
+// O NOVO PLANO DE EMERGÊNCIA DO BAÚ (ZERO FOTOS)
+const magicalFallbacks = [
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMDktYWV3LTAxM18xLmpwZw.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdi01MzYtbWFjcm92ZWN0b3ItMDcxXzEuanBn.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjQxNC1tYWNyby0yMWEuanBn.jpg"
+];
 
 async function refillBuffer() {
     if (isGenerating) return;
@@ -15,7 +22,6 @@ async function refillBuffer() {
 
     while (buffer.length < MAX_BUFFER_SIZE) {
         try {
-            // Pede ao Juiz IA uma carta validada
             const newCardUrl = await generateSurrealImage();
             
             if (newCardUrl) {
@@ -23,7 +29,6 @@ async function refillBuffer() {
                 console.log(`[Buffer] Carta APROVADA guardada! Total: ${buffer.length}/${MAX_BUFFER_SIZE}`);
             }
             
-            // Pausa pequena de 2 segundos para não sobrecarregar as APIs
             await delay(2000); 
 
         } catch (error) {
@@ -43,8 +48,8 @@ function drawCards(count) {
         if (buffer.length > 0) {
             cardsDrawn.push(buffer.shift());
         } else {
-            const uniqueSeed = Math.floor(Math.random() * 999999999);
-            cardsDrawn.push(`https://picsum.photos/600/1000?random=emergencia${uniqueSeed}`);
+            const randomIndex = Math.floor(Math.random() * magicalFallbacks.length);
+            cardsDrawn.push(magicalFallbacks[randomIndex]);
         }
     }
 
