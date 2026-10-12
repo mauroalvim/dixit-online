@@ -67,11 +67,15 @@
         
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; width: 100%; }
         
-        /* --- CARTA --- */
+        /* --- CARTA COM O CORTE ESPECÍFICO NA PARTE INFERIOR (CROP DA LOGO) --- */
         .card {
             width: calc(33.33% - 12px); max-width: 130px; aspect-ratio: 2 / 3; border-radius: 12px; cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,.8); border: 3px solid rgba(255,255,255,.12); transition: .3s;
-            background-color: #161b22; background-size: cover; background-position: center;
+            background-color: #161b22; 
+            /* O SEGREDO DO CORTE: Amplia para 100% e 115% e alinha ligeiramente acima, cortando apenas o rodapé onde fica a logo */
+            background-size: 100% 115%; 
+            background-position: center 30%; 
+            overflow: hidden; 
         }
         .card:hover { transform: translateY(-8px); border-color: #a777e3; }
         
@@ -159,8 +163,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.15 -->
-    <div class="version-footer">Versão 10.15</div>
+    <!-- VERSÃO 10.16 -->
+    <div class="version-footer">Versão 10.16</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -316,11 +320,16 @@
             me.hand.forEach(url => appendCardToBoard(url, false));
         });
 
+        // Evento blindado para desbloquear os jogadores imediatamente quando o narrador joga
         socket.on('narratorPlayed', () => {
             narratorHasPlayed = true;
             if (!amINarrator) {
                 $('actionInstruction').innerHTML = '<span style="color:#6e8efb; font-weight:800; font-size:1.4em;">Sua Vez!</span><br>O Narrador deu a dica. Escolha a sua carta que mais combina com a dica.';
-                myHandElements.forEach(d => d.classList.remove('locked-card'));
+                myHandElements.forEach(d => {
+                    d.classList.remove('locked-card');
+                    d.style.opacity = '1';
+                    d.style.filter = 'none';
+                });
             }
         });
 
