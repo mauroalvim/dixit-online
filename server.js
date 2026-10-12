@@ -18,13 +18,15 @@ const memoriaCartasGlobais = new Set();
 const promptJuizIA = `Você é um curador de arte extremamente rigoroso para um jogo de tabuleiro estilo Dixit. 
 Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qualquer uma que viole as regras abaixo.
 
-REGRA DE REJEIÇÃO ABSOLUTA:
-- REJEITE qualquer imagem que mostre rostos humanos fotorrealistas ou proporções anatômicas realistas.
-- REJEITE fotografias do mundo real.
-- REJEITE qualquer imagem com fundo transparente, objetos isolados em fundo branco/vazio ou imagens em formato de selo. A imagem DEVE ser uma obra de arte ou cena completa que preencha todo o quadro (sem áreas transparentes).
+TOLERÂNCIA ZERO PARA REALISMO:
+- REJEITE qualquer imagem que pareça uma fotografia do mundo real.
+- REJEITE imagens geradas por IA ou ilustrações digitais que busquem o fotorrealismo.
+- REJEITE imagens onde o rosto humano, a textura da pele, o cabelo ou a iluminação pareçam reais (mesmo que a pessoa esteja vestida com roupas de fantasia, como uma princesa, bruxa ou guerreiro). Se parecer uma pessoa real fantasiada, REJEITE.
+- REJEITE qualquer imagem com fundo transparente, objetos isolados em fundo branco/vazio ou imagens em formato de selo. A imagem DEVE ser uma obra de cena completa.
 
-CRITÉRIO DE APROVAÇÃO:
-- APROVE APENAS pinturas, ilustrações abstratas, cenários surreais, oníricos, de fantasia, contos de fadas, ficção ou mitologia, com cenário completo.
+CRITÉRIO DE APROVAÇÃO ESTRITO:
+- APROVE APENAS pinturas, ilustrações claramente estilizadas (como aquarela, pintura a óleo, cartoon, estilo de livro infantil), arte abstrata ou cenas surreais onde os personagens (se houver) não tenham feições humanas realistas.
+- Na dúvida sobre o nível de realismo, REJEITE a imagem.
 
 Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
 
@@ -36,19 +38,34 @@ function embaralharArray(array) {
     return array;
 }
 
+// Lista expandida massivamente para evitar lotes temáticos
 const temasBusca = [
     "surreal", "dream", "fantasy", "illusion", "bizarre",
     "mystical", "whimsical", "magic", "fairytale", "wonderland",
     "mythology", "steampunk", "space art", "psychedelic", 
     "magical realism", "concept art", "otherworldly", "ethereal", 
-    "surrealism", "abstract", "imaginative", "optical illusion"
+    "surrealism", "abstract", "imaginative", "optical illusion",
+    "watercolor fantasy", "oil painting surreal", "digital art stylized",
+    "storybook illustration", "dreamscape", "fantasy landscape",
+    "surreal creatures", "mystical forest", "floating islands",
+    "cosmic art", "alien world", "gothic fantasy", "cyberpunk art",
+    "retro futurism", "enchanted garden", "underwater fantasy",
+    "celestial art", "mind bending", "strange art", "quirky illustration",
+    "surreal portrait", "dreamlike scene", "fantasy architecture",
+    "magical creatures", "surreal nature", "abstract expressionism",
+    "pop surrealism", "lowbrow art", "dark fantasy", "epic fantasy",
+    "surreal collage", "vintage surrealism", "surreal photography manipulation",
+    "origami landscape", "papercraft scene", "claymation style",
+    "cubism art", "fauvism style", "pointillism art", "geometric abstract",
+    "steampunk animals", "watercolor galaxy", "fantasy map"
 ];
 
-async function buscarCartasMisturadasPixabay(quantidadePorTema = 10) {
+// Busca 10 temas simultâneos em até 50 páginas de profundidade
+async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
     try {
-        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); 
+        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 10); 
         const promessas = temasSorteados.map(async (tema) => {
-            const randomPage = Math.floor(Math.random() * 10) + 1; 
+            const randomPage = Math.floor(Math.random() * 50) + 1; 
             const query = encodeURIComponent(`${tema} -portrait -face -photo`);
             const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
             
@@ -95,7 +112,7 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        let urlsMisturadas = await buscarCartasMisturadasPixabay(10);
+        let urlsMisturadas = await buscarCartasMisturadasPixabay(5); // 10 temas x 5 cartas = 50 
         let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
         
         if (aprovadas.length > 0) {
@@ -119,7 +136,7 @@ async function preencherBauLento(codigo) {
     sala.preenchendo = true;
     try {
         while (sala.bau.length < 150) { 
-            let urlsMisturadas = await buscarCartasMisturadasPixabay(20);
+            let urlsMisturadas = await buscarCartasMisturadasPixabay(10); // 10 temas x 10 cartas = 100
             if (urlsMisturadas.length === 0) break;
             
             let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
