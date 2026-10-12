@@ -2,63 +2,29 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const https = require('https');
+const cors = require('cors');
+require('dotenv').config();
+
+// IMPORTANDO A SUA ENGENHARIA BRILHANTE
+const { refillBuffer, drawCards } = require('./cardBuffer');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: '*', methods: ["GET", "POST"] } });
 
+app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Inicializa o seu Baú de Cartas em Background!
+console.log("Inicializando servidor. Carregando o Baú Mágico de cartas...");
+refillBuffer(); 
 
 const gameRooms = {}; 
 
-// =========================================================================
-// 🤖 GERADOR DE BARALHO INFINITO (LEXICA.ART)
-// =========================================================================
-async function fetchAIImages() {
-    return new Promise((resolve) => {
-        const prompts = [
-            'surrealism masterpiece salvador dali', 
-            'dreamcore aesthetic fantasy illustration', 
-            'magical realism bizarre landscape', 
-            'whimsical dreamlike concept art',
-            'dixit board game style illustration'
-        ];
-        const prompt = prompts[Math.floor(Math.random() * prompts.length)];
-        const url = `https://lexica.art/api/v1/search?q=${encodeURIComponent(prompt)}`;
-
-        https.get(url, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(data);
-                    if (json.images && json.images.length > 0) {
-                        const urls = json.images.map(img => img.src).slice(0, 50);
-                        resolve(urls);
-                    } else {
-                        resolve([]);
-                    }
-                } catch (e) {
-                    resolve([]);
-                }
-            });
-        }).on('error', () => {
-            resolve([]);
-        });
-    });
-}
-
-function getFallbackDeck() {
-    const deck = [];
-    for(let i = 0; i < 50; i++) {
-        deck.push(`https://image.pollinations.ai/prompt/surreal_fantasy_art_${Math.floor(Math.random()*10000)}?width=300&height=450&nologo=true`);
-    }
-    return deck;
-}
-// =========================================================================
-
 io.on('connection', (socket) => {
+  console.log(`Novo jogador conectado: ${socket.id}`);
+
   socket.on('validateRoom', ({ roomId }) => {
       const room = gameRooms[roomId];
       if (room && room.status === 'LOBBY') {
@@ -68,23 +34,16 @@ io.on('connection', (socket) => {
       }
   });
 
-  socket.on('createRoom', async ({ targetScore, playerName }) => {
+  socket.on('createRoom', ({ targetScore, playerName }) => {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
     const hostPlayer = { id: socket.id, name: playerName, score: 0, hand: [], isNarrator: false };
-
-    socket.emit('generatingDeck');
-
-    let aiDeck = await fetchAIImages();
-    if (aiDeck.length < 10) aiDeck = getFallbackDeck();
-
-    const shuffledDeck = aiDeck.sort(() => Math.random() - 0.5);
 
     gameRooms[roomId] = {
       hostSocketId: socket.id,
       targetScore: parseInt(targetScore) || 30,
       status: 'LOBBY',
       players: [hostPlayer], 
-      deck: shuffledDeck, 
+      // Não precisamos mais de um "deck" fixo na sala, o seu Buffer fornece cartas infinitas!
       currentRound: { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false }
     };
     
@@ -111,8 +70,14 @@ io.on('connection', (socket) => {
     if (room) {
       room.status = 'NARRATOR_TURN';
       room.currentRound = { hint: "", narratorCard: null, playedCards: [], votes: [], narratorPlayed: false };
+      
       room.players.forEach((p, i) => p.isNarrator = (i === 0));
-      room.players.forEach(p => { p.hand = room.deck.splice(0, 5); });
+      
+      // AQUI A MÁGICA ACONTECE: Saca as 5 cartas iniciais do seu Buffer para cada jogador!
+      room.players.forEach(p => {
+        p.hand = drawCards(5); 
+      });
+
       io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
@@ -127,17 +92,15 @@ io.on('connection', (socket) => {
         const nextNarratorIndex = (currentNarratorIndex + 1) % room.players.length;
         room.players.forEach((p, i) => p.isNarrator = (i === nextNarratorIndex));
 
+        // Repõe apenas as cartas que faltam usando o seu Buffer!
         room.players.forEach(p => {
             const cardsNeeded = 5 - p.hand.length;
-            for(let i = 0; i < cardsNeeded; i++) {
-                if (room.deck.length > 0) {
-                    p.hand.push(room.deck.splice(0, 1)[0]);
-                } else {
-                    room.deck = getFallbackDeck();
-                    p.hand.push(room.deck.splice(0, 1)[0]);
-                }
+            if (cardsNeeded > 0) {
+                const newCards = drawCards(cardsNeeded);
+                p.hand.push(...newCards);
             }
         });
+
         io.to(roomId).emit('gameStarted', { players: room.players });
     }
   });
@@ -153,6 +116,7 @@ io.on('connection', (socket) => {
       const alreadyPlayed = room.currentRound.playedCards.find(c => c.playerId === socket.id);
       if (!alreadyPlayed) {
         room.currentRound.playedCards.push({ playerId: socket.id, cardUrl: cardUrl });
+        
         if (isNarratorPlaying) {
             room.currentRound.narratorCard = cardUrl;
             room.currentRound.narratorPlayed = true;
@@ -228,4 +192,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor Dixit Online rodando na porta ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor Dixit Online a rodar na porta ${PORT}`));
