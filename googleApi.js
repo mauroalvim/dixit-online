@@ -8,40 +8,47 @@ if (process.env.GOOGLE_API_KEY) {
 }
 
 const PIXABAY_KEY = process.env.PIXABAY_API_KEY;
-let pixabayCache = []; // Guarda as URLs para não pedir à API do Pixabay toda a hora
+let pixabayCache = []; 
 
-// 1. Busca um lote de imagens de fantasia/surrealismo no Pixabay
+// O NOVO PLANO DE EMERGÊNCIA (Apenas Ilustrações Mágicas, ZERO Fotos)
+const magicalFallbacks = [
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMDktYWV3LTAxM18xLmpwZw.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdi01MzYtbWFjcm92ZWN0b3ItMDcxXzEuanBn.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjQxNC1tYWNyby0yMWEuanBn.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjQxNC1tYWNyby0zMC5qcGc.jpg",
+    "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjk0NC1iZy0wMS1hLmpwZw.jpg"
+];
+
 async function fetchPixabayBatch() {
     if (!PIXABAY_KEY) {
-        console.warn("AVISO: Chave do Pixabay não encontrada!");
+        console.warn("AVISO: Chave do Pixabay ausente! Usando o Baú Mágico de Emergência.");
         return [];
     }
-    // Pesquisa focada no lúdico, onírico e ilustrações
-    const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=surreal+dream+fantasy+magic&image_type=illustration&per_page=200&safesearch=true`;
+    // Pesquisa focada exclusivamente em pinturas, ilustrações e arte digital (sem fotos)
+    const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=surreal+fantasy+dream&image_type=illustration&category=backgrounds&per_page=150&safesearch=true`;
     try {
         const res = await fetch(url);
         const data = await res.json();
         return data.hits.map(hit => hit.largeImageURL);
     } catch (e) {
-        console.error("Erro ao buscar no Pixabay:", e);
+        console.error("Erro no Pixabay:", e);
         return [];
     }
 }
 
-// 2. O Juiz: O Gemini olha para a imagem e decide
 async function judgeImage(imageUrl) {
-    if (!genAI) return true; // Se não houver Gemini, aprova por padrão
+    if (!genAI) return true; 
 
     try {
-        // Baixa a imagem para a memória do servidor
         const response = await fetch(imageUrl);
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = buffer.toString("base64");
 
-        // Pede ao Gemini para analisar a imagem
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = "Você é um juiz de arte rigoroso para um jogo de tabuleiro estilo Dixit. Analise esta imagem. Ela é uma ilustração lúdica, surreal, onírica, mágica, sem textos e faz sentido para o jogo? Responda APENAS com a palavra SIM ou NAO.";
+        
+        // JUIZ IMPLACÁVEL: Instruções ultra-estritas
+        const prompt = "Você é um juiz de arte muito rigoroso para o jogo Dixit. Analise esta imagem. O jogo exige APENAS ilustrações, pinturas ou arte digital que sejam surreais, mágicas e oníricas. REGRAS DE REJEIÇÃO: Se a imagem for uma fotografia real, se tiver pessoas reais, paisagens do mundo real, possuir texto, ou for monótona, você DEVE rejeitar imediatamente. Responda APENAS com a palavra SIM (se for arte surreal aprovada) ou NAO (se for foto ou inadequada).";
 
         const result = await model.generateContent([
             prompt,
@@ -49,47 +56,36 @@ async function judgeImage(imageUrl) {
         ]);
 
         const answer = result.response.text().trim().toUpperCase();
-        console.log(`[Juiz IA] Veredito: ${answer}`);
+        console.log(`[Juiz IA] Veredito para a carta: ${answer}`);
         
-        // Só aprova se a IA disser explicitamente SIM
         return answer.includes("SIM") || answer.includes("YES");
-
     } catch (error) {
-        console.error("[Juiz IA] Erro ao avaliar. Rejeitando por precaução.");
+        console.error("[Juiz IA] Erro ao avaliar, rejeitando por precaução.");
         return false;
     }
 }
 
-// 3. Função principal que entrega uma carta garantida e validada
 async function getValidatedCard() {
-    // Se o cache estiver vazio, vai buscar mais ao Pixabay
     if (pixabayCache.length === 0) {
-        console.log("[Pixabay] A procurar novas imagens candidatas...");
+        console.log("[Pixabay] A buscar novo lote de ilustrações...");
         pixabayCache = await fetchPixabayBatch();
-        pixabayCache = pixabayCache.sort(() => Math.random() - 0.5); // Embaralha
+        pixabayCache = pixabayCache.sort(() => Math.random() - 0.5); 
     }
 
-    // Se continuar vazio (ex: sem API Key), fallback de emergência
-    if (pixabayCache.length === 0) {
-        return `https://picsum.photos/600/1000?random=${Math.floor(Math.random()*9999)}`;
-    }
-
-    // Tira uma imagem do cache e submete a julgamento
     while (pixabayCache.length > 0) {
         const candidateUrl = pixabayCache.pop();
-        console.log(`[Juiz IA] A analisar candidato...`);
-        
         const isApproved = await judgeImage(candidateUrl);
         
         if (isApproved) {
-            return candidateUrl; // Aprovada! Segue para o Baú.
+            return candidateUrl; 
         } else {
-            console.log(`[Juiz IA] Descartada! Não encaixa no perfil Dixit.`);
+            console.log(`[Juiz IA] IMAGEM REJEITADA! Não é Dixit. Buscando próxima...`);
         }
     }
     
-    return null;
+    // Se o Pixabay falhar ou o Juiz rejeitar tudo, usamos as nossas ilustrações mágicas de garantia (ZERO FOTOS)
+    const randomIndex = Math.floor(Math.random() * magicalFallbacks.length);
+    return magicalFallbacks[randomIndex];
 }
 
-// Mantemos o mesmo nome exportado para não quebrar o seu código
 module.exports = { generateSurrealImage: getValidatedCard };
