@@ -180,8 +180,8 @@
         </div>
     </div>
     
-    <!-- VERSÃO 10.18 -->
-    <div class="version-footer">Versão 10.18</div>
+    <!-- VERSÃO 10.20 -->
+    <div class="version-footer">Versão 10.20</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -273,13 +273,32 @@
 
         function loadInto(cardDiv, url) {
             const img = new Image();
+            let attempts = 0;
+            
             img.onload = () => { 
                 cardDiv.classList.remove('card-loading'); 
                 cardDiv.style.backgroundImage = `url('${url}')`; 
             };
+            
             img.onerror = () => {
-                setTimeout(() => { img.src = url + "&retry=" + new Date().getTime(); }, 2000);
+                attempts++;
+                if (attempts < 3) {
+                    setTimeout(() => { 
+                        img.src = url + (url.includes('?') ? '&' : '?') + "retry=" + Date.now(); 
+                    }, 1500 * attempts);
+                } else {
+                    cardDiv.classList.remove('card-loading');
+                    cardDiv.style.backgroundColor = '#2a2a40';
+                }
             };
+            
+            // Retoma o carregamento automaticamente se o telemóvel voltar a focar a aba
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && cardDiv.classList.contains('card-loading')) {
+                    img.src = url + (url.includes('?') ? '&' : '?') + "focussed=" + Date.now();
+                }
+            });
+
             img.src = url;
         }
 
