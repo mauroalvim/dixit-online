@@ -1,52 +1,25 @@
-const { GoogleGenAI } = require("@google/genai");
-require('dotenv').config();
+// googleApi.js - VERSÃO DE TESTE DE CARREGAMENTO (10.29)
+// Ignoramos a IA por completo para validar se a aplicação consegue carregar imagens externas.
 
-let genAI = null;
-if (process.env.GOOGLE_API_KEY) {
-    try { genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY }); } 
-    catch (e) { console.log("Modo offline para o Gemini."); }
-}
-
-const styles = [
-    "childrens book illustration, vibrant pastel watercolors",
-    "bright colorful cartoon fantasy, cute magical storybook style",
-    "magical papercraft art style, colorful creative world",
-    "vibrant digital illustration, cute fantasy creatures, cheerful colors"
-];
-
-const fallbackSubjects = [
-    "a clumsy baby dragon", "a friendly giant turtle", 
-    "a tiny hedgehog carrying a lantern", "a cheerful astronaut", 
-    "a fluffy cloud shaped like a whale", "a wise old tree spirit"
+const fallbackImages = [
+    "https://fastly.picsum.photos/id/1015/600/1000.jpg?hmac=X-dEDQYJ0O9bVnU7J99vLd5aI1WnZ31hO7_W4W-9B0k",
+    "https://fastly.picsum.photos/id/1016/600/1000.jpg?hmac=7_Q-wU9rYwX-2eXkZ36s_s8l8H_m6g0a1vI6X_Vv9E",
+    "https://fastly.picsum.photos/id/1025/600/1000.jpg?hmac=L-vD1D8D2bWp-19N-u2p5_P5yM9w4B_k4eD1h6oR7k0",
+    "https://fastly.picsum.photos/id/1035/600/1000.jpg?hmac=y3E_sB4aB4s5L_T4j-0L8Y9eF5K-u9E_yH_s9bK9h4",
+    "https://fastly.picsum.photos/id/1040/600/1000.jpg?hmac=T9b6jG9mN-v_B-oV4fC-W-xY_8xP2aM-H_1G0R-Z8a",
+    "https://fastly.picsum.photos/id/1045/600/1000.jpg?hmac=H-v1a9V2R-o_M_P4H-yL-aF-G-D4C_9hO_s9B9K4",
+    "https://fastly.picsum.photos/id/1050/600/1000.jpg?hmac=E_xP8C-hV_o-L4T_D-kY_0F9B-M-s1D9H_6R-v4V_2a",
+    "https://fastly.picsum.photos/id/1055/600/1000.jpg?hmac=P-v4a-V-yM_1H_O-sC-G_D_4F-kL-9B-Y-hR_1xP-2h",
+    "https://fastly.picsum.photos/id/1060/600/1000.jpg?hmac=M-o-V-yM_1H_O-sC-G_D_4F-kL-9B-Y-hR_1xP-2h"
 ];
 
 async function generateSurrealImage() {
-    let rawText = "";
-
-    try {
-        if (genAI) {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const instruction = "Invent a playful and cute surreal concept for a board game card. Child-friendly, magical. Max 6 words. ONLY the description, no punctuation.";
-            const result = await model.generateContent(instruction);
-            rawText = result.response.text();
-        }
-    } catch (error) {
-        console.error("Erro no Gemini, usando lista local.");
-    }
-
-    if (!rawText || rawText.length < 3) {
-        rawText = fallbackSubjects[Math.floor(Math.random() * fallbackSubjects.length)];
-    }
-
-    // SANITIZAÇÃO ABSOLUTA: Remove TUDO o que não for letra, número ou espaço
-    const cleanText = rawText.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-    const uniqueSeed = Math.floor(Math.random() * 99999999) + Date.now();
+    // Escolhe uma imagem da lista acima aleatoriamente
+    const randomIndex = Math.floor(Math.random() * fallbackImages.length);
+    const imageUrl = fallbackImages[randomIndex];
     
-    const combinedPrompt = `${cleanText} ${randomStyle}`;
-    const finalPrompt = encodeURIComponent(combinedPrompt);
-
-    return `https://image.pollinations.ai/prompt/${finalPrompt}?width=600&height=1000&nologo=true&seed=${uniqueSeed}`;
+    // Adicionamos um timestamp inútil apenas para forçar o navegador a não usar cache antigo
+    return `${imageUrl}&refresh=${Date.now()}`;
 }
 
 module.exports = { generateSurrealImage };
