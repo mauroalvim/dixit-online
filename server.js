@@ -12,16 +12,27 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Cria pasta local temporária para guardar as cartas oficiais extraídas
 const dirExpansoes = path.join(__dirname, 'public', 'expansoes');
-if (!fs.existsSync(dirExpansoes)) fs.mkdirSync(dirExpansoes, { recursive: true });
+
+// ========================================================
+// 🧹 EXTERMINADOR DE CACHE FANTASMA
+// ========================================================
+if (fs.existsSync(dirExpansoes)) {
+    try {
+        fs.rmSync(dirExpansoes, { recursive: true, force: true });
+        console.log("Limpeza de cache antigo concluída com sucesso.");
+    } catch (e) {
+        console.log("Aviso ao limpar cache: ", e);
+    }
+}
+fs.mkdirSync(dirExpansoes, { recursive: true });
 
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 
-// A NOSSA PISCINA GERAL (Apenas Cartas 100% Oficiais dos ZIPs)
+// A NOSSA PISCINA GERAL (Apenas Cartas 100% Puras dos ZIPs)
 let bancoDeCartasGlobais = [];
 
 // --------------------------------------------------------
@@ -39,8 +50,6 @@ async function baixarZipsEmBackground() {
     ];
 
     console.log("A extrair Expansões Asmodee em background...");
-
-    // Baralha a ordem dos ZIPs para que o arranque seja imprevisível se o servidor for reiniciado
     const zipsMisturados = embaralharArray([...urlsZips]);
 
     for (let url of zipsMisturados) {
@@ -54,23 +63,17 @@ async function baixarZipsEmBackground() {
                     
                     const isImage = nomeUpper.endsWith('.PNG') || nomeUpper.endsWith('.JPG') || nomeUpper.endsWith('.JPEG');
                     
-                    // FILTRO ESTRITO E CIRÚRGICO: Apenas arquivos que contenham _1_, _2_, _10_, etc. (ex: _1_)
-                    const isCard = /_\d+_/.test(nomeUpper);
+                    // 1. Obriga a ter a palavra CARD ou CARTE
+                    const hasCardWord = nomeUpper.includes('CARD') || nomeUpper.includes('CARTE');
                     
-                    // Mantemos a lista negra apenas como dupla garantia de segurança
-                    const isNotTrash = !nomeUpper.includes('MACOSX') && 
-                                       !nomeUpper.includes('WALLPAPER') && 
-                                       !nomeUpper.includes('BOX') && 
-                                       !nomeUpper.includes('BOITE') && 
-                                       !nomeUpper.includes('RULE') && 
-                                       !nomeUpper.includes('REGLE') && 
-                                       !nomeUpper.includes('COVER') && 
-                                       !nomeUpper.includes('MOCKUP') && 
-                                       !nomeUpper.includes('3D') && 
-                                       !nomeUpper.includes('PRESENTATION') && 
-                                       !nomeUpper.includes('VISUAL');
+                    // 2. FILTRO CORRIGIDO: Exige underscore + número + underscore (Ex: _1_)
+                    const hasNumberLogic = /_\d+_/.test(nomeUpper);
+                    
+                    // 3. Lista Negra Agressiva
+                    const lixo = ['MACOSX', 'WALLPAPER', 'BOX', 'BOITE', 'RULE', 'REGLE', 'COVER', 'MOCKUP', '3D', 'PRESENTATION', 'VISUAL', 'PACK', 'PACKSHOT', 'PACKAGING', 'DISPLAY', 'PRODUCT', 'MATERIEL', 'COMPONENTS', 'SETUP', 'LIVRET', 'BOOKLET', 'GAME', 'JEU', 'PROMO', 'FLYER', 'BANNER', 'FOND', 'LOGO'];
+                    const isNotTrash = !lixo.some(bad => nomeUpper.includes(bad));
 
-                    if (entry.type === 'File' && isImage && isCard && isNotTrash) {
+                    if (entry.type === 'File' && isImage && hasCardWord && hasNumberLogic && isNotTrash) {
                         const nomeArquivo = path.basename(fileName);
                         const caminhoDestino = path.join(dirExpansoes, nomeArquivo);
                         
@@ -92,13 +95,12 @@ async function baixarZipsEmBackground() {
             console.log(`Aviso: Erro ao ler ZIP ${url}`);
         }
     }
-    console.log("Mapeamento de cartas oficiais concluído! Apenas cartas puras foram extraídas.");
+    console.log("Mapeamento concluído! Apenas cartas puras foram extraídas e o lixo foi apagado.");
 }
-// Arranca a descompactação silenciosa assim que o servidor liga
 baixarZipsEmBackground();
 
 // --------------------------------------------------------
-// PROXY INTELIGENTE (URLs locais e Pixabay)
+// PROXY INTELIGENTE
 // --------------------------------------------------------
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
@@ -168,15 +170,13 @@ async function preencherBauSala(codigo) {
     sala.preenchendo = true;
 
     try {
-        // Se o servidor acabou de ligar, aguarda uns milissegundos até que os ZIPs extraiam as primeiras cartas
         let tentativas = 0;
-        while (bancoDeCartasGlobais.length < 80 && tentativas < 20) { // Tenta por max 5 segundos
+        while (bancoDeCartasGlobais.length < 80 && tentativas < 20) { 
             await new Promise(r => setTimeout(r, 250));
             tentativas++;
         }
 
         if (sala.bau.length < 80 && bancoDeCartasGlobais.length > 0) {
-            // Sorteia da piscina global
             let poolGlobal = embaralharArray([...bancoDeCartasGlobais]);
             
             for (let url of poolGlobal) {
@@ -188,7 +188,6 @@ async function preencherBauSala(codigo) {
             }
         }
 
-        // Se por milagre esgotarmos as cartas da Asmodee, usa o Pixabay
         if (sala.bau.length < 20) {
             let urlsStella = await buscarCartasStellaPixabay(15);
             let aprovadas = await julgarCartas(urlsStella);
