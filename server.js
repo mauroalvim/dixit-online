@@ -53,8 +53,22 @@ async function baixarZipsEmBackground() {
                     const nomeUpper = fileName.toUpperCase();
                     
                     const isImage = nomeUpper.endsWith('.PNG') || nomeUpper.endsWith('.JPG') || nomeUpper.endsWith('.JPEG');
-                    const isCard = (nomeUpper.includes('CARD') || /\_\d+\_/.test(nomeUpper));
-                    const isNotTrash = !nomeUpper.includes('MACOSX') && !nomeUpper.includes('WALLPAPER') && !nomeUpper.includes('BOX') && !nomeUpper.includes('RULE');
+                    
+                    // FILTRO ESTRITO E CIRÚRGICO: Apenas arquivos que contenham _1_, _2_, _10_, etc. (ex: _1_)
+                    const isCard = /_\d+_/.test(nomeUpper);
+                    
+                    // Mantemos a lista negra apenas como dupla garantia de segurança
+                    const isNotTrash = !nomeUpper.includes('MACOSX') && 
+                                       !nomeUpper.includes('WALLPAPER') && 
+                                       !nomeUpper.includes('BOX') && 
+                                       !nomeUpper.includes('BOITE') && 
+                                       !nomeUpper.includes('RULE') && 
+                                       !nomeUpper.includes('REGLE') && 
+                                       !nomeUpper.includes('COVER') && 
+                                       !nomeUpper.includes('MOCKUP') && 
+                                       !nomeUpper.includes('3D') && 
+                                       !nomeUpper.includes('PRESENTATION') && 
+                                       !nomeUpper.includes('VISUAL');
 
                     if (entry.type === 'File' && isImage && isCard && isNotTrash) {
                         const nomeArquivo = path.basename(fileName);
@@ -78,7 +92,7 @@ async function baixarZipsEmBackground() {
             console.log(`Aviso: Erro ao ler ZIP ${url}`);
         }
     }
-    console.log("Mapeamento de cartas oficiais concluído!");
+    console.log("Mapeamento de cartas oficiais concluído! Apenas cartas puras foram extraídas.");
 }
 // Arranca a descompactação silenciosa assim que o servidor liga
 baixarZipsEmBackground();
