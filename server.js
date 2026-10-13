@@ -19,14 +19,13 @@ const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro (est
 Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
 
 REGRAS DE REJEIÇÃO (Elimine imediatamente se tiver alguma destas):
-1. Fundos transparentes, brancos lisos ou áreas de recorte de PNG mal feitas.
-2. Fotografias fotorrealistas de pessoas, paisagens do mundo real ou rostos que pareçam humanos de verdade.
-3. Cartões com texto legível, logos ou marcas d'água evidentes.
-4. Objetos aleatórios isolados flutuando sem nenhum cenário ou fundo artístico.
+1. REJEITE EXPRESSAMENTE QUALQUER ROSTO HUMANO com feições reais, mesmo que seja uma arte digital muito bem feita, pintura realista ou que tenha elementos de fantasia. Se parecer uma pessoa de verdade, rejeite.
+2. Fundos transparentes, brancos lisos, áreas de recorte de PNG ou imagens em formato de selo.
+3. Fotografias e paisagens do mundo real.
+4. Objetos aleatórios isolados flutuando sem nenhum cenário de fundo.
 
 CRITÉRIOS DE APROVAÇÃO:
-- Ilustrações completas, pinturas digitais, arte surreal, cenários de fantasia, estilo cartoon ou aquarela.
-- A imagem tem que parecer uma obra de arte pronta para um jogo de criatividade e imaginação.
+- Cenas completas de fantasia, ilustrações abstratas, aquarela, cenários surreais e arte estilizada (estilo cartoon/livro infantil).
 
 Responda APENAS com o JSON. Exemplo: ["url1", "url2"]`;
 
@@ -39,10 +38,9 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// MOTOR DO PINTEREST (Com múltiplas pastas de Dixit)
+// MOTOR DO PINTEREST (A FONTE PRINCIPAL E PRIVILEGIADA)
 // --------------------------------------------------------
 async function buscarCartasPinterest() {
-    // Lista de pastas públicas focadas em Dixit (Você pode adicionar mais nomes de usuário/pasta aqui)
     const pastasDisponiveis = [
         "ligiaausten/dixit",
         "corujinhaliteraria/dixit",
@@ -54,21 +52,21 @@ async function buscarCartasPinterest() {
         "nathaliabrag/dixit-art"
     ];
     
-    // Sorteia 3 pastas aleatórias dessa lista para não puxar sempre as mesmas
-    const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 3);
+    // Aumentamos para puxar de 5 pastas diferentes de uma vez
+    const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 5);
     
     let urls = [];
     for (let pasta of pastasSorteadas) {
         try {
             const url = `https://br.pinterest.com/${pasta}.rss`;
-            const response = await axios.get(url, { timeout: 5000 });
+            const response = await axios.get(url, { timeout: 6000 });
             const xml = response.data;
             
             const regex = /<img src="([^"]+)"/g;
             let match;
             while ((match = regex.exec(xml)) !== null) {
                 let imgUrl = match[1];
-                imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); // Garante alta resolução
+                imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); 
                 
                 if (!memoriaCartasGlobais.has(imgUrl)) {
                     urls.push(imgUrl);
@@ -82,7 +80,7 @@ async function buscarCartasPinterest() {
 }
 
 // --------------------------------------------------------
-// MOTOR DO PIXABAY (Rede de segurança e variedade extra)
+// MOTOR DO PIXABAY (APENAS ESTEPE / BACKUP)
 // --------------------------------------------------------
 const temasBusca = [
     "surreal", "dream", "fantasy landscape", "whimsical", "fairytale", 
@@ -128,14 +126,14 @@ async function julgarCartas(urls) {
         const jsonMatch = text.match(/\[.*\]/s);
         
         if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        return urls.slice(0, Math.min(urls.length, 5)); // Fallback em caso de erro da IA
+        return urls.slice(0, Math.min(urls.length, 5)); 
     } catch (error) {
         return urls.slice(0, Math.min(urls.length, 5)); 
     }
 }
 
 // --------------------------------------------------------
-// GERENCIAMENTO DO BAÚ
+// GERENCIAMENTO DO BAÚ (FOCO TOTAL NO PINTEREST)
 // --------------------------------------------------------
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
@@ -143,26 +141,20 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        console.log(`[SALA ${codigo}] Puxando lotes do Pinterest e Pixabay...`);
+        console.log(`[SALA ${codigo}] Puxando lotes do Pinterest (Prioridade Máxima)...`);
         
-        // Puxa um pouco do Pinterest e um pouco do Pixabay ao mesmo tempo
-        const [urlsPinterest, urlsPixabay] = await Promise.all([
-            buscarCartasPinterest(),
-            buscarCartasMisturadasPixabay(5)
-        ]);
-
-        // Mistura as duas fontes
-        let urlsMisturadas = embaralharArray([...urlsPinterest, ...urlsPixabay]);
-
-        // Passa 40 cartas pro Juiz IA analisar de uma vez
-        let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 40));
+        // Exclusividade do Pinterest na primeira rodada
+        let urlsPinterest = await buscarCartasPinterest();
+        
+        // Passa até 40 cartas pro Juiz IA analisar
+        let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
         
         if (aprovadas.length > 0) {
             aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-            sala.bau.push(...aprovadas);
+            sala.bau.push(...embaralharArray(aprovadas));
         } else {
-            console.log(`[AVISO] Juiz rejeitou tudo na Sala ${codigo}. Aplicando fallback de emergência.`);
-            const fallbackUrls = urlsMisturadas.slice(0, 10);
+            console.log(`[AVISO] Juiz rejeitou tudo na Sala ${codigo}. Aplicando fallback.`);
+            const fallbackUrls = urlsPinterest.slice(0, 10);
             fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
             sala.bau.push(...fallbackUrls);
         }
@@ -184,18 +176,27 @@ async function preencherBauLento(codigo) {
     sala.preenchendo = true;
     try {
         while (sala.bau.length < 150) { 
-            // Abastecimento contínuo mistura as fontes
             let urlsPinterest = await buscarCartasPinterest();
-            let urlsPixabay = await buscarCartasMisturadasPixabay(5);
-            let urlsMisturadas = embaralharArray([...urlsPinterest, ...urlsPixabay]);
             
-            if (urlsMisturadas.length === 0) break;
-            
-            let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
-            if (aprovadas.length === 0) continue;
-            
-            aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-            sala.bau.push(...aprovadas);
+            // Se o Pinterest ainda tiver imagens novas (mais que 5)
+            if (urlsPinterest.length > 5) {
+                let aprovadas = await julgarCartas(urlsPinterest.slice(0, 30));
+                if (aprovadas.length > 0) {
+                    aprovadas.forEach(url => memoriaCartasGlobais.add(url));
+                    sala.bau.push(...embaralharArray(aprovadas));
+                }
+            } else {
+                // Se as cartas inéditas do Pinterest estiverem acabando, apela pro Pixabay
+                console.log(`[SALA ${codigo}] Pinterest esgotando. Buscando Pixabay...`);
+                let urlsPixabay = await buscarCartasMisturadasPixabay(10);
+                if (urlsPixabay.length === 0) break;
+                
+                let aprovadas = await julgarCartas(urlsPixabay.slice(0, 30));
+                if (aprovadas.length > 0) {
+                    aprovadas.forEach(url => memoriaCartasGlobais.add(url));
+                    sala.bau.push(...embaralharArray(aprovadas));
+                }
+            }
             
             if (sala.estado === 'jogando') {
                 io.to(codigo).emit('atualizarSala', sala);
