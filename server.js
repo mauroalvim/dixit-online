@@ -15,20 +15,20 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 const memoriaCartasGlobais = new Set();
 
-const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro estilo Dixit. 
-Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qualquer uma que viole as regras abaixo.
+const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro (estilo Dixit). 
+Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
 
-REGRAS DE REJEIÇÃO:
-1. REJEITE imagens que pareçam fotografias do mundo real.
-2. REJEITE fundos puramente brancos, pretos, ou transparentes. O fundo da imagem precisa ter alguma arte (céu, cenário, cores misturadas).
-3. REJEITE rostos humanos com traços realistas (ilustrações cartunescas ou rostos de fantasia exagerados estão liberados).
-4. REJEITE imagens com objetos isolados flutuando sem nenhum contexto ou cenário de fundo.
+REGRAS PARA REJEITAR (NÃO INCLUA NA RESPOSTA):
+- Fotografias ou fotorrealismo.
+- Rostos humanos realistas (estilo fotografia).
+- Imagens com fundo totalmente branco, fundo transparente ou objetos isolados sem cenário.
+- Padrões repetitivos (tipo papel de parede) ou texturas planas sem profundidade.
 
-CRITÉRIO DE APROVAÇÃO:
-- APROVE pinturas, ilustrações, cenários surreais, oníricos, de fantasia ou abstratos.
-- Se a imagem for minimamente utilizável e não violar as regras acima de forma flagrante, APROVE.
+REGRAS PARA APROVAR:
+- Ilustrações, pinturas, arte digital, cenários de fantasia, surreais ou abstratos narrativos.
+- Personagens desenhados/estilizados inseridos num cenário ou paisagem.
 
-Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
+Responda APENAS com o JSON. Exemplo: ["url1", "url2", "url3"]`;
 
 function embaralharArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -38,6 +38,7 @@ function embaralharArray(array) {
     return array;
 }
 
+// Lista massiva de temas para garantir diversidade extrema
 const temasBusca = [
     "surreal", "dream", "fantasy", "illusion", "bizarre",
     "mystical", "whimsical", "magic", "fairytale", "wonderland",
@@ -63,9 +64,10 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
     try {
         const temasSorteados = embaralharArray([...temasBusca]).slice(0, 10); 
         const promessas = temasSorteados.map(async (tema) => {
-            const randomPage = Math.floor(Math.random() * 50) + 1; 
-            const query = encodeURIComponent(`${tema} art painting illustration -photo -isolated -transparent -texture`);
-            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=photo&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
+            const randomPage = Math.floor(Math.random() * 20) + 1; 
+            // Pesquisa limpa e direta para não quebrar a API do Pixabay
+            const query = encodeURIComponent(tema);
+            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
             
             try {
                 const res = await axios.get(url);
@@ -97,7 +99,6 @@ async function julgarCartas(urls) {
         const jsonMatch = text.match(/\[.*\]/s);
         
         if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        // Reduzido o fallback de 15 para 5 em caso de erro da IA para minimizar imagens estranhas.
         return urls.slice(0, Math.min(urls.length, 5)); 
     } catch (error) {
         console.error("Erro no Juiz IA:", error.message);
@@ -105,31 +106,30 @@ async function julgarCartas(urls) {
     }
 }
 
-// CORREÇÃO: Pede mais imagens na primeira rodada para garantir que o Juiz não rejeite tudo
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
     if (!sala) return;
     
     sala.preenchendo = true;
     try {
-        // Pedindo 10 imagens de 10 temas = 100 imagens brutas
-        let urlsMisturadas = await buscarCartasMisturadasPixabay(10); 
-        // Analisando 40 em vez de 30 para ter mais gordura pra rejeição
-        let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 40));
+        let urlsMisturadas = await buscarCartasMisturadasPixabay(5); // 10 temas x 5 = 50 imagens
+        
+        // Passa 30 para o Juiz
+        let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
         
         if (aprovadas.length > 0) {
             aprovadas.forEach(url => memoriaCartasGlobais.add(url));
             sala.bau.push(...embaralharArray(aprovadas));
-            io.to(codigo).emit('atualizarSala', sala);
         } else {
-             // Fallback de segurança extrema: se o Juiz rejeitar ABSOLUTAMENTE tudo (muito raro), 
-             // forçamos as 5 primeiras para o jogo não travar na tela de loading.
-             console.warn("Juiz rejeitou 100% no lote inicial. Forçando fallback de emergência.");
-             const fallbackUrls = urlsMisturadas.slice(0, 10);
-             fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
-             sala.bau.push(...fallbackUrls);
-             io.to(codigo).emit('atualizarSala', sala);
+            // REDE DE SEGURANÇA: Se a IA rejeitar tudo ou falhar, injeta 10 cartas à força para o jogo nunca bloquear
+            console.log(`[AVISO] IA rejeitou todas as imagens iniciais da Sala ${codigo}. Aplicando fallback de segurança.`);
+            const fallbackUrls = urlsMisturadas.slice(0, 10);
+            fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
+            sala.bau.push(...fallbackUrls);
         }
+        
+        io.to(codigo).emit('atualizarSala', sala);
+
     } catch (err) {
         console.error("Erro no preenchimento inicial:", err);
     } finally {
