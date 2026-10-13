@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Imagination</title>
     <script src="/socket.io/socket.io.js"></script>
-    <!-- Adicionado: Biblioteca de Confetes para o Fim de Jogo -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -65,13 +64,37 @@
         }
         .screen.active { display: flex !important; }
 
+        /* ==========================================================
+           TIPOGRAFIA FLUIDA GERAL (Para não partir em ecrãs pequenos)
+           ========================================================== */
         .main-title {
-            text-align: center; font-size: 42px; font-weight: 800;
-            margin-top: 20px; margin-bottom: 5px; text-shadow: 0 4px 20px rgba(0,0,0,0.9);
+            text-align: center; 
+            font-size: clamp(28px, 8vw, 42px); 
+            font-weight: 900;
+            margin-top: 20px; 
+            margin-bottom: 5px; 
+            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
+            line-height: 1.2;
+            word-wrap: break-word;
         }
-        .title-stars {
-            text-align: center; font-size: 28px; margin-bottom: 30px; text-shadow: 0 2px 15px rgba(255, 215, 0, 0.9);
+
+        h2 { 
+            text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); 
+            font-size: clamp(22px, 6vw, 28px); 
+            line-height: 1.2;
         }
+
+        .panel-header {
+            color: var(--primary); font-weight: 800; text-align: center; margin-bottom: 10px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-size: clamp(20px, 5.5vw, 24px);
+        }
+
+        .title-gold { color: #facc15; letter-spacing: -0.5px; }
+        .title-stars { text-align: center; font-size: clamp(22px, 6vw, 28px); margin-bottom: 30px; text-shadow: 0 2px 15px rgba(255, 215, 0, 0.9); }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: clamp(13px, 4vw, 15px); margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+        /* -------------------------------------------------------- */
 
         .glass-panel {
             background: var(--panel-bg); border-radius: 24px; padding: 30px 25px;
@@ -83,13 +106,6 @@
         .login-subpanel { display: none; flex-direction: column; }
         .login-subpanel.active { display: flex; }
 
-        .panel-header {
-            color: var(--primary); font-size: 24px; font-weight: 800;
-            text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-
         input {
             width: 100%; padding: 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);
             background: var(--input-bg); color: white; margin-bottom: 15px; font-size: 16px; outline: none;
@@ -97,9 +113,10 @@
         input:focus { border-color: var(--primary); background: rgba(0,0,0,0.8); }
 
         button {
-            width: 100%; padding: 18px; border-radius: 14px; border: none; font-size: 18px; font-weight: 800;
+            width: 100%; padding: 18px; border-radius: 14px; border: none; font-size: clamp(16px, 4vw, 18px); font-weight: 800;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s;
             box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); margin-top: 10px; margin-bottom: 15px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Proteção no botão */
         }
         button:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-3px); }
         button:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
@@ -110,8 +127,6 @@
             text-align: center; color: #facc15; font-size: 15px; font-weight: 600;
             padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px; cursor: pointer;
         }
-
-        h2 { text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
 
         .carousel-container {
             display: flex; gap: 20px; overflow-x: auto; padding: 20px 10px;
@@ -132,6 +147,7 @@
             position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.8); color: white; padding: 5px 12px; border-radius: 20px;
             font-size: 13px; backdrop-filter: blur(4px); pointer-events: none;
+            white-space: nowrap;
         }
 
         .grid-container {
@@ -146,63 +162,88 @@
         }
         .carta-pequena:active { transform: scale(0.95); }
         
-        .carta-propria {
-            border: 4px solid var(--red-alert) !important; 
-            pointer-events: none; 
-            filter: brightness(0.5); 
-        }
+        .carta-propria { border: 4px solid var(--red-alert) !important; pointer-events: none; filter: brightness(0.5); }
         .carta-propria::before {
             content: 'Sua Carta';
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: var(--red-alert); color: white; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 14px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; white-space: nowrap;
         }
 
         .carta-narrador { border: 4px solid #facc15 !important; box-shadow: var(--gold-glow); }
         
+        /* --------------------------------------------------------
+           CORTE DE TEXTOS LONGOS (Nas Cartas da Mesa)
+           -------------------------------------------------------- */
         .carta-info {
             position: absolute; bottom: 0; width: 100%; background: rgba(0, 0, 0, 0.85);
-            padding: 10px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; text-align: center;
+            padding: 8px 5px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; text-align: center;
         }
-        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 13px; }
-        .dono-texto.dono-narrador { color: #facc15; font-size: 14px; }
-        .votos-texto { font-size: 14px; color: #fff; margin-bottom: 2px; font-weight: bold; }
+        .dono-texto, .votos-texto, .votos-nomes {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            display: block;
+        }
+        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 12px; margin-top: 2px;}
+        .dono-texto.dono-narrador { color: #facc15; font-size: 13px; }
+        .votos-texto { font-size: 13px; color: #fff; font-weight: bold; }
+        .votos-nomes { font-size: 10px; color: #94a3b8; }
 
+        /* --------------------------------------------------------
+           RANKING FLUIDO (Nomes longos cortam com "...")
+           -------------------------------------------------------- */
         .ranking-list {
-            background: var(--input-bg); border-radius: 16px; padding: 20px;
+            background: var(--input-bg); border-radius: 16px; padding: 15px;
             width: 100%; max-height: 400px; overflow-y: auto; margin-bottom: 15px;
         }
         
         .ranking-item {
-            display: flex; justify-content: space-between; padding: 15px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
-            border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: clamp(15px, 4vw, 18px); font-weight: 600;
+            border-radius: 8px; gap: 10px;
         }
         
-        /* 🏆 ESTILOS DA TELA DE FIM DE JOGO (NOVO) 🏆 */
+        .nome-jogador {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1; /* Ocupa o espaço disponível */
+        }
+
+        .pontos-jogador {
+            white-space: nowrap;
+            flex-shrink: 0; /* Impede que os pontos sejam esmagados */
+            font-weight: 900;
+        }
+        
+        /* 🏆 TELA DE FIM DE JOGO 🏆 */
         .winner-card {
             background: linear-gradient(135deg, var(--winner-green), #34d399);
             border-radius: 20px;
-            padding: 28px 20px;
+            padding: 25px 15px;
             text-align: center;
             box-shadow: 0 10px 32px rgba(0,200,150,0.35);
             margin-bottom: 24px;
             width: 100%;
         }
 
-        .trophy { font-size: 52px; display: block; margin-bottom: 10px; }
+        .trophy { font-size: clamp(40px, 12vw, 52px); display: block; margin-bottom: 10px; }
 
         .winner-name {
-            font-size: clamp(24px, 7vw, 34px);
+            font-size: clamp(22px, 7vw, 34px);
             font-weight: 900;
             color: #fff;
             letter-spacing: -0.3px;
             line-height: 1.2;
             text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            /* Se o nome for uma só palavra gigante (ex: "Mauroooo..."), ele quebra para não sair do ecrã */
+            word-break: break-word; 
         }
 
         .winner-sub {
-            font-size: 14px;
+            font-size: clamp(12px, 3.5vw, 14px);
             font-weight: 800;
             color: rgba(255,255,255,0.9);
             text-transform: uppercase;
@@ -246,8 +287,7 @@
         
         .modal-carta {
             flex: 0 0 100%; height: 85vh; border-radius: 20px;
-            background-size: cover; 
-            background-repeat: no-repeat; background-position: center; 
+            background-size: cover; background-repeat: no-repeat; background-position: center; 
             scroll-snap-align: center; box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
 
@@ -353,10 +393,10 @@
         <h1 class="main-title" id="titulo-ranking">Ranking Atual</h1>
         
         <div class="glass-panel" style="max-width: 500px; width: 100%;">
-            <!-- CAIXA DO VENCEDOR (Injetada via JS apenas no Fim de Jogo) -->
+            <!-- CAIXA DO VENCEDOR -->
             <div id="winnerDisplayContainer" style="display: none;"></div>
             
-            <div class="panel-header" id="subtitulo-ranking" style="font-size: 18px; color: var(--text-muted); display: none;">Placar Final</div>
+            <div class="panel-header" id="subtitulo-ranking" style="font-size: clamp(16px, 5vw, 18px); color: var(--text-muted); display: none; margin-top: 10px;">Placar Final</div>
             
             <div class="ranking-list" id="ranking-container"></div>
             
@@ -399,9 +439,7 @@
             alvo.style.display = 'flex';
         }
 
-        // ==========================================
-        // ANIMAÇÃO DE CONFETES (FIM DE JOGO)
-        // ==========================================
+        // ANIMAÇÃO DE CONFETES
         function dispararConfete() {
             if (typeof confetti === "function") {
                 const end = Date.now() + 3500;
@@ -414,9 +452,7 @@
             }
         }
 
-        // ==========================================
         // LÓGICA DO MODAL 
-        // ==========================================
         function atualizarBotaoPelaCarta(cardElement) {
             const btn = document.getElementById('btn-modal-acao');
             if(btn.style.display === 'none' || !cardElement) return;
@@ -498,9 +534,7 @@
             }
         });
 
-        // ==========================================
         // RENDERIZAÇÃO DE CARTAS 
-        // ==========================================
         function renderizarCartasMao(urls) {
             const container = document.getElementById('hand-container');
             const modalContainer = document.getElementById('modal-container');
@@ -559,24 +593,21 @@
                 if (isCardNarrador) div.classList.add('carta-narrador');
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
                 
+                // Utilizando as classes com text-overflow para proteger contra nomes gigantes
                 div.innerHTML = `
                     <div class="carta-info">
-                        <div class="votos-texto" style="font-size: 14px; margin-bottom: 5px;">
-                            ${cartaObj.votos.length} Voto(s) 
-                            ${votosNomes ? `<br><span style="font-size: 11px; color: #94a3b8;">(${votosNomes})</span>` : ''}
-                        </div>
-                        <div class="dono-texto ${isCardNarrador ? 'dono-narrador' : ''}">
-                            ${isCardNarrador ? '👑 NARRADOR<br>' : 'De: '} ${dono ? dono.nome : 'Desc.'}
-                        </div>
+                        <span class="votos-texto">${cartaObj.votos.length} Voto(s)</span>
+                        ${votosNomes ? `<span class="votos-nomes">(${votosNomes})</span>` : ''}
+                        <span class="dono-texto ${isCardNarrador ? 'dono-narrador' : ''}">
+                            ${isCardNarrador ? '👑 NARRADOR' : 'De: ' + (dono ? dono.nome : 'Desc.')}
+                        </span>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // ==========================================
         // FLUXO DO LOBBY E PARTIDA
-        // ==========================================
         function verificarSala() {
             const codigo = document.getElementById('player-sala').value.trim();
             if(!codigo) return alert("Digite o código da sala!");
@@ -633,7 +664,13 @@
                 mostrarTela('lobby-screen');
                 document.getElementById('lobby-titulo').innerText = `Sala: ${codigo}`;
                 let htmlList = '';
-                sala.jogadores.forEach(j => { htmlList += `<div class="ranking-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); border-radius:0;"><span>${j.nome}</span></div>`; });
+                
+                // Aplicada a classe nome-jogador para truncar nomes muito longos no lobby
+                sala.jogadores.forEach(j => { 
+                    htmlList += `<div class="ranking-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); border-radius:0;">
+                                    <span class="nome-jogador">${j.nome}</span>
+                                 </div>`; 
+                });
                 document.getElementById('jogadores-list').innerHTML = htmlList;
 
                 const isHost = sala.jogadores[0].id === meuId;
@@ -707,34 +744,35 @@
                 mostrarTela('results-screen');
                 renderizarCartasResultados(sala.mesa, sala.cartaNarradorUrl, sala.jogadores);
                 
-                // LÓGICA DO RANKING E FIM DE JOGO
+                // LÓGICA DO RANKING E FIM DE JOGO (Protegida contra nomes longos)
                 const jogadoresOrdenados = [...sala.jogadores].sort((a,b) => b.pontos - a.pontos);
                 let rankingHtml = '';
                 const maxPts = jogadoresOrdenados[0].pontos;
 
                 jogadoresOrdenados.forEach(j => {
-                    // Se for o Fim do Jogo, o vencedor recebe um estilo visual especial na lista
                     const isWinner = (sala.estado === 'fim_jogo' && j.pontos === maxPts);
                     const rowClass = isWinner ? 'ranking-item winner-row' : 'ranking-item';
                     const scoreColor = isWinner ? '#facc15' : 'var(--primary)';
                     
                     rankingHtml += `
                         <div class="${rowClass}" style="${!isWinner ? 'border-bottom: 1px solid rgba(255,255,255,0.1); border-radius:0;' : ''}">
-                            <span>${isWinner ? '👑 ' : ''}${j.nome}</span> 
-                            <span style="color: ${scoreColor}; font-weight:900;">${j.pontos} pts</span>
+                            <span class="nome-jogador">${isWinner ? '👑 ' : ''}${j.nome}</span> 
+                            <span class="pontos-jogador" style="color: ${scoreColor};">${j.pontos} pts</span>
                         </div>`;
                 });
                 
                 document.getElementById('ranking-container').innerHTML = rankingHtml;
 
                 if (sala.estado === 'fim_jogo') {
-                    // CONFIGURAR TELA DE FIM DE JOGO ESTILO "DIXIT SCORE"
-                    document.getElementById('titulo-ranking').innerText = "🎉 FIM DE JOGO! 🎉";
+                    const mainTitle = document.getElementById('titulo-ranking');
+                    // Emoji único no final, garante que o texto não se parte em dois
+                    mainTitle.innerText = "FIM DE JOGO! 🎉";
+                    mainTitle.classList.add('title-gold'); 
+                    
                     document.getElementById('subtitulo-ranking').style.display = "block";
                     document.getElementById('btn-proxima-rodada').style.display = "none";
                     document.getElementById('btn-reiniciar-jogo').style.display = "block";
                     
-                    // Constrói o Cartão Verde de Vencedor
                     const vencedores = jogadoresOrdenados.filter(j => j.pontos === maxPts).map(j => j.nome);
                     const winnerContainer = document.getElementById('winnerDisplayContainer');
                     winnerContainer.style.display = "block";
@@ -750,17 +788,18 @@
                             <div class="winner-sub" style="margin-top:8px">${maxPts} pontos</div>
                         </div>`;
                     
-                    // Dispara a animação se o painel de ranking for mostrado
                     const originalVerRanking = verRanking;
                     verRanking = function() {
                         originalVerRanking();
                         dispararConfete();
-                        // Garante que só dispara uma vez ao clicar
                         verRanking = originalVerRanking; 
                     };
 
                 } else {
-                    document.getElementById('titulo-ranking').innerText = "Ranking Atual";
+                    const mainTitle = document.getElementById('titulo-ranking');
+                    mainTitle.innerText = "Ranking Atual";
+                    mainTitle.classList.remove('title-gold');
+                    
                     document.getElementById('subtitulo-ranking').style.display = "none";
                     document.getElementById('winnerDisplayContainer').style.display = "none";
                     document.getElementById('btn-proxima-rodada').style.display = "block";
