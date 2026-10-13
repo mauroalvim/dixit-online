@@ -20,7 +20,6 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* FUNDO FIXO E SEGURO (Gato Mágico/Estrelado tipo Dixit) */
         body, html { 
             color: var(--text-main); 
             min-height: 100dvh; 
@@ -28,17 +27,51 @@
             overflow-y: auto; 
             position: relative;
             background-color: #0f172a; 
-            background-image: url('https://cdn.pixabay.com/photo/2023/12/28/19/22/ai-generated-8474776_1280.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
         }
 
-        /* Desfoque suave pedido (blur 2px) e leve escurecimento para leitura */
+        /* ========================================================
+           NOVO FUNDO 100% CSS (Estilo Dixit/Nebulosa)
+           Nunca falha porque não usa imagens externas!
+           ======================================================== */
+        .fundo-magico {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -3;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+            overflow: hidden;
+        }
+
+        .fundo-magico::before, .fundo-magico::after {
+            content: '';
+            position: absolute;
+            width: 200%; height: 200%;
+            top: -50%; left: -50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.25) 0%, transparent 50%);
+            filter: blur(40px);
+            animation: moveNebulosa 30s infinite alternate ease-in-out;
+        }
+
+        .fundo-magico::after {
+            background: radial-gradient(circle at 40% 60%, rgba(56, 189, 248, 0.35) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(250, 204, 21, 0.2) 0%, transparent 40%);
+            animation: moveNebulosa2 40s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes moveNebulosa {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(15deg) scale(1.1); }
+        }
+        @keyframes moveNebulosa2 {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(-10deg) scale(1.15); }
+        }
+
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.3);
-            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: -1;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: -2;
         }
 
         .screen {
@@ -167,7 +200,7 @@
             font-weight: 600; margin-top: 30px;
         }
 
-        /* MODAL ECRÃ CHEIO (ZOOM CARTA INTEIRA E BOTÃO) */
+        /* MODAL ECRÃ CHEIO */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -191,7 +224,7 @@
         
         .modal-carta {
             flex: 0 0 100%; height: 80vh; border-radius: 20px;
-            background-size: cover; background-repeat: no-repeat; background-position: center; 
+            background-size: contain; background-repeat: no-repeat; background-position: center; 
             scroll-snap-align: center; box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
 
@@ -205,8 +238,11 @@
 </head>
 <body>
 
+    <!-- O FUNDO MÁGICO 100% CSS -->
+    <div class="fundo-magico"></div>
     <div class="bg-overlay"></div>
 
+    <!-- MODAL DE ECRÃ CHEIO -->
     <div id="image-modal" class="fullscreen-modal">
         <button class="close-modal" onclick="fecharModal()">✕</button>
         <div class="modal-carousel" id="modal-container"></div>
@@ -250,7 +286,7 @@
             </div>
         </div>
         
-        <div class="versao-app">Versão 10.75</div>
+        <div class="versao-app">Versão 10.76</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
