@@ -30,48 +30,38 @@
         }
 
         /* ========================================================
-           NOVO FUNDO 100% CSS (Estilo Dixit/Nebulosa)
-           Nunca falha porque não usa imagens externas!
+           O FUNDO DA VERSÃO 10.10 RESTAURADO (MOSAICO DIXIT)
            ======================================================== */
-        .fundo-magico {
+        #dixit-mosaic {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: -20%; left: -20%; width: 140%; height: 140%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 28vh;
+            gap: 15px;
             z-index: -3;
-            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
-            overflow: hidden;
+            transform: rotate(-6deg); /* A famosa inclinação do ecrã 10.10 */
+            animation: panMosaico 50s linear infinite alternate;
+            opacity: 0.9;
         }
 
-        .fundo-magico::before, .fundo-magico::after {
-            content: '';
-            position: absolute;
-            width: 200%; height: 200%;
-            top: -50%; left: -50%;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 60%),
-                        radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
-                        radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.25) 0%, transparent 50%);
-            filter: blur(40px);
-            animation: moveNebulosa 30s infinite alternate ease-in-out;
+        .mosaic-card {
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
-        .fundo-magico::after {
-            background: radial-gradient(circle at 40% 60%, rgba(56, 189, 248, 0.35) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 80%, rgba(250, 204, 21, 0.2) 0%, transparent 40%);
-            animation: moveNebulosa2 40s infinite alternate-reverse ease-in-out;
+        @keyframes panMosaico {
+            0% { transform: rotate(-6deg) translate(0, 0) scale(1); }
+            100% { transform: rotate(-6deg) translate(-5%, -5%) scale(1.05); }
         }
 
-        @keyframes moveNebulosa {
-            0% { transform: rotate(0deg) scale(1); }
-            100% { transform: rotate(15deg) scale(1.1); }
-        }
-        @keyframes moveNebulosa2 {
-            0% { transform: rotate(0deg) scale(1); }
-            100% { transform: rotate(-10deg) scale(1.15); }
-        }
-
+        /* Desfoque suave para os painéis ficarem legíveis */
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: -2;
+            background: rgba(15, 23, 42, 0.65); /* Leve escurecimento elegante */
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: -2;
         }
 
         .screen {
@@ -150,7 +140,7 @@
             font-size: 13px; backdrop-filter: blur(4px); pointer-events: none;
         }
 
-        /* GRELHA NA MESA */
+        /* GRELHA NA MESA (Votação e Resultados) */
         .grid-container {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; 
             padding: 20px 10px; width: 100%; max-width: 600px;
@@ -163,10 +153,10 @@
         }
         .carta-pequena:active { transform: scale(0.95); }
         
-        /* CARTA PRÓPRIA (MESA) */
+        /* CARTA PRÓPRIA (Borda Vermelha) */
         .carta-propria {
             border: 4px solid var(--red-alert) !important; 
-            pointer-events: none;
+            pointer-events: none; /* Bloqueia o clique */
             filter: brightness(0.5); 
         }
         .carta-propria::before {
@@ -195,12 +185,15 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
         }
 
+        /* VERSÃO APENAS NO LOGIN */
         .versao-app {
             text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 14px; 
             font-weight: 600; margin-top: 30px;
         }
 
-        /* MODAL ECRÃ CHEIO */
+        /* ========================================================
+           MODAL ECRÃ CHEIO (FULL) COM BOTÃO
+           ======================================================== */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -222,9 +215,11 @@
         }
         .modal-carousel::-webkit-scrollbar { display: none; }
         
+        /* CARTA PREENCHE O ECRÃ SEM CORTAR (cover) */
         .modal-carta {
             flex: 0 0 100%; height: 80vh; border-radius: 20px;
-            background-size: contain; background-repeat: no-repeat; background-position: center; 
+            background-size: cover; 
+            background-repeat: no-repeat; background-position: center; 
             scroll-snap-align: center; box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
 
@@ -238,8 +233,8 @@
 </head>
 <body>
 
-    <!-- O FUNDO MÁGICO 100% CSS -->
-    <div class="fundo-magico"></div>
+    <!-- FUNDO MOSAICO 10.10 GARANTIDO -->
+    <div id="dixit-mosaic"></div>
     <div class="bg-overlay"></div>
 
     <!-- MODAL DE ECRÃ CHEIO -->
@@ -286,7 +281,7 @@
             </div>
         </div>
         
-        <div class="versao-app">Versão 10.76</div>
+        <div class="versao-app">Versão 10.77</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
@@ -343,6 +338,32 @@
         let modalRegraDesativacao = null;
         let cartaSelecionadaVisivel = null;
 
+        // INICIALIZA O FUNDO MOSAICO INFALÍVEL
+        window.onload = () => {
+            const container = document.getElementById('dixit-mosaic');
+            const seguras = [
+                'https://images.unsplash.com/photo-1604871000636-074fa5117945?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1578301978693-85fa9c026b47?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1536697246787-1f276329ee4f?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=400&q=80',
+                'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?auto=format&fit=crop&w=400&q=80'
+            ];
+            const misturadas = seguras.sort(() => 0.5 - Math.random());
+            misturadas.forEach(url => {
+                const card = document.createElement('div');
+                card.className = 'mosaic-card';
+                card.style.backgroundImage = `url('${url}')`;
+                container.appendChild(card);
+            });
+        };
+
         socket.on('connect', () => { meuId = socket.id; });
         socket.on('erro', (msg) => { alert(msg); });
 
@@ -367,7 +388,7 @@
         }
 
         // ==========================================
-        // LÓGICA DO MODAL (ZOOM COM BOTÃO)
+        // LÓGICA DO MODAL (ZOOM COM BOTÃO DENTRO)
         // ==========================================
         function abrirModal(urlClicada) {
             const modal = document.getElementById('image-modal');
