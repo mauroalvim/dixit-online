@@ -10,21 +10,21 @@
         :root {
             --primary: #10b981;
             --primary-hover: #059669;
-            --panel-bg: rgba(15, 23, 42, 0.70); 
+            --panel-bg: rgba(15, 23, 42, 0.75); 
             --input-bg: rgba(0, 0, 0, 0.5); 
             --text-main: #ffffff;
             --text-muted: #cbd5e1;
-            --gold-glow: 0 0 20px rgba(250, 204, 21, 0.8);
+            --gold-glow: 0 0 20px rgba(250, 204, 21, 0.9);
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* FUNDO COLORIDO E ALEGRE (Unsplash não bloqueia) */
+        /* FUNDO ALEGRE E VIBRANTE (TIPO DIXIT) */
         body, html { 
             color: var(--text-main); 
             min-height: 100dvh; 
             overflow-x: hidden; 
-            overflow-y: auto; 
+            overflow-y: auto; /* Permite rolagem livre */
             position: relative;
             background-color: #0f172a; 
             background-image: url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1920&q=80');
@@ -33,26 +33,25 @@
             background-attachment: fixed;
         }
 
-        /* Desfoque leve apenas para dar leitura aos painéis */
+        /* Desfoque leve para não esconder as cores vibrantes */
         .bg-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.2);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: -1;
         }
 
         .screen {
             display: none; flex-direction: column; min-height: 100dvh; 
-            padding: 30px 20px; align-items: center;
+            padding: 30px 20px; align-items: center; justify-content: flex-start;
         }
         .screen.active { display: flex; }
 
         .main-title {
             text-align: center; font-size: 42px; font-weight: 800;
             margin-top: 20px; margin-bottom: 5px; text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-            letter-spacing: 2px;
         }
 
         .title-stars {
@@ -61,14 +60,11 @@
         }
 
         .glass-panel {
-            background: var(--panel-bg);
-            border-radius: 24px; padding: 30px 25px;
+            background: var(--panel-bg); border-radius: 24px; padding: 30px 25px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 100%; max-width: 450px;
-            display: flex; flex-direction: column;
+            width: 100%; max-width: 450px; display: flex; flex-direction: column;
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
         }
 
         .login-subpanel { display: none; flex-direction: column; }
@@ -89,7 +85,6 @@
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
         }
         input:focus { border-color: var(--primary); background: rgba(0,0,0,0.7); }
-        input::placeholder { color: #94a3b8; }
 
         button {
             width: 100%; padding: 18px; border-radius: 14px; border: none; font-size: 18px; font-weight: 800;
@@ -100,101 +95,103 @@
         button:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
         
         .btn-secondary { background: #3b82f6; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-        .btn-secondary:hover { background: #2563eb; }
-        
-        .btn-link { background: transparent; color: var(--text-muted); box-shadow: none; font-weight: 600; padding: 5px; margin-top:0;}
-        
+        .btn-link { background: transparent; color: var(--text-muted); box-shadow: none; padding: 5px; margin-top:0;}
         .panel-footer {
             text-align: center; color: #facc15; font-size: 15px; font-weight: 600;
             padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px; cursor: pointer;
         }
 
-        h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
+        h2 { text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
         
-        /* Grid Principal de Cartas */
+        /* GRID DE CARTAS (Visão Geral - Clicável) */
         .cards-container {
-            display: flex; gap: 15px; overflow-x: auto; padding: 20px 10px;
-            scroll-snap-type: x mandatory; scroll-behavior: smooth;
-            width: 100%; max-width: 600px; margin-bottom: 10px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; 
+            padding: 20px 10px; width: 100%; max-width: 600px;
         }
-        .cards-container::-webkit-scrollbar { display: none; }
         
         .carta {
-            flex: 0 0 75%; max-width: 300px; height: 50vh; min-height: 350px; border-radius: 20px;
-            scroll-snap-align: center; position: relative; background-size: cover; background-position: center;
-            border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-            cursor: pointer; /* Indica que é clicável */
-            transition: transform 0.2s;
+            height: 220px; border-radius: 12px; position: relative; background-size: cover; background-position: center;
+            border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            cursor: pointer; transition: transform 0.2s;
         }
-        .carta:active { transform: scale(0.95); } /* Efeito de clique */
+        .carta:active { transform: scale(0.95); }
         
         .carta-narrador { border: 4px solid #facc15; box-shadow: var(--gold-glow); }
         
         .carta-info {
             position: absolute; bottom: 0; width: 100%; background: rgba(0, 0, 0, 0.85);
-            padding: 15px; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; text-align: center;
+            padding: 10px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; text-align: center;
         }
-        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 16px; }
-        .dono-texto.dono-narrador { color: #facc15; }
-        .votos-texto { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
-        
+        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 13px; }
+        .dono-texto.dono-narrador { color: #facc15; font-size: 14px; }
+        .votos-texto { font-size: 14px; color: #fff; margin-bottom: 2px; font-weight: bold; }
+
         .ranking-list {
             background: var(--input-bg); border-radius: 16px; padding: 20px;
             width: 100%; max-height: 350px; overflow-y: auto; margin-bottom: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
         }
         .ranking-item {
             display: flex; justify-content: space-between; padding: 15px; 
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
         }
-        .ranking-item:last-child { border-bottom: none; }
 
-        /* Apenas na tela de Login */
+        /* VERSÃO APENAS NA TELA DE LOGIN */
         .versao-app {
             text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 14px; 
-            font-weight: 600; margin-top: 20px;
+            font-weight: 600; margin-top: 30px;
         }
 
         /* ========================================================
-           NOVO: MODAL DE ECRÃ CHEIO (ZOOM E CARROSSEL LIVRE)
+           MODAL ECRÃ CHEIO (ZOOM E CARROSSEL COM BOTÃO DENTRO)
            ======================================================== */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
         .fullscreen-modal.active { display: flex; }
         
         .close-modal {
             position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2);
             color: white; border: none; border-radius: 50%; width: 45px; height: 45px;
-            font-size: 22px; font-weight: bold; z-index: 10000; display: flex;
-            align-items: center; justify-content: center; box-shadow: none; padding: 0;
-            margin: 0;
+            font-size: 22px; font-weight: bold; z-index: 10000; padding: 0; margin: 0;
+            box-shadow: none; display: flex; align-items: center; justify-content: center;
         }
         
         .modal-carousel {
             display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
-            width: 100%; height: 100%; align-items: center; gap: 20px;
-            scroll-behavior: smooth;
+            width: 100%; height: calc(100% - 100px); align-items: center; gap: 20px;
+            scroll-behavior: smooth; padding: 0 20px;
         }
         .modal-carousel::-webkit-scrollbar { display: none; }
         
         .modal-carta {
-            flex: 0 0 100%; height: 80vh; background-size: contain; background-repeat: no-repeat;
-            background-position: center; scroll-snap-align: center;
+            flex: 0 0 100%; height: 75vh; border-radius: 20px;
+            background-size: contain; background-repeat: no-repeat; background-position: center; 
+            scroll-snap-align: center;
         }
+
+        /* O BOTÃO FICA DENTRO DO MODAL */
+        .modal-footer {
+            height: 100px; width: 100%; display: flex; align-items: center; justify-content: center;
+            padding: 0 20px;
+        }
+        #btn-modal-acao { margin: 0; max-width: 400px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+
     </style>
 </head>
 <body>
 
     <div class="bg-overlay"></div>
 
-    <!-- MODAL DE ECRÃ CHEIO PARA VER DETALHES -->
+    <!-- MODAL DE ECRÃ CHEIO (ZOOM COM BOTÃO INTEGRADO) -->
     <div id="image-modal" class="fullscreen-modal">
         <button class="close-modal" onclick="fecharModal()">✕</button>
         <div class="modal-carousel" id="modal-container">
-            <!-- Cartas ampliadas entram aqui -->
+            <!-- As cartas ampliadas entram aqui -->
+        </div>
+        <div class="modal-footer">
+            <button id="btn-modal-acao" style="display:none;"></button>
         </div>
     </div>
 
@@ -232,9 +229,8 @@
                 <button class="btn-link" onclick="mostrarPainel('painel-player-codigo')">Cancelar</button>
             </div>
         </div>
-        
-        <!-- VERSÃO APENAS NA TELA INICIAL -->
-        <div class="versao-app">Versão 10.68</div>
+        <!-- VERSÃO SÓ AQUI -->
+        <div class="versao-app">Versão 10.69</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
@@ -250,12 +246,9 @@
 
     <!-- ECRÃ DE JOGO / ESCOLHA -->
     <div id="game-screen" class="screen">
-        <h2 id="fase-titulo">Escolha sua Carta</h2>
+        <h2 id="fase-titulo">Sua Mão</h2>
         <div class="subtitle" id="fase-instrucao" style="color: white; font-weight: 600;">Toque na carta para ampliar.</div>
         <div class="cards-container" id="hand-container"></div>
-        <div class="glass-panel" style="padding: 20px; width: 100%; max-width: 600px;">
-            <button id="btn-acao-escolha" style="margin: 0;" disabled>Selecionar Carta Centrada</button>
-        </div>
     </div>
 
     <!-- ECRÃ DE VOTAÇÃO (MESA) -->
@@ -263,18 +256,18 @@
         <h2>Votação</h2>
         <div class="subtitle" id="votacao-instrucao" style="color: white; font-weight: 600;">Qual é a carta do Narrador?</div>
         <div class="cards-container" id="table-container"></div>
-        <div class="glass-panel" style="padding: 20px; width: 100%; max-width: 600px;">
-            <button id="btn-votar" style="margin: 0;" disabled>Votar na Carta Centrada</button>
-        </div>
     </div>
 
-    <!-- ECRÃ DE RESULTADOS DA RONDA -->
+    <!-- ECRÃ DE RESULTADOS DA RONDA (MOSTRA TUDO JUNTO) -->
     <div id="results-screen" class="screen">
-        <h2 style="color: #facc15;">Resultados</h2>
-        <div class="subtitle" style="color: white; font-weight: 600;">A carta dourada era do Narrador!</div>
-        <div class="cards-container" id="results-container"></div>
-        <div class="glass-panel" style="padding: 20px; width: 100%; max-width: 600px;">
-            <button class="btn-secondary" style="margin: 0;" onclick="verRanking()">Ver Ranking</button>
+        <h2 style="color: #facc15;">Resultados da Ronda</h2>
+        <div class="subtitle" style="color: white; font-weight: 600;">A carta com coroa e brilho é a do Narrador!</div>
+        
+        <!-- O container onde as cartas reveladas vão aparecer -->
+        <div class="cards-container" id="results-container" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); max-width: 800px;"></div>
+        
+        <div class="glass-panel" style="padding: 20px; width: 100%; max-width: 400px; margin-top: 20px;">
+            <button class="btn-secondary" style="margin: 0;" onclick="verRanking()">Ver Ranking Atual</button>
         </div>
     </div>
 
@@ -291,13 +284,16 @@
         const socket = io();
         let minhaSala = null;
         let meuId = null;
-        let cartaSelecionadaVisivel = null; 
         let salaDesejada = null;
+
+        // Variaveis de Controlo do Modal (O botão que fica no Zoom)
+        let modalAcaoCallback = null;
+        let modalRegraDesativacao = null;
+        let cartaSelecionadaVisivel = null;
 
         socket.on('connect', () => { meuId = socket.id; });
         socket.on('erro', (msg) => { alert(msg); });
 
-        // NAVEGAÇÃO DE ECRÃS
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -308,57 +304,80 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // LÓGICA DO MODAL (ZOOM DA CARTA)
+        // ==========================================
+        // LÓGICA DO MODAL (ZOOM COM BOTÃO)
+        // ==========================================
         function abrirModal(urlClicada) {
             const modal = document.getElementById('image-modal');
             const modalContainer = document.getElementById('modal-container');
             modal.classList.add('active');
             
-            // Procura a carta clicada no modal e rola até ela
             const targetCard = Array.from(modalContainer.children).find(c => c.dataset.url === urlClicada);
             if (targetCard) {
                 targetCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
             }
+            // Força a atualização do botão
+            setTimeout(() => { modalContainer.dispatchEvent(new Event('scroll')); }, 50);
         }
 
         function fecharModal() {
-            const modalContainer = document.getElementById('modal-container');
+            document.getElementById('image-modal').classList.remove('active');
+        }
+
+        // Configura o que o botão do Modal deve fazer e se deve ficar bloqueado
+        function configurarBotaoModal(texto, callback, regraDesativacao, textoDesativado = "Ação Indisponível") {
+            const btn = document.getElementById('btn-modal-acao');
             
-            // Descobre qual carta está focada no modal quando o jogador o fecha
-            let centerOffset = modalContainer.scrollLeft + modalContainer.clientWidth / 2;
-            let cards = Array.from(modalContainer.children);
+            if (!texto) {
+                btn.style.display = 'none';
+                return;
+            }
+            
+            btn.style.display = 'block';
+            modalAcaoCallback = callback;
+            modalRegraDesativacao = regraDesativacao;
+            btn.dataset.textoOriginal = texto;
+            btn.dataset.textoDesativado = textoDesativado;
+            
+            // Força a validação
+            document.getElementById('modal-container').dispatchEvent(new Event('scroll'));
+        }
+
+        // Ouve o carrossel do Modal para ativar/desativar o botão em tempo real
+        document.getElementById('modal-container').addEventListener('scroll', function() {
+            const btn = document.getElementById('btn-modal-acao');
+            if(btn.style.display === 'none') return;
+
+            let centerOffset = this.scrollLeft + this.clientWidth / 2;
+            let cards = Array.from(this.children);
             let closestCard = null;
             let minDistance = Infinity;
 
             cards.forEach(card => {
                 let cardCenter = card.offsetLeft + card.clientWidth / 2;
                 let distance = Math.abs(centerOffset - cardCenter);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestCard = card;
-                }
+                if (distance < minDistance) { minDistance = distance; closestCard = card; }
             });
 
-            // Sincroniza o carrossel principal com a carta que o jogador estava a ver no modal
             if (closestCard) {
-                const urlFocada = closestCard.dataset.url;
-                const containersAtivos = ['hand-container', 'table-container', 'results-container'];
-                
-                containersAtivos.forEach(id => {
-                    const c = document.getElementById(id);
-                    if (c && c.parentElement.classList.contains('active')) {
-                        const mainCard = Array.from(c.children).find(el => el.dataset.url === urlFocada);
-                        if (mainCard) {
-                            mainCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-                        }
-                    }
-                });
+                cartaSelecionadaVisivel = closestCard.dataset.url;
+                if (modalRegraDesativacao && modalRegraDesativacao(closestCard)) {
+                    btn.disabled = true;
+                    btn.innerText = closestCard.dataset.motivoDesativado || btn.dataset.textoDesativado;
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = btn.dataset.textoOriginal;
+                    btn.onclick = () => {
+                        fecharModal();
+                        if (modalAcaoCallback) modalAcaoCallback(cartaSelecionadaVisivel);
+                    };
+                }
             }
-            
-            document.getElementById('image-modal').classList.remove('active');
-        }
+        });
 
-        // COMANDOS DE SALA
+        // ==========================================
+        // FLUXO DO LOBBY E SALA
+        // ==========================================
         function verificarSala() {
             const codigo = document.getElementById('player-sala').value.trim();
             if(!codigo) return alert("Digite o código da sala!");
@@ -404,35 +423,9 @@
 
         function verRanking() { mostrarTela('ranking-screen'); }
 
-        function setupCarousel(containerId, btnId, callbackAcao, regraDesativacao) {
-            const container = document.getElementById(containerId);
-            const btn = document.getElementById(btnId);
-            
-            container.addEventListener('scroll', () => {
-                let centerOffset = container.scrollLeft + container.clientWidth / 2;
-                let cards = Array.from(container.children);
-                let closestCard = null;
-                let minDistance = Infinity;
-
-                cards.forEach(card => {
-                    let cardCenter = card.offsetLeft + card.clientWidth / 2;
-                    let distance = Math.abs(centerOffset - cardCenter);
-                    if (distance < minDistance) { minDistance = distance; closestCard = card; }
-                });
-
-                if (closestCard) {
-                    cartaSelecionadaVisivel = closestCard.dataset.url;
-                    if (regraDesativacao && regraDesativacao(closestCard)) {
-                        btn.disabled = true;
-                    } else {
-                        btn.disabled = false;
-                        btn.onclick = () => callbackAcao(cartaSelecionadaVisivel);
-                    }
-                }
-            });
-        }
-
-        // LÓGICA DE FASES E ATUALIZAÇÃO DO JOGO
+        // ==========================================
+        // LÓGICA DE FASES (ATUALIZAR SALA)
+        // ==========================================
         socket.on('atualizarSala', (sala) => {
             minhaSala = sala;
             const codigo = sala.codigo || salaDesejada;
@@ -443,11 +436,8 @@
             if (sala.estado === 'aguardando') {
                 mostrarTela('lobby-screen');
                 document.getElementById('lobby-titulo').innerText = `Sala: ${codigo}`;
-                
                 let htmlList = '';
-                sala.jogadores.forEach(j => {
-                    htmlList += `<div class="ranking-item"><span>${j.nome}</span></div>`;
-                });
+                sala.jogadores.forEach(j => { htmlList += `<div class="ranking-item"><span>${j.nome}</span></div>`; });
                 document.getElementById('jogadores-list').innerHTML = htmlList;
 
                 const isHost = sala.jogadores[0].id === meuId;
@@ -466,76 +456,74 @@
 
             if (sala.estado === 'escolha_narrador') {
                 mostrarTela('game-screen');
-                const btn = document.getElementById('btn-acao-escolha');
+                renderizarCartas(eu.mao, 'hand-container');
                 
                 if (isNarrador) {
                     document.getElementById('fase-titulo').innerText = "VOCÊ É O NARRADOR!";
-                    document.getElementById('fase-instrucao').innerText = "Diga a dica em voz alta e escolha uma carta. (Toque nela para ver maior)";
-                    renderizarCartas(eu.mao, 'hand-container');
-                    setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
+                    document.getElementById('fase-instrucao').innerText = "Toque na carta que vai descrever.";
+                    configurarBotaoModal("Confirmar Carta (Narrador)", (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }), null);
                 } else {
                     document.getElementById('fase-titulo').innerText = "Aguarde o Narrador...";
-                    document.getElementById('fase-instrucao').innerText = "O narrador está a pensar na dica.";
-                    document.getElementById('hand-container').innerHTML = ''; 
-                    btn.disabled = true;
+                    document.getElementById('fase-instrucao').innerText = "Analise as suas cartas enquanto o narrador pensa.";
+                    // Mostra as cartas, mas bloqueia o botão no zoom
+                    configurarBotaoModal("Aguarde o Narrador...", null, () => true, "Aguarde a dica");
                 }
             }
 
             if (sala.estado === 'escolha_jogadores') {
                 mostrarTela('game-screen');
-                const btn = document.getElementById('btn-acao-escolha');
                 
                 if (isNarrador) {
                     document.getElementById('fase-titulo').innerText = "Aguardando Jogadores...";
-                    document.getElementById('fase-instrucao').innerText = "Os outros estão a tentar confundir a mesa.";
-                    document.getElementById('hand-container').innerHTML = '';
-                    btn.disabled = true;
+                    document.getElementById('fase-instrucao').innerText = "Os outros estão a escolher as cartas deles.";
+                    document.getElementById('hand-container').innerHTML = ''; // Narrador não vê a mão
+                    configurarBotaoModal(null);
                 } else {
                     const jaJogou = sala.mesa.some(c => c.jogadorId === meuId);
                     if (jaJogou) {
                         document.getElementById('fase-titulo').innerText = "Carta enviada!";
                         document.getElementById('fase-instrucao').innerText = "Aguarde os restantes jogadores...";
                         document.getElementById('hand-container').innerHTML = '';
-                        btn.disabled = true;
+                        configurarBotaoModal(null);
                     } else {
                         document.getElementById('fase-titulo').innerText = "A dica foi dada!";
-                        document.getElementById('fase-instrucao').innerText = "Escolha a carta que mais combina com a dica. (Toque para ver maior)";
+                        document.getElementById('fase-instrucao').innerText = "Toque e escolha a carta que vai confundir a mesa.";
                         renderizarCartas(eu.mao, 'hand-container');
-                        setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
+                        configurarBotaoModal("Jogar esta Carta", (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }), null);
                     }
                 }
             }
 
             if (sala.estado === 'votacao') {
                 mostrarTela('voting-screen');
-                const btn = document.getElementById('btn-votar');
                 const jaVotou = sala.mesa.some(c => c.votos.includes(meuId));
-                
                 const urlsMesa = sala.mesa.map(c => c.cartaUrl);
                 renderizarCartas(urlsMesa, 'table-container', sala.mesa); 
 
                 if (isNarrador) {
                     document.getElementById('votacao-instrucao').innerText = "O Narrador não vota. Assista ao caos!";
-                    btn.disabled = true;
+                    configurarBotaoModal(null);
                 } else if (jaVotou) {
                     document.getElementById('votacao-instrucao').innerText = "Voto registado. Aguarde os outros...";
-                    btn.disabled = true;
+                    configurarBotaoModal(null);
                 } else {
-                    document.getElementById('votacao-instrucao').innerText = "Vote na carta que acha ser a do Narrador. (Toque para ver maior)";
-                    setupCarousel('table-container', 'btn-votar', 
-                        (url) => socket.emit('votarCarta', { codigo, cartaUrl: url }),
-                        (cardElement) => cardElement.dataset.dono === meuId
-                    );
+                    document.getElementById('votacao-instrucao').innerText = "Toque na carta que acha ser a do Narrador.";
+                    
+                    // Botão vota, mas se for a própria carta, bloqueia e avisa
+                    configurarBotaoModal("Votar nesta Carta", (url) => socket.emit('votarCarta', { codigo, cartaUrl: url }), (cardElement) => {
+                        if(cardElement.dataset.dono === meuId) {
+                            cardElement.dataset.motivoDesativado = "Esta é a sua carta!";
+                            return true;
+                        }
+                        return false;
+                    }, "Não pode votar");
                 }
             }
 
             if (sala.estado === 'resultado' || sala.estado === 'fim_jogo') {
                 mostrarTela('results-screen');
                 const container = document.getElementById('results-container');
-                const modalContainer = document.getElementById('modal-container');
-                
                 container.innerHTML = '';
-                modalContainer.innerHTML = ''; // Limpa o modal
                 
                 sala.mesa.forEach(cartaObj => {
                     const dono = sala.jogadores.find(j => j.id === cartaObj.jogadorId);
@@ -545,30 +533,30 @@
                         return qmVotou ? qmVotou.nome : '';
                     }).join(', ');
 
-                    // Carta na mesa
                     const div = document.createElement('div');
                     div.className = 'carta';
+                    div.style.height = '350px'; // Para a visão dos resultados
                     if (isCardNarrador) div.classList.add('carta-narrador');
-                    div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
-                    div.onclick = () => abrirModal(cartaObj.cartaUrl);
                     
+                    div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
+                    
+                    // Design detalhado dos votos e donos como você pediu
                     div.innerHTML = `
                         <div class="carta-info">
-                            <div class="dono-texto ${isCardNarrador ? 'dono-narrador' : ''}">
-                                De: ${dono ? dono.nome : 'Desc.'} ${isCardNarrador ? '⭐' : ''}
+                            <div class="votos-texto" style="font-size: 15px; margin-bottom: 5px;">
+                                ${cartaObj.votos.length} Voto(s) 
+                                ${votosNomes ? `<br><span style="font-size: 11px; color: #94a3b8;">(${votosNomes})</span>` : ''}
                             </div>
-                            <div class="votos-texto">Votos: ${cartaObj.votos.length} ${votosNomes ? '('+votosNomes+')' : ''}</div>
+                            <div class="dono-texto ${isCardNarrador ? 'dono-narrador' : ''}">
+                                ${isCardNarrador ? '👑 NARRADOR<br>' : 'De: '} ${dono ? dono.nome : 'Desc.'}
+                            </div>
                         </div>
                     `;
                     container.appendChild(div);
-
-                    // Adiciona também ao modal em ecrã cheio
-                    const modalDiv = document.createElement('div');
-                    modalDiv.className = 'modal-carta';
-                    modalDiv.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
-                    modalDiv.dataset.url = cartaObj.cartaUrl;
-                    modalContainer.appendChild(modalDiv);
                 });
+                
+                // O botão do modal desaparece nos resultados
+                configurarBotaoModal(null);
                 
                 let rankingHtml = '';
                 [...sala.jogadores].sort((a,b) => b.pontos - a.pontos).forEach(j => {
@@ -588,36 +576,39 @@
             }
         });
 
-        // Constrói as cartas na mesa e também no Modal oculto
+        // RENDERIZA NAS TELAS PRINCIPAIS E REPLICA NO MODAL
         function renderizarCartas(urls, containerId, mesaData = null) {
             const container = document.getElementById(containerId);
             const modalContainer = document.getElementById('modal-container');
             
             container.innerHTML = '';
-            modalContainer.innerHTML = ''; // Limpa as antigas do modal
+            modalContainer.innerHTML = ''; // Limpa o modal
 
             urls.forEach(url => {
-                // Carta normal clicável
+                // Cartas da vista normal
                 const div = document.createElement('div');
                 div.className = 'carta';
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
                 div.dataset.url = url;
-                div.onclick = () => abrirModal(url); // Clique abre o zoom
+                div.onclick = () => abrirModal(url); // Abre o Zoom
                 
-                if (mesaData) {
-                    const cartaObj = mesaData.find(c => c.cartaUrl === url);
-                    if (cartaObj) div.dataset.dono = cartaObj.jogadorId;
-                }
-                container.appendChild(div);
-
-                // Carta Grande para o Modal
+                // Cartas da vista do Modal
                 const modalDiv = document.createElement('div');
                 modalDiv.className = 'modal-carta';
                 modalDiv.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
                 modalDiv.dataset.url = url;
+
+                if (mesaData) {
+                    const cartaObj = mesaData.find(c => c.cartaUrl === url);
+                    if (cartaObj) {
+                        div.dataset.dono = cartaObj.jogadorId;
+                        modalDiv.dataset.dono = cartaObj.jogadorId;
+                    }
+                }
+                
+                container.appendChild(div);
                 modalContainer.appendChild(modalDiv);
             });
-            setTimeout(() => { container.dispatchEvent(new Event('scroll')); }, 100);
         }
     </script>
 </body>
