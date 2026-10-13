@@ -13,30 +13,44 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const dirExpansoes = path.join(__dirname, 'public', 'expansoes');
-
-// ========================================================
-// 🧹 EXTERMINADOR DE CACHE FANTASMA
-// ========================================================
-if (fs.existsSync(dirExpansoes)) {
-    try {
-        fs.rmSync(dirExpansoes, { recursive: true, force: true });
-        console.log("Limpeza de cache antigo concluída com sucesso.");
-    } catch (e) {
-        console.log("Aviso ao limpar cache: ", e);
-    }
-}
-fs.mkdirSync(dirExpansoes, { recursive: true });
+if (!fs.existsSync(dirExpansoes)) fs.mkdirSync(dirExpansoes, { recursive: true });
 
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 
-// A NOSSA PISCINA GERAL (Apenas Cartas 100% Puras dos ZIPs)
+// A NOSSA PISCINA GERAL (+500 cartas) E O HISTÓRICO GLOBAL ANTI-REPETIÇÃO
 let bancoDeCartasGlobais = [];
+let historicoGlobalCartas = new Set(); // Memoriza as cartas usadas entre DIFERENTES salas
+
+// ========================================================
+// ⚡ CARREGAMENTO INSTANTÂNEO & LIMPEZA CIRÚRGICA DE CACHE
+// ========================================================
+// Lê o que já está no disco no segundo zero, para não termos de esperar pelo ZIP
+if (fs.existsSync(dirExpansoes)) {
+    const files = fs.readdirSync(dirExpansoes);
+    files.forEach(file => {
+        const nomeUpper = file.toUpperCase();
+        const isImage = nomeUpper.endsWith('.PNG') || nomeUpper.endsWith('.JPG') || nomeUpper.endsWith('.JPEG');
+        const hasCardWord = nomeUpper.includes('CARD') || nomeUpper.includes('CARTE');
+        const hasNumberLogic = /_\d+_/.test(nomeUpper);
+        const lixo = ['MACOSX', 'WALLPAPER', 'BOX', 'BOITE', 'RULE', 'REGLE', 'COVER', 'MOCKUP', '3D', 'PRESENTATION', 'VISUAL', 'PACK', 'PACKSHOT', 'PACKAGING', 'DISPLAY', 'PRODUCT', 'MATERIEL', 'COMPONENTS', 'SETUP', 'LIVRET', 'BOOKLET', 'GAME', 'JEU', 'PROMO', 'FLYER', 'BANNER', 'FOND', 'LOGO'];
+        const isNotTrash = !lixo.some(bad => nomeUpper.includes(bad));
+
+        // Se for carta válida, injeta logo no banco! Se for lixo antigo (ex: caixa), apaga do disco.
+        if (isImage && hasCardWord && hasNumberLogic && isNotTrash) {
+            const urlLocal = `/expansoes/${encodeURIComponent(file)}`;
+            if (!bancoDeCartasGlobais.includes(urlLocal)) bancoDeCartasGlobais.push(urlLocal);
+        } else {
+            try { fs.unlinkSync(path.join(dirExpansoes, file)); } catch(e){} 
+        }
+    });
+    console.log(`⚡ Arranque Rápido: ${bancoDeCartasGlobais.length} cartas carregadas instantaneamente!`);
+}
 
 // --------------------------------------------------------
-// EXTRAÇÃO INTELIGENTE DE ZIPs EM BACKGROUND
+// EXTRAÇÃO DE NOVOS ZIPs EM BACKGROUND (Apenas os que faltam)
 // --------------------------------------------------------
 async function baixarZipsEmBackground() {
     const urlsZips = [
@@ -49,7 +63,6 @@ async function baixarZipsEmBackground() {
         "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-origins.zip"
     ];
 
-    console.log("A extrair Expansões Asmodee em background...");
     const zipsMisturados = embaralharArray([...urlsZips]);
 
     for (let url of zipsMisturados) {
@@ -62,14 +75,8 @@ async function baixarZipsEmBackground() {
                     const nomeUpper = fileName.toUpperCase();
                     
                     const isImage = nomeUpper.endsWith('.PNG') || nomeUpper.endsWith('.JPG') || nomeUpper.endsWith('.JPEG');
-                    
-                    // 1. Obriga a ter a palavra CARD ou CARTE
                     const hasCardWord = nomeUpper.includes('CARD') || nomeUpper.includes('CARTE');
-                    
-                    // 2. FILTRO CORRIGIDO: Exige underscore + número + underscore (Ex: _1_)
                     const hasNumberLogic = /_\d+_/.test(nomeUpper);
-                    
-                    // 3. Lista Negra Agressiva
                     const lixo = ['MACOSX', 'WALLPAPER', 'BOX', 'BOITE', 'RULE', 'REGLE', 'COVER', 'MOCKUP', '3D', 'PRESENTATION', 'VISUAL', 'PACK', 'PACKSHOT', 'PACKAGING', 'DISPLAY', 'PRODUCT', 'MATERIEL', 'COMPONENTS', 'SETUP', 'LIVRET', 'BOOKLET', 'GAME', 'JEU', 'PROMO', 'FLYER', 'BANNER', 'FOND', 'LOGO'];
                     const isNotTrash = !lixo.some(bad => nomeUpper.includes(bad));
 
@@ -95,7 +102,6 @@ async function baixarZipsEmBackground() {
             console.log(`Aviso: Erro ao ler ZIP ${url}`);
         }
     }
-    console.log("Mapeamento concluído! Apenas cartas puras foram extraídas e o lixo foi apagado.");
 }
 baixarZipsEmBackground();
 
@@ -162,7 +168,7 @@ async function julgarCartas(urls) {
 }
 
 // --------------------------------------------------------
-// PREENCHIMENTO DA SALA (100% ALEATÓRIO, 0% REPETIÇÃO)
+// PREENCHIMENTO DA SALA (MEMÓRIA GLOBAL = ZERO REPETIÇÃO)
 // --------------------------------------------------------
 async function preencherBauSala(codigo) {
     const sala = salas[codigo];
@@ -171,6 +177,7 @@ async function preencherBauSala(codigo) {
 
     try {
         let tentativas = 0;
+        // Espera no máximo 5 segs apenas se o banco estiver muito vazio
         while (bancoDeCartasGlobais.length < 80 && tentativas < 20) { 
             await new Promise(r => setTimeout(r, 250));
             tentativas++;
@@ -179,15 +186,33 @@ async function preencherBauSala(codigo) {
         if (sala.bau.length < 80 && bancoDeCartasGlobais.length > 0) {
             let poolGlobal = embaralharArray([...bancoDeCartasGlobais]);
             
+            // FASE 1: Tenta distribuir APENAS cartas inéditas no servidor (Que não apareceram nas salas anteriores)
             for (let url of poolGlobal) {
-                if (!sala.cartasUsadas.has(url)) {
+                if (!sala.cartasUsadas.has(url) && !historicoGlobalCartas.has(url)) {
                     sala.bau.push(url);
                     sala.cartasUsadas.add(url);
+                    historicoGlobalCartas.add(url); // Regista no servidor inteiro
                 }
                 if (sala.bau.length >= 80) break; 
             }
+
+            // FASE 2: Se o servidor esgotar as 500+ cartas inéditas, limpa a memória global e recomeça o ciclo!
+            if (sala.bau.length < 80) {
+                console.log("O servidor esgotou o banco de cartas inéditas! A reiniciar o histórico global...");
+                historicoGlobalCartas.clear(); // Limpa a memória das salas antigas
+                
+                for (let url of poolGlobal) {
+                    if (!sala.cartasUsadas.has(url)) { // Mas continua a respeitar a memória da sala atual
+                        sala.bau.push(url);
+                        sala.cartasUsadas.add(url);
+                        historicoGlobalCartas.add(url);
+                    }
+                    if (sala.bau.length >= 80) break; 
+                }
+            }
         }
 
+        // FASE 3: Pixabay como rede de segurança extrema
         if (sala.bau.length < 20) {
             let urlsStella = await buscarCartasStellaPixabay(15);
             let aprovadas = await julgarCartas(urlsStella);
