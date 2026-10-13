@@ -10,31 +10,36 @@
         :root {
             --primary: #10b981;
             --primary-hover: #059669;
-            --text-main: #f8fafc;
+            --panel-bg: #151728; /* Fundo escuro e elegante do painel */
+            --input-bg: #0b0c14; /* Fundo mais escuro para os inputs */
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
             --gold-glow: 0 0 20px rgba(250, 204, 21, 0.8);
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* Fundo imersivo com imagem surreal */
+        /* Fundo Vibrante e Imersivo */
         body { 
             color: var(--text-main); 
             height: 100vh; 
             overflow: hidden; 
             display: flex; 
             flex-direction: column;
-            background-image: url('https://cdn.pixabay.com/photo/2021/09/13/08/19/fantasy-6620584_1280.jpg');
+            /* Usando uma imagem bem colorida simulando um mosaico de cartas */
+            background-image: url('https://cdn.pixabay.com/photo/2022/11/07/19/12/fantasy-7576976_1280.jpg');
             background-size: cover;
             background-position: center;
             position: relative;
         }
 
-        /* Camada de desfoque (Glassmorphism global) */
+        /* Desfoque suave que mantém as cores vivas, sem ficar cinza */
         .bg-blur {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            backdrop-filter: blur(25px) brightness(0.6);
-            -webkit-backdrop-filter: blur(25px) brightness(0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.4); /* Leve escurecimento azulado apenas para dar contraste */
             z-index: -1;
         }
         
@@ -43,50 +48,88 @@
         }
         .screen.active { display: flex; }
 
-        /* Painel de Vidro para Login e Lobby */
+        /* Título Principal */
+        .main-title {
+            text-align: center;
+            font-size: 38px;
+            font-weight: 800;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            letter-spacing: 1px;
+        }
+
+        .title-stars {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Painel Escuro (Design Restaurado) */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            background: var(--panel-bg);
+            border-radius: 24px;
+            padding: 30px 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             width: 100%;
             max-width: 400px;
-            margin: auto;
+            margin: 0 auto auto auto;
             display: flex;
             flex-direction: column;
+        }
+
+        .panel-header {
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 10px;
+            display: flex;
             align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        h1 { font-size: 32px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-        h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .subtitle { text-align: center; color: #cbd5e1; font-size: 14px; margin-bottom: 25px; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
 
-        /* Inputs e Botões com estilo translúcido */
+        /* Inputs Escuros */
         input {
-            width: 100%; padding: 15px; border-radius: 12px; 
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.2); color: white; 
-            margin-bottom: 15px; font-size: 16px;
+            width: 100%; padding: 16px; border-radius: 14px; 
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            background: var(--input-bg); color: white; 
+            margin-bottom: 15px; font-size: 15px;
             outline: none; transition: 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
         }
-        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.4); }
-        input::placeholder { color: #94a3b8; }
+        input:focus { border-color: var(--primary); }
+        input::placeholder { color: #475569; }
 
+        /* Botão Verde Vibrante */
         button {
-            width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600;
+            width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 5px; margin-bottom: 15px;
         }
         button:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-2px); }
-        button:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); cursor: not-allowed; box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
+        button:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
         
-        .btn-secondary { background: rgba(59, 130, 246, 0.8); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
-        .btn-secondary:hover { background: rgba(37, 99, 235, 1); }
+        .btn-secondary { background: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-secondary:hover { background: #2563eb; }
 
-        /* Grid de Cartas com Scroll Horizontal Estilo Carrossel */
+        /* Rodapé do Painel (Decoração) */
+        .panel-footer {
+            text-align: center;
+            color: #facc15;
+            font-size: 14px;
+            font-weight: 600;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 10px;
+        }
+
+        /* Grid de Cartas com Scroll Horizontal */
         .cards-container {
             display: flex; gap: 15px; overflow-x: auto; padding: 20px 0;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
@@ -99,46 +142,37 @@
             flex: 0 0 75%; max-width: 320px; height: 60vh; border-radius: 16px;
             scroll-snap-align: center; position: relative;
             background-size: cover; background-position: center;
-            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             transition: transform 0.3s ease;
         }
         
-        /* Destaques Especiais */
-        .carta-narrador { border: 3px solid #facc15; box-shadow: var(--gold-glow); }
+        .carta-narrador { border: 4px solid #facc15; box-shadow: var(--gold-glow); }
         
-        /* Detalhes nos Resultados */
         .carta-info {
-            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.75);
+            position: absolute; bottom: 0; width: 100%; background: rgba(11, 12, 20, 0.9);
             padding: 12px; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;
-            text-align: center; backdrop-filter: blur(8px);
+            text-align: center;
         }
         .dono-texto { font-weight: 800; color: #38bdf8; font-size: 15px; }
         .dono-texto.dono-narrador { color: #facc15; }
-        .votos-texto { font-size: 13px; color: #e2e8f0; margin-top: 4px; }
+        .votos-texto { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
-        /* Ranking List */
         .ranking-list {
-            background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px;
-            border: 1px solid rgba(255,255,255,0.1); width: 100%;
-            max-height: 200px; overflow-y: auto;
+            background: var(--input-bg); border-radius: 14px; padding: 15px;
+            width: 100%; max-height: 250px; overflow-y: auto;
+            margin-bottom: 15px;
         }
         .ranking-item {
             display: flex; justify-content: space-between; padding: 12px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 16px; font-weight: 600;
         }
         .ranking-item:last-child { border-bottom: none; }
 
-        /* TEXTO DA VERSÃO */
         .versao-app {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 12px;
-            pointer-events: none;
-            z-index: 1000;
+            position: absolute; bottom: 10px; width: 100%;
+            text-align: center; color: rgba(255, 255, 255, 0.3);
+            font-size: 12px; pointer-events: none; z-index: 1000;
         }
     </style>
 </head>
@@ -146,64 +180,79 @@
 
     <div class="bg-blur"></div>
 
-    <!-- ECRÃ DE LOGIN -->
+    <!-- ECRÃ DE LOGIN (Restaurado com o Design Escuro e Elegante) -->
     <div id="login-screen" class="screen active">
+        <h1 class="main-title">Imagination</h1>
+        <div class="title-stars">✨</div>
+        
         <div class="glass-panel">
-            <h1>Imagination</h1>
-            <div class="subtitle">O Jogo das Cartas Surreais</div>
+            <div class="panel-header">🎮 Entrar na Partida</div>
+            <div class="subtitle">Digite seu nome e o código da Sala.</div>
+            
             <input type="text" id="nome-input" placeholder="Seu Nickname">
             <input type="number" id="sala-input" placeholder="Código da Sala (Ex: 1234)">
-            <button onclick="entrarSala()">Entrar na Sala</button>
+            
+            <button onclick="entrarSala()">Avançar</button>
+            
+            <div class="panel-footer">
+                👑 Criar uma nova sala? <br> Basta inventar um código! ▼
+            </div>
         </div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
     <div id="lobby-screen" class="screen">
-        <div class="glass-panel">
-            <h1 id="lobby-titulo">Sala: ----</h1>
-            <div class="subtitle" id="lobby-status">Aguardando jogadores...</div>
+        <h1 class="main-title" id="lobby-titulo" style="font-size: 28px;">Sala: ----</h1>
+        <div class="glass-panel" style="margin-top: 20px;">
+            <div class="panel-header">Jogadores</div>
+            <div class="subtitle" id="lobby-status">Aguardando mais pessoas...</div>
+            
             <div class="ranking-list" id="jogadores-list"></div>
-            <button id="btn-iniciar" style="margin-top: 20px; display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
+            
+            <button id="btn-iniciar" style="display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
         </div>
     </div>
 
     <!-- ECRÃ DE JOGO / ESCOLHA -->
     <div id="game-screen" class="screen">
-        <h2 id="fase-titulo">Escolha sua Carta</h2>
-        <div class="subtitle" id="fase-instrucao">Aguarde as instruções...</div>
+        <h2 id="fase-titulo" style="margin-top: 10px;">Escolha sua Carta</h2>
+        <div class="subtitle" id="fase-instrucao" style="color: white; font-weight: 600;">Aguarde as instruções...</div>
         <div class="cards-container" id="hand-container"></div>
-        <button id="btn-acao-escolha" disabled>Escolher Carta Centrada</button>
+        <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
+            <button id="btn-acao-escolha" style="margin: 0;" disabled>Escolher Carta Centrada</button>
+        </div>
     </div>
 
     <!-- ECRÃ DE VOTAÇÃO (MESA) -->
     <div id="voting-screen" class="screen">
-        <h2>Votação</h2>
-        <div class="subtitle" id="votacao-instrucao">Qual é a carta do Narrador?</div>
+        <h2 style="margin-top: 10px;">Votação</h2>
+        <div class="subtitle" id="votacao-instrucao" style="color: white; font-weight: 600;">Qual é a carta do Narrador?</div>
         <div class="cards-container" id="table-container"></div>
-        <button id="btn-votar" disabled>Votar na Carta Centrada</button>
+        <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
+            <button id="btn-votar" style="margin: 0;" disabled>Votar na Carta Centrada</button>
+        </div>
     </div>
 
     <!-- ECRÃ DE RESULTADOS DA RONDA -->
     <div id="results-screen" class="screen">
-        <h2 style="color: #facc15; text-shadow: 0 0 10px rgba(250,204,21,0.5);">Resultados da Ronda</h2>
-        <div class="subtitle">A carta com brilho dourado era do Narrador!</div>
+        <h2 style="color: #facc15; margin-top: 10px; text-shadow: 0 0 10px rgba(250,204,21,0.5);">Resultados da Ronda</h2>
+        <div class="subtitle" style="color: white; font-weight: 600;">A carta dourada era do Narrador!</div>
         <div class="cards-container" id="results-container"></div>
-        <button class="btn-secondary" onclick="verRanking()">Ver Ranking</button>
+        <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
+            <button class="btn-secondary" style="margin: 0;" onclick="verRanking()">Ver Ranking</button>
+        </div>
     </div>
 
     <!-- ECRÃ DE RANKING FINAL -->
     <div id="ranking-screen" class="screen">
-        <div class="glass-panel" style="max-width: 500px;">
-            <h2>Ranking Atual</h2>
-            <div class="ranking-list" id="ranking-container" style="max-height: 400px; margin-bottom: 20px;"></div>
-            <button onclick="proximaRodada()">Próxima Rodada</button>
+        <h1 class="main-title" style="font-size: 28px;">Ranking Atual</h1>
+        <div class="glass-panel" style="margin-top: 20px;">
+            <div class="ranking-list" id="ranking-container" style="max-height: 400px;"></div>
+            <button onclick="proximaRodada()" style="margin-bottom: 0;">Próxima Rodada</button>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- MARCADOR DE VERSÃO (Altere aqui no futuro) -->
-    <!-- ========================================== -->
-    <div class="versao-app">Versão 10.63</div>
+    <div class="versao-app">Versão 10.64</div>
 
     <script>
         const socket = io();
@@ -273,7 +322,6 @@
             const eu = sala.jogadores.find(j => j.id === meuId);
             const isNarrador = sala.jogadores[sala.narradorIndex].id === meuId;
 
-            // 1. FASE DE LOBBY
             if (sala.estado === 'aguardando') {
                 mostrarTela('lobby-screen');
                 document.getElementById('lobby-titulo').innerText = `Sala: ${codigo}`;
@@ -292,10 +340,12 @@
                 } else if (sala.bau.length === 0) {
                     document.getElementById('lobby-status').innerText = "A carregar cartas...";
                     btnIniciar.style.display = 'none';
+                } else {
+                    document.getElementById('lobby-status').innerText = "Aguardando mais jogadores...";
+                    btnIniciar.style.display = 'none';
                 }
             }
 
-            // 2. FASE: ESCOLHA DO NARRADOR
             if (sala.estado === 'escolha_narrador') {
                 mostrarTela('game-screen');
                 const btn = document.getElementById('btn-acao-escolha');
@@ -313,14 +363,13 @@
                 }
             }
 
-            // 3. FASE: ESCOLHA DOS JOGADORES
             if (sala.estado === 'escolha_jogadores') {
                 mostrarTela('game-screen');
                 const btn = document.getElementById('btn-acao-escolha');
                 
                 if (isNarrador) {
                     document.getElementById('fase-titulo').innerText = "Aguardando Jogadores...";
-                    document.getElementById('fase-instrucao').innerText = "Os outros jogadores estão a tentar confundir a mesa.";
+                    document.getElementById('fase-instrucao').innerText = "Os outros estão a tentar confundir a mesa.";
                     document.getElementById('hand-container').innerHTML = '';
                     btn.disabled = true;
                 } else {
@@ -339,7 +388,6 @@
                 }
             }
 
-            // 4. FASE: VOTAÇÃO
             if (sala.estado === 'votacao') {
                 mostrarTela('voting-screen');
                 const btn = document.getElementById('btn-votar');
@@ -363,7 +411,6 @@
                 }
             }
 
-            // 5. FASE: RESULTADOS
             if (sala.estado === 'resultado') {
                 mostrarTela('results-screen');
                 const container = document.getElementById('results-container');
@@ -396,7 +443,7 @@
                 
                 let rankingHtml = '';
                 [...sala.jogadores].sort((a,b) => b.pontos - a.pontos).forEach(j => {
-                    rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span>${j.pontos} pts</span></div>`;
+                    rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span style="color: var(--primary);">${j.pontos} pts</span></div>`;
                 });
                 document.getElementById('ranking-container').innerHTML = rankingHtml;
             }
