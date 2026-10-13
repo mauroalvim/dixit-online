@@ -21,14 +21,8 @@ app.use(express.static('public'));
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 
-// 1. A LINHA DA FRENTE (Imediata e sempre disponível)
-let cartasGitHub = [];
-for (let i = 1; i <= 98; i++) {
-    cartasGitHub.push(`https://raw.githubusercontent.com/aarongaither/dixitOnline/master/assets/cards/card_${String(i).padStart(5, '0')}.jpg`);
-}
-
-// 2. OS REFORÇOS DE ELITE (Carregados em Background)
-let cartasZipsAsmodee = [];
+// A NOSSA PISCINA GERAL (Apenas Cartas 100% Oficiais dos ZIPs)
+let bancoDeCartasGlobais = [];
 
 // --------------------------------------------------------
 // EXTRAÇÃO INTELIGENTE DE ZIPs EM BACKGROUND
@@ -46,7 +40,10 @@ async function baixarZipsEmBackground() {
 
     console.log("A extrair Expansões Asmodee em background...");
 
-    for (let url of urlsZips) {
+    // Baralha a ordem dos ZIPs para que o arranque seja imprevisível se o servidor for reiniciado
+    const zipsMisturados = embaralharArray([...urlsZips]);
+
+    for (let url of zipsMisturados) {
         try {
             const response = await axios({ method: 'get', url, responseType: 'stream' });
             
@@ -70,8 +67,8 @@ async function baixarZipsEmBackground() {
                         }
                         
                         const urlLocal = `/expansoes/${encodeURIComponent(nomeArquivo)}`;
-                        if (!cartasZipsAsmodee.includes(urlLocal)) {
-                            cartasZipsAsmodee.push(urlLocal);
+                        if (!bancoDeCartasGlobais.includes(urlLocal)) {
+                            bancoDeCartasGlobais.push(urlLocal);
                         }
                     } else {
                         entry.autodrain();
@@ -81,9 +78,9 @@ async function baixarZipsEmBackground() {
             console.log(`Aviso: Erro ao ler ZIP ${url}`);
         }
     }
-    console.log(`Extração concluída! Foram carregadas ${cartasZipsAsmodee.length} novas cartas.`);
+    console.log("Mapeamento de cartas oficiais concluído!");
 }
-// Arranca a descompactação silenciosa imediatamente
+// Arranca a descompactação silenciosa assim que o servidor liga
 baixarZipsEmBackground();
 
 // --------------------------------------------------------
@@ -93,7 +90,6 @@ app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('URL missing');
 
-    // Se a carta for local (ZIPs)
     if (targetUrl.startsWith('/expansoes/')) {
         const fileName = targetUrl.split('/').pop();
         const localPath = path.join(dirExpansoes, decodeURIComponent(fileName));
@@ -101,7 +97,6 @@ app.get('/proxy', async (req, res) => {
         else return res.status(404).send('Não encontrado no servidor');
     }
 
-    // Se for link externo (GitHub ou Pixabay)
     try {
         const response = await axios.get(targetUrl, { responseType: 'stream', headers: { 'User-Agent': 'Mozilla/5.0' } });
         res.set('Cache-Control', 'public, max-age=31536000');
@@ -121,7 +116,7 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// 3. A BÓIA DE SALVAÇÃO (Pixabay + IA)
+// BÓIA DE SALVAÇÃO (Pixabay + IA)
 // --------------------------------------------------------
 async function buscarCartasStellaPixabay(quantidade = 10) {
     try {
@@ -151,7 +146,7 @@ async function julgarCartas(urls) {
 }
 
 // --------------------------------------------------------
-// PREENCHIMENTO DA SALA (Estratégia Tripla Garantida)
+// PREENCHIMENTO DA SALA (100% ALEATÓRIO, 0% REPETIÇÃO)
 // --------------------------------------------------------
 async function preencherBauSala(codigo) {
     const sala = salas[codigo];
@@ -159,34 +154,27 @@ async function preencherBauSala(codigo) {
     sala.preenchendo = true;
 
     try {
-        // TENTA ENCHER ATÉ 80 CARTAS POR CHAMADA
-        
-        // Fase 1: Adiciona do GitHub se ainda não estiver no limite
-        if (sala.bau.length < 80) {
-            let poolGitHub = embaralharArray([...cartasGitHub]);
-            for (let url of poolGitHub) {
-                if (!sala.cartasUsadas.has(url)) {
-                    sala.bau.push(url);
-                    sala.cartasUsadas.add(url); // Marca como usada
-                }
-                if (sala.bau.length >= 80) break;
-            }
+        // Se o servidor acabou de ligar, aguarda uns milissegundos até que os ZIPs extraiam as primeiras cartas
+        let tentativas = 0;
+        while (bancoDeCartasGlobais.length < 80 && tentativas < 20) { // Tenta por max 5 segundos
+            await new Promise(r => setTimeout(r, 250));
+            tentativas++;
         }
 
-        // Fase 2: Completa com os ZIPs Asmodee (se já existirem e precisar de mais cartas)
-        if (sala.bau.length < 80 && cartasZipsAsmodee.length > 0) {
-            let poolZips = embaralharArray([...cartasZipsAsmodee]);
-            for (let url of poolZips) {
-                // A verificação via cartasUsadas impede que um ZIP repita uma carta que já veio do GitHub!
+        if (sala.bau.length < 80 && bancoDeCartasGlobais.length > 0) {
+            // Sorteia da piscina global
+            let poolGlobal = embaralharArray([...bancoDeCartasGlobais]);
+            
+            for (let url of poolGlobal) {
                 if (!sala.cartasUsadas.has(url)) {
                     sala.bau.push(url);
                     sala.cartasUsadas.add(url);
                 }
-                if (sala.bau.length >= 80) break;
+                if (sala.bau.length >= 80) break; 
             }
         }
 
-        // Fase 3 (Extremo Recurso): Se nem GitHub + Zips chegaram a 20 cartas no Baú, pede ao Pixabay
+        // Se por milagre esgotarmos as cartas da Asmodee, usa o Pixabay
         if (sala.bau.length < 20) {
             let urlsStella = await buscarCartasStellaPixabay(15);
             let aprovadas = await julgarCartas(urlsStella);
@@ -198,7 +186,6 @@ async function preencherBauSala(codigo) {
             });
         }
         
-        // Sempre dá uma baralhada final no Baú antes de servir
         sala.bau = embaralharArray(sala.bau);
         io.to(codigo).emit('atualizarSala', sala);
 
@@ -259,10 +246,9 @@ io.on('connection', (socket) => {
             codigo: codFinal,
             jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', 
             preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30,
-            cartasUsadas: new Set() // MEMÓRIA DA SALA CONTRA REPETIÇÕES (Essencial)
+            cartasUsadas: new Set() 
         };
         
-        // Dispara o preenchimento imediatamente ao criar a sala
         preencherBauSala(codFinal); 
         
         const sala = salas[codFinal];
@@ -365,7 +351,6 @@ io.on('connection', (socket) => {
             }
         });
 
-        // Abastece a sala se necessário
         if(sala.bau.length < 30) preencherBauSala(codigo);
         io.to(codigo).emit('atualizarSala', sala);
     });
