@@ -22,54 +22,47 @@
         
         body, html { 
             color: var(--text-main); 
-            min-height: 100dvh; 
+            min-height: 100vh; 
             overflow-x: hidden; 
             overflow-y: auto; 
+            position: relative;
             background-color: #0f172a; 
             margin: 0;
-            padding: 0;
+            /* Fundo Fallback Seguro e Bonito - Gradiente Vibrante Dixit Style */
+            background: linear-gradient(135deg, #4c1d95 0%, #0f172a 50%, #881337 100%);
         }
 
-        /* ========================================================
-           O FUNDO DA VERSÃO 10.10 RESTAURADO E VISÍVEL (Z-INDEX CORRIGIDO)
-           ======================================================== */
-        #dixit-mosaic {
+        /* FUNDO DINÂMICO GARANTIDO TIPO TINTA DIXIT (com animação) */
+        .fundo-tinta-magica {
             position: fixed;
-            top: -20%; left: -20%; width: 140%; height: 140%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-auto-rows: 28vh;
-            gap: 15px;
-            z-index: 1; /* Garante que fica na frente do fundo azul escuro do body */
-            transform: rotate(-6deg);
-            animation: panMosaico 50s linear infinite alternate;
-            opacity: 0.9;
-        }
-
-        .mosaic-card {
+            top: -10%; left: -10%; width: 120%; height: 120%;
+            z-index: 1 !important; /* FORÇA A APARECER */
+            background-image: url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            opacity: 0.85;
+            animation: panTinta 60s ease-in-out infinite alternate;
         }
 
-        @keyframes panMosaico {
-            0% { transform: rotate(-6deg) translate(0, 0) scale(1); }
-            100% { transform: rotate(-6deg) translate(-5%, -5%) scale(1.05); }
+        @keyframes panTinta {
+            0% { transform: scale(1) translate(0,0); }
+            100% { transform: scale(1.1) translate(-2%, -2%); }
         }
 
+        /* Película de Vidro e Sombra para destacar os painéis */
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.5); /* Mais transparente para revelar o mosaico */
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
-            z-index: 2; /* Na frente do mosaico */
+            background: rgba(15, 23, 42, 0.4); 
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); 
+            z-index: 2 !important; 
         }
 
+        /* Estrutura Central dos Ecrãs */
         .screen {
-            display: none; flex-direction: column; min-height: 100dvh; 
-            padding: 30px 20px; align-items: center; justify-content: flex-start;
+            display: none; flex-direction: column; min-height: 100vh; 
+            padding: 30px 20px 80px 20px; align-items: center; justify-content: flex-start;
             position: relative;
-            z-index: 10; /* Na frente do overlay */
+            z-index: 10 !important; /* Sempre acima do fundo */
         }
         .screen.active { display: flex !important; }
 
@@ -85,7 +78,7 @@
             background: var(--panel-bg); border-radius: 24px; padding: 30px 25px;
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9); border: 1px solid rgba(255, 255, 255, 0.15);
             width: 100%; max-width: 450px; display: flex; flex-direction: column;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
         }
 
         .login-subpanel { display: none; flex-direction: column; }
@@ -96,7 +89,7 @@
             text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 25px; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
         input {
             width: 100%; padding: 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);
@@ -121,6 +114,9 @@
 
         h2 { text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
 
+        /* ========================================================
+           CARTAS GRANDES NA MÃO (Com indicação visual de Toque)
+           ======================================================== */
         .carousel-container {
             display: flex; gap: 20px; overflow-x: auto; padding: 20px 10px;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
@@ -142,6 +138,9 @@
             font-size: 13px; backdrop-filter: blur(4px); pointer-events: none;
         }
 
+        /* ========================================================
+           GRELHA NA MESA (Para Votação Direta e Resultados Rápidos)
+           ======================================================== */
         .grid-container {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; 
             padding: 20px 10px; width: 100%; max-width: 600px;
@@ -154,6 +153,7 @@
         }
         .carta-pequena:active { transform: scale(0.95); }
         
+        /* CARTA PRÓPRIA (Bloqueio Visual na Votação) */
         .carta-propria {
             border: 4px solid var(--red-alert) !important; 
             pointer-events: none; 
@@ -185,12 +185,16 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
         }
 
+        /* VERSÃO APENAS TELA INICIAL (Fixada em baixo) */
         .versao-app {
-            text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 14px; 
-            font-weight: 600; margin-top: 30px; position: relative; z-index: 10;
+            position: absolute; bottom: 15px; left: 0; width: 100%;
+            text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 14px; 
+            font-weight: 600; z-index: 100;
         }
 
-        /* MODAL ECRÃ CHEIO COM BOTÃO */
+        /* ========================================================
+           MODAL ECRÃ CHEIO (ZOOM FULL SCREEN COM BOTÃO DENTRO)
+           ======================================================== */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -203,7 +207,6 @@
             color: white; border: none; border-radius: 50%; width: 45px; height: 45px;
             font-size: 22px; font-weight: bold; z-index: 10000; padding: 0; margin: 0;
             box-shadow: none; display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
         }
         
         .modal-carousel {
@@ -213,15 +216,18 @@
         }
         .modal-carousel::-webkit-scrollbar { display: none; }
         
+        /* CARTA TOTALMENTE FULL NO ECRÃ DE ZOOM */
         .modal-carta {
-            flex: 0 0 100%; height: 80vh; border-radius: 20px;
-            background-size: cover; background-repeat: no-repeat; background-position: center; 
+            flex: 0 0 100%; height: 85vh; border-radius: 20px;
+            background-size: cover; /* Cobre o ecrã inteiro sem espaços */
+            background-repeat: no-repeat; background-position: center; 
             scroll-snap-align: center; box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
 
         .modal-footer {
             height: 100px; width: 100%; display: flex; align-items: center; justify-content: center;
             padding: 0 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            position: absolute; bottom: 0; left: 0; z-index: 10000;
         }
         #btn-modal-acao { margin: 0; max-width: 400px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
 
@@ -229,10 +235,11 @@
 </head>
 <body>
 
-    <!-- FUNDO MOSAICO 10.10 -->
-    <div id="dixit-mosaic"></div>
+    <!-- CAMADA DE FUNDOS -->
+    <div class="fundo-tinta-magica"></div>
     <div class="bg-overlay"></div>
 
+    <!-- MODAL DE ZOOM ECRÃ CHEIO -->
     <div id="image-modal" class="fullscreen-modal">
         <button class="close-modal" onclick="fecharModal()">✕</button>
         <div class="modal-carousel" id="modal-container"></div>
@@ -241,7 +248,7 @@
         </div>
     </div>
 
-    <!-- ECRÃ DE LOGIN -->
+    <!-- ECRÃ DE LOGIN (Com Versão 10.79) -->
     <div id="login-screen" class="screen active" style="display: flex;">
         <h1 class="main-title">Imagination</h1>
         <div class="title-stars">✨</div>
@@ -276,7 +283,7 @@
             </div>
         </div>
         
-        <div class="versao-app">Versão 10.78</div>
+        <div class="versao-app">Versão 10.79</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
@@ -290,21 +297,21 @@
         </div>
     </div>
 
-    <!-- ECRÃ DE JOGO / ESCOLHA DA MÃO -->
+    <!-- ECRÃ DA MÃO DO JOGADOR -->
     <div id="game-screen" class="screen">
         <h2 id="fase-titulo">Sua Mão</h2>
         <div class="subtitle" id="fase-instrucao" style="color: white; font-weight: 600;">Toque na carta para expandir.</div>
         <div class="carousel-container" id="hand-container"></div>
     </div>
 
-    <!-- ECRÃ DE VOTAÇÃO -->
+    <!-- ECRÃ DE VOTAÇÃO DA MESA -->
     <div id="voting-screen" class="screen">
         <h2>Votação</h2>
         <div class="subtitle" id="votacao-instrucao" style="color: white; font-weight: 600;">Toque na carta que acha ser a do Narrador.</div>
         <div class="grid-container" id="table-container"></div>
     </div>
 
-    <!-- ECRÃ DE RESULTADOS DA RONDA -->
+    <!-- ECRÃ RESULTADOS DA MESA -->
     <div id="results-screen" class="screen">
         <h2 style="color: #facc15;">Resultados da Ronda</h2>
         <div class="subtitle" style="color: white; font-weight: 600;">A carta com coroa e brilho é a do Narrador!</div>
@@ -314,7 +321,7 @@
         </div>
     </div>
 
-    <!-- ECRÃ DE RANKING E FIM DE JOGO -->
+    <!-- ECRÃ RANKING GERAL -->
     <div id="ranking-screen" class="screen">
         <h1 class="main-title" id="titulo-ranking">Ranking Atual</h1>
         <div class="glass-panel">
@@ -333,34 +340,10 @@
         let modalRegraDesativacao = null;
         let cartaSelecionadaVisivel = null;
 
-        window.onload = () => {
-            const container = document.getElementById('dixit-mosaic');
-            const seguras = [
-                'https://cdn.pixabay.com/photo/2022/11/07/19/12/fantasy-7576976_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/06/18/04/57/crimson-8071231_1280.jpg',
-                'https://cdn.pixabay.com/photo/2021/09/13/08/19/fantasy-6620584_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/11/09/19/36/landscape-8378170_1280.jpg',
-                'https://cdn.pixabay.com/photo/2020/05/26/20/39/bird-5224783_1280.jpg',
-                'https://cdn.pixabay.com/photo/2021/11/21/21/14/nature-6815142_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/12/28/19/22/ai-generated-8474776_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/08/11/04/51/ai-generated-8182766_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/10/24/00/40/ai-generated-8337180_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/07/13/18/34/ai-generated-8125488_1280.jpg',
-                'https://cdn.pixabay.com/photo/2022/10/03/22/05/ai-generated-7496956_1280.jpg',
-                'https://cdn.pixabay.com/photo/2023/01/14/19/50/ai-generated-7718956_1280.jpg'
-            ];
-            const misturadas = seguras.sort(() => 0.5 - Math.random());
-            misturadas.forEach(url => {
-                const card = document.createElement('div');
-                card.className = 'mosaic-card';
-                card.style.backgroundImage = `url('${url}')`;
-                container.appendChild(card);
-            });
-        };
-
         socket.on('connect', () => { meuId = socket.id; });
         socket.on('erro', (msg) => { alert(msg); });
 
+        // NAVEGAÇÃO ENTRE ECRÃS
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => {
                 s.classList.remove('active');
@@ -381,6 +364,9 @@
             alvo.style.display = 'flex';
         }
 
+        // ==========================================
+        // LÓGICA DO MODAL (ZOOM COM BOTÃO DENTRO)
+        // ==========================================
         function abrirModal(urlClicada) {
             const modal = document.getElementById('image-modal');
             const modalContainer = document.getElementById('modal-container');
@@ -414,6 +400,7 @@
             document.getElementById('modal-container').dispatchEvent(new Event('scroll'));
         }
 
+        // Ativação Lógica do Botão consoante a Carta selecionada no Zoom
         document.getElementById('modal-container').addEventListener('scroll', function() {
             const btn = document.getElementById('btn-modal-acao');
             if(btn.style.display === 'none') return;
@@ -445,18 +432,23 @@
             }
         });
 
+        // ==========================================
+        // RENDERIZAÇÃO DE CARTAS (Mão, Mesa e Resultados)
+        // ==========================================
         function renderizarCartasMao(urls) {
             const container = document.getElementById('hand-container');
             const modalContainer = document.getElementById('modal-container');
             container.innerHTML = ''; modalContainer.innerHTML = ''; 
 
             urls.forEach(url => {
+                // Cartas da Mão (Visão Geral)
                 const div = document.createElement('div');
                 div.className = 'carta-grande';
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
                 div.onclick = () => abrirModal(url); 
                 container.appendChild(div);
 
+                // Cartas no Zoom Ecrã Cheio (Modal)
                 const modalDiv = document.createElement('div');
                 modalDiv.className = 'modal-carta';
                 modalDiv.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
@@ -475,7 +467,7 @@
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
                 
                 if (cartaObj.jogadorId === meuId) {
-                    div.classList.add('carta-propria');
+                    div.classList.add('carta-propria'); // Contorno Vermelho Intocável
                 } else if (!isNarrador && !jaVotou) {
                     div.onclick = () => {
                         socket.emit('votarCarta', { codigo: salaDesejada || minhaSala.codigo, cartaUrl: cartaObj.cartaUrl });
@@ -518,6 +510,9 @@
             });
         }
 
+        // ==========================================
+        // FLUXO DO LOBBY E PARTIDA
+        // ==========================================
         function verificarSala() {
             const codigo = document.getElementById('player-sala').value.trim();
             if(!codigo) return alert("Digite o código da sala!");
