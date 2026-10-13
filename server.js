@@ -37,13 +37,11 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// O SEGREDO 10.61: PROXY INTERNO DE IMAGENS
-// Resolve o bloqueio do Pinterest sem precisar de AWS S3
+// PROXY DO PINTEREST
 // --------------------------------------------------------
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('URL missing');
-
     try {
         const response = await axios.get(targetUrl, {
             responseType: 'stream',
@@ -52,32 +50,20 @@ app.get('/proxy', async (req, res) => {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
-        
-        // Mantém a imagem em cache no navegador do jogador para ser super rápido
         res.set('Cache-Control', 'public, max-age=31536000');
         res.set('Content-Type', response.headers['content-type']);
         response.data.pipe(res);
     } catch (error) {
-        console.error('Erro no proxy de imagem:', error.message);
         res.status(404).send('Imagem indisponível');
     }
 });
 
-// --------------------------------------------------------
-// MOTOR DO PINTEREST
-// --------------------------------------------------------
 async function buscarCartasPinterest() {
     const pastasDisponiveis = [
-        "ligiaausten/dixit",
-        "corujinhaliteraria/dixit",
-        "jessicabraghiroli/dixit-cards",
-        "karenkristenn/cartas-dixit",
-        "jojolyne/dixit",
-        "renatabueno/dixit-cartas",
-        "marcelomourar/dixit",
-        "nathaliabrag/dixit-art"
+        "ligiaausten/dixit", "corujinhaliteraria/dixit", "jessicabraghiroli/dixit-cards",
+        "karenkristenn/cartas-dixit", "jojolyne/dixit", "renatabueno/dixit-cartas",
+        "marcelomourar/dixit", "nathaliabrag/dixit-art"
     ];
-    
     const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 4);
     let urls = [];
     
@@ -85,94 +71,51 @@ async function buscarCartasPinterest() {
         try {
             const urlOriginal = `https://br.pinterest.com/${pasta}.rss`;
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlOriginal)}`;
-            
             const response = await axios.get(proxyUrl, { timeout: 8000 });
-            const items = response.data.items; 
-            
-            if (!items) continue;
-
-            for (let item of items) {
-                const regex = /<img src="([^"]+)"/;
-                const match = regex.exec(item.description);
-                
+            if (!response.data.items) continue;
+            for (let item of response.data.items) {
+                const match = /<img src="([^"]+)"/.exec(item.description);
                 if (match) {
-                    let imgUrl = match[1];
-                    imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); 
-                    
-                    if (!memoriaCartasGlobais.has(imgUrl)) {
-                        urls.push(imgUrl);
-                    }
+                    let imgUrl = match[1].replace(/\/\d+x\//, '/736x/'); 
+                    if (!memoriaCartasGlobais.has(imgUrl)) urls.push(imgUrl);
                 }
             }
-        } catch (e) {
-            console.error(`Erro ao buscar Pinterest (${pasta}):`, e.message);
-        }
+        } catch (e) {}
     }
     return embaralharArray(urls);
 }
 
-// --------------------------------------------------------
-// MOTOR DO PIXABAY (Backup de emergência)
-// --------------------------------------------------------
-const temasBusca = [
-    "surreal", "dream", "fantasy landscape", "whimsical", "fairytale", 
-    "mythology", "steampunk", "space art", "magical realism", 
-    "concept art", "storybook illustration"
-];
-
-async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
+async function buscarCartasMisturadasPixabay(quantidade = 5) {
     try {
-        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); 
-        const promessas = temasSorteados.map(async (tema) => {
-            const randomPage = Math.floor(Math.random() * 15) + 1; 
-            const query = encodeURIComponent(`${tema} painting`);
-            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
-            
+        const temas = ["surreal", "dream", "fantasy landscape", "whimsical", "concept art"];
+        const promessas = temas.map(async (tema) => {
+            const page = Math.floor(Math.random() * 10) + 1; 
+            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(tema + " painting")}&image_type=illustration&orientation=vertical&per_page=${quantidade}&page=${page}&safesearch=true`;
             try {
                 const res = await axios.get(url, { timeout: 5000 });
-                return res.data.hits.map(hit => hit.largeImageURL);
-            } catch (e) {
-                return [];
-            }
+                return res.data.hits.map(h => h.largeImageURL);
+            } catch (e) { return []; }
         });
-
-        const arraysDeUrls = await Promise.all(promessas);
-        const todasUrls = arraysDeUrls.flat();
-        const urlsIneditas = todasUrls.filter(url => !memoriaCartasGlobais.has(url));
-        return embaralharArray(urlsIneditas);
-    } catch (error) {
-        return [];
-    }
+        const arrays = await Promise.all(promessas);
+        return embaralharArray(arrays.flat().filter(url => !memoriaCartasGlobais.has(url)));
+    } catch (e) { return []; }
 }
 
-// --------------------------------------------------------
-// JUIZ IA
-// --------------------------------------------------------
 async function julgarCartas(urls) {
     if(!urls || urls.length === 0) return [];
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(`${promptJuizIA}\n\nURLs:\n${JSON.stringify(urls)}`);
-        const text = result.response.text();
-        const jsonMatch = text.match(/\[.*\]/s);
-        
-        if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        return []; 
-    } catch (error) {
-        return []; 
-    }
+        const match = result.response.text().match(/\[.*\]/s);
+        return match ? JSON.parse(match[0]) : []; 
+    } catch (e) { return []; }
 }
 
-// --------------------------------------------------------
-// GERENCIAMENTO DO BAÚ 
-// --------------------------------------------------------
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
     if (!sala) return;
-    
     sala.preenchendo = true;
     try {
-        console.log(`[SALA ${codigo}] Puxando Pinterest...`);
         let urlsPinterest = await buscarCartasPinterest();
         let urlsFinais = [];
         
@@ -180,27 +123,20 @@ async function preencherBauRapidoInicial(codigo) {
             let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
             urlsFinais = aprovadas.length > 0 ? aprovadas : urlsPinterest.slice(0, 15);
         } else {
-            console.log(`[SALA ${codigo}] Pinterest falhou. Acionando Pixabay...`);
             let urlsPixabay = await buscarCartasMisturadasPixabay(15);
             let aprovadasPixabay = await julgarCartas(urlsPixabay.slice(0, 40));
             urlsFinais = aprovadasPixabay.length > 0 ? aprovadasPixabay : urlsPixabay.slice(0, 15);
         }
         
-        // Processa as cartas aprovadas pelo Proxy e adiciona à mesa
         if (urlsFinais.length > 0) {
             urlsFinais.forEach(url => {
                 memoriaCartasGlobais.add(url);
-                // Converte a rota original do Pinterest para a rota secreta do nosso servidor
-                const urlSegura = `/proxy?url=${encodeURIComponent(url)}`;
-                sala.bau.push(urlSegura);
+                sala.bau.push(`/proxy?url=${encodeURIComponent(url)}`);
             });
             sala.bau = embaralharArray(sala.bau);
         }
-        
         io.to(codigo).emit('atualizarSala', sala);
-
     } catch (err) {
-        console.error("Erro no preenchimento inicial:", err);
     } finally {
         sala.preenchendo = false;
         preencherBauLento(codigo);
@@ -210,97 +146,167 @@ async function preencherBauRapidoInicial(codigo) {
 async function preencherBauLento(codigo) {
     const sala = salas[codigo];
     if (!sala || sala.preenchendo) return;
-    
     sala.preenchendo = true;
     try {
         while (sala.bau.length < 150) { 
             let urlsPinterest = await buscarCartasPinterest();
             let urlsAnalisar = urlsPinterest.length > 5 ? urlsPinterest.slice(0, 30) : [];
-
             if (urlsAnalisar.length === 0) {
                 let urlsPixabay = await buscarCartasMisturadasPixabay(10);
                 if (urlsPixabay.length === 0) break;
                 urlsAnalisar = urlsPixabay.slice(0, 30);
             }
-            
             let aprovadas = await julgarCartas(urlsAnalisar);
             if (aprovadas.length > 0) {
                 aprovadas.forEach(url => {
                     memoriaCartasGlobais.add(url);
-                    const urlSegura = `/proxy?url=${encodeURIComponent(url)}`;
-                    sala.bau.push(urlSegura);
+                    sala.bau.push(`/proxy?url=${encodeURIComponent(url)}`);
                 });
                 sala.bau = embaralharArray(sala.bau);
-                
-                if (sala.estado === 'jogando') {
-                    io.to(codigo).emit('atualizarSala', sala);
-                }
             }
         }
     } catch (err) {
-        console.error("Erro no preenchimento lento do baú:", err);
     } finally {
         sala.preenchendo = false;
     }
 }
 
 // --------------------------------------------------------
-// LÓGICA DO JOGO (SOCKETS)
+// LÓGICA E REGRAS DIXIT (MÁQUINA DE ESTADOS)
 // --------------------------------------------------------
+function calcularPontosDixit(sala) {
+    const cartaNarrador = sala.mesa.find(c => c.cartaUrl === sala.cartaNarradorUrl);
+    if (!cartaNarrador) return;
+
+    const acertos = cartaNarrador.votos.length;
+    const totalJogadores = sala.jogadores.length;
+    const narradorId = sala.jogadores[sala.narradorIndex].id;
+
+    // Regra 1: Se todos acertam ou ninguém acerta, narrador ganha 0, os outros ganham 2.
+    if (acertos === 0 || acertos === totalJogadores - 1) {
+        sala.jogadores.forEach(j => {
+            if (j.id !== narradorId) j.pontos += 2;
+        });
+    } else {
+        // Regra 2: Narrador ganha 3, quem acertou ganha 3.
+        const narrador = sala.jogadores.find(j => j.id === narradorId);
+        narrador.pontos += 3;
+        cartaNarrador.votos.forEach(votoId => {
+            const jogadorCerto = sala.jogadores.find(j => j.id === votoId);
+            if (jogadorCerto) jogadorCerto.pontos += 3;
+        });
+    }
+
+    // Regra 3: Pontos bónus (1 ponto por cada voto na carta falsa do jogador)
+    sala.mesa.forEach(c => {
+        if (c.cartaUrl !== sala.cartaNarradorUrl) {
+            const dono = sala.jogadores.find(j => j.id === c.jogadorId);
+            if (dono) dono.pontos += c.votos.length;
+        }
+    });
+}
+
 io.on('connection', (socket) => {
     socket.on('entrarSala', ({ nome, codigo }) => {
         if (!salas[codigo]) {
             salas[codigo] = {
-                jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', preenchendo: false
+                jogadores: [], bau: [], mesa: [], narradorIndex: 0, 
+                estado: 'aguardando', preenchendo: false, cartaNarradorUrl: null
             };
             preencherBauRapidoInicial(codigo); 
         }
-        
         const sala = salas[codigo];
-        const jogador = { id: socket.id, nome, mao: [], pontos: 0 };
-        sala.jogadores.push(jogador);
-        
+        sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
         socket.join(codigo);
-        if (sala.bau.length > 0 || sala.estado === 'aguardando') {
-            io.to(codigo).emit('atualizarSala', sala);
-        }
+        io.to(codigo).emit('atualizarSala', sala);
     });
 
     socket.on('iniciarPartida', (codigo) => {
-        if(salas[codigo] && salas[codigo].jogadores.length >= 2) {
-            salas[codigo].estado = 'jogando';
-            io.to(codigo).emit('atualizarSala', salas[codigo]);
+        const sala = salas[codigo];
+        if(sala && sala.jogadores.length >= 2) {
+            // Fase 1: Só o narrador joga
+            sala.estado = 'escolha_narrador';
+            io.to(codigo).emit('atualizarSala', sala);
         }
     });
 
     socket.on('jogarCarta', ({ codigo, cartaUrl }) => {
         const sala = salas[codigo];
         if(!sala) return;
-        
         const jogador = sala.jogadores.find(j => j.id === socket.id);
-        if(jogador) {
+        const isNarrador = sala.jogadores[sala.narradorIndex].id === socket.id;
+
+        if (sala.estado === 'escolha_narrador' && isNarrador) {
             jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
             sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
-            jogador.pontos += 10; 
+            sala.cartaNarradorUrl = cartaUrl;
             
-            if(sala.bau.length > 0) jogador.mao.push(sala.bau.shift());
+            // Fase 2: O resto dos jogadores joga agora
+            sala.estado = 'escolha_jogadores';
             io.to(codigo).emit('atualizarSala', sala);
-            
-            if(sala.bau.length < 50) preencherBauLento(codigo); 
+            return;
         }
-    });
 
-    socket.on('pedirCartas', (codigo) => {
-        const sala = salas[codigo];
-        if(!sala) return;
-        
-        const jogador = sala.jogadores.find(j => j.id === socket.id);
-        if(jogador && jogador.mao.length < 5 && sala.bau.length > 0) {
-            while(jogador.mao.length < 5 && sala.bau.length > 0) {
-                jogador.mao.push(sala.bau.shift());
+        if (sala.estado === 'escolha_jogadores' && !isNarrador) {
+            const jaJogou = sala.mesa.some(c => c.jogadorId === socket.id);
+            if (jaJogou) return;
+
+            jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
+            sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
+
+            // Se todos jogaram, vai para votação e embaralha as cartas!
+            if (sala.mesa.length === sala.jogadores.length) {
+                sala.estado = 'votacao';
+                sala.mesa = embaralharArray(sala.mesa);
             }
             io.to(codigo).emit('atualizarSala', sala);
         }
+    });
+
+    socket.on('votarCarta', ({ codigo, cartaUrl }) => {
+        const sala = salas[codigo];
+        if(!sala || sala.estado !== 'votacao') return;
+        
+        const isNarrador = sala.jogadores[sala.narradorIndex].id === socket.id;
+        if (isNarrador) return; // Narrador não vota
+
+        const cartaAlvo = sala.mesa.find(c => c.cartaUrl === cartaUrl);
+        if (!cartaAlvo) return;
+        if (cartaAlvo.jogadorId === socket.id) return; // Não pode votar na própria
+
+        const jaVotou = sala.mesa.some(c => c.votos.includes(socket.id));
+        if (jaVotou) return;
+
+        cartaAlvo.votos.push(socket.id);
+
+        // Se todos os não-narradores votaram, calcula e vai para resultados
+        const totalVotos = sala.mesa.reduce((acc, c) => acc + c.votos.length, 0);
+        if (totalVotos === sala.jogadores.length - 1) {
+            calcularPontosDixit(sala);
+            sala.estado = 'resultado';
+        }
+        
+        io.to(codigo).emit('atualizarSala', sala);
+    });
+
+    socket.on('proximaRodada', (codigo) => {
+        const sala = salas[codigo];
+        if(!sala || sala.estado !== 'resultado') return;
+
+        sala.estado = 'escolha_narrador';
+        sala.mesa = [];
+        sala.cartaNarradorUrl = null;
+        sala.narradorIndex = (sala.narradorIndex + 1) % sala.jogadores.length;
+
+        // Distribui até 5 cartas novamente
+        sala.jogadores.forEach(j => {
+            while (j.mao.length < 5 && sala.bau.length > 0) {
+                j.mao.push(sala.bau.shift());
+            }
+        });
+
+        if(sala.bau.length < 50) preencherBauLento(codigo);
+        io.to(codigo).emit('atualizarSala', sala);
     });
 
     socket.on('disconnect', () => {
@@ -313,6 +319,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Servidor Imagination rodando na porta ${PORT}`);
-});
+server.listen(PORT, () => { console.log(`Rodando na porta ${PORT}`); });
