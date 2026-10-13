@@ -4,322 +4,368 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Imagination</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 40, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: -1; }
-
-        .main-title-container { text-align: center; margin-top: 50px; margin-bottom: 20px; }
-        .main-title { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: 1px; text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.6); }
-        .sparkles { font-size: 2rem; margin-top: -10px; text-shadow: 0 0 15px rgba(241, 196, 15, 0.8); }
-
-        .card-padrao { background-color: #1a1a24; border-radius: 20px; width: 90%; max-width: 450px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 20px; }
-        .game-container { max-width: 650px; padding: 25px; box-sizing: border-box; background-color: transparent; box-shadow: none; border: none; margin-top: 10px; }
-
-        .header-sala { text-align: center; margin-bottom: 15px; }
-        .header-sala h2 { color: #f1c40f; font-size: 1.8rem; margin: 0; }
-
-        .header { padding: 30px 20px 15px 20px; text-align: center; }
-        .header h3 { color: #2ecc71; margin: 0; font-size: 1.4rem; }
-        .header p { color: #d1d1d1; font-size: 0.95rem; margin-top: 15px; margin-bottom: 0; }
-        .body-card { padding: 15px 25px 30px 25px; display: flex; flex-direction: column; gap: 15px; }
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --text-main: #f8fafc;
+            --gold-glow: 0 0 20px rgba(250, 204, 21, 0.6);
+        }
         
-        input { background-color: #111115; border: 1px solid #2a2a35; color: white; padding: 16px; border-radius: 12px; font-size: 1rem; text-align: center; outline: none; transition: border 0.3s; width: calc(100% - 32px); }
-        input:focus { border: 1px solid #2ecc71; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        button.btn-avancar { background: linear-gradient(90deg, #2ecc71, #229954); color: white; border: none; padding: 16px; border-radius: 25px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); transition: transform 0.2s; width: 100%; }
-        button.btn-avancar:active { transform: scale(0.96); }
-        button.btn-avancar:disabled { background: #555; box-shadow: none; cursor: not-allowed; color: #888; }
+        body { 
+            background: var(--bg-dark); color: var(--text-main); 
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+        }
         
-        .btn-voltar { background: transparent; color: #aaa; border: none; font-size: 1rem; cursor: pointer; text-decoration: underline; }
-        .footer-card { background-color: #14141c; padding: 25px; text-align: center; color: #f1c40f; font-weight: bold; cursor: pointer; border-top: 1px solid rgba(255, 255, 255, 0.02); }
+        /* Glassmorphism Containers */
+        .screen {
+            display: none; flex-direction: column; height: 100%; padding: 20px;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+        .screen.active { display: flex; }
 
-        .ranking-container { background: #111115; border-radius: 12px; border: 1px solid #2a2a35; padding: 15px; margin-bottom: 20px; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; }
-        .ranking-title { font-size: 1.1rem; color: #f1c40f; margin-bottom: 15px; font-weight: bold; text-align: center; }
-        .jogador-rank { display: flex; justify-content: space-between; align-items: center; background: #1a1a24; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.05); }
-        .jogador-rank:nth-child(1) { border-left: 4px solid #f1c40f; }
+        h1, h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
 
-        .status-narrador { text-align: center; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
-        .narrador-titulo { color: #2ecc71; font-weight: bold; font-size: 1.4rem; text-transform: uppercase; margin-bottom: 5px; }
-        .narrador-subtitulo { color: #ccc; font-size: 0.95rem; }
+        /* Inputs e Botões */
+        input {
+            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: var(--glass-bg); color: white; margin-bottom: 15px; font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600;
+            background: var(--primary); color: white; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px;
+        }
+        button:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-2px); }
+        button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; }
         
-        .deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-items: center; max-width: 320px; margin: 0 auto 30px auto; }
-        
-        .carta { width: 145px; height: 210px; border-radius: 12px; object-fit: cover; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.5); transition: transform 0.2s; border: 2px solid transparent; }
-        .carta:hover { transform: scale(1.05); border: 2px solid #2ecc71; }
-        .carta:nth-child(5) { grid-column: span 2; }
+        .btn-secondary { background: #3b82f6; }
+        .btn-secondary:hover { background: #2563eb; }
 
-        .btn-acao { background: #111115; border: 1px solid #2a2a35; color: white; padding: 15px; border-radius: 20px; cursor: pointer; width: 100%; max-width: 400px; font-weight: bold; margin: 0 auto; display: block; }
-        .versao { margin-top: 20px; color: #888; font-size: 0.9rem; text-align: center; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 15, 0.95); }
-        .modal:not(.hidden) { display: flex; flex-direction: column; justify-content: center; }
-        .close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1010; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-        .carousel-container { display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 75vh; touch-action: pan-y; }
-        .modal-content { max-width: 90%; max-height: 100%; object-fit: contain; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); transition: opacity 0.2s ease-in-out; }
+        /* Grid de Cartas com Scroll Horizontal Estilo Carrossel */
+        .cards-container {
+            display: flex; gap: 15px; overflow-x: auto; padding: 20px 0;
+            scroll-snap-type: x mandatory; scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .cards-container::-webkit-scrollbar { display: none; }
         
-        .carousel-nav { background: rgba(255, 255, 255, 0.1); color: white; border: none; font-size: 2rem; padding: 15px 10px; cursor: pointer; position: absolute; z-index: 10; border-radius: 8px; transition: 0.3s; }
-        #prevBtn { left: 10px; } #nextBtn { right: 10px; }
-        .zoom-action-container { text-align: center; margin-top: 15px; }
-        #btnEscolherCarta { background: linear-gradient(90deg, #2ecc71, #229954); color: white; font-size: 1.2rem; font-weight: bold; padding: 15px 40px; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
+        .carta {
+            flex: 0 0 80%; max-width: 300px; height: 60vh; border-radius: 16px;
+            scroll-snap-align: center; position: relative;
+            background-size: cover; background-position: center;
+            border: 2px solid var(--glass-border); box-shadow: 0 10px 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        /* Destaques Especiais */
+        .carta-narrador { border: 4px solid #facc15; box-shadow: var(--gold-glow); }
+        .borda-desativada { opacity: 0.4; pointer-events: none; }
+        
+        /* Detalhes nos Resultados */
+        .carta-info {
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8);
+            padding: 10px; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
+            text-align: center; backdrop-filter: blur(5px);
+        }
+        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 14px; }
+        .dono-texto.dono-narrador { color: #facc15; }
+        .votos-texto { font-size: 12px; color: #cbd5e1; margin-top: 4px; }
+
+        /* Ranking List */
+        .ranking-list {
+            background: var(--glass-bg); border-radius: 16px; padding: 20px;
+            border: 1px solid var(--glass-border); flex-grow: 1; overflow-y: auto;
+        }
+        .ranking-item {
+            display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 18px; font-weight: 600;
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-title-container" id="tituloApp">
-        <h1 class="main-title">Imagination</h1>
-        <div class="sparkles">✨</div>
+    <!-- ECRÃ DE LOGIN -->
+    <div id="login-screen" class="screen active">
+        <h1>Imagination</h1>
+        <div class="subtitle">O Jogo das Cartas Surreais</div>
+        <input type="text" id="nome-input" placeholder="Seu Nickname">
+        <input type="number" id="sala-input" placeholder="Código da Sala (Ex: 1234)">
+        <button onclick="entrarSala()">Entrar na Sala</button>
     </div>
 
-    <!-- LOGIN -->
-    <div class="card-padrao" id="telaEntrada">
-        <div id="stepCodigo">
-            <div class="header"><h3>🎮 Entrar na Partida</h3><p>Digite o código fornecido pelo Host.</p></div>
-            <div class="body-card">
-                <input type="number" id="codigoSala" placeholder="Código da Sala (Ex: 1234)">
-                <button class="btn-avancar" onclick="avancarParaNome(false)">Avançar</button>
-            </div>
-            <div class="footer-card" onclick="avancarParaNome(true)">👑 Criar uma nova sala? Clique aqui ▼</div>
-        </div>
-        <div id="stepNome" style="display: none;">
-            <div class="header"><h3 id="tituloPassoNome">👤 Seu Perfil</h3><p id="subtituloPassoNome">Como os outros vão te chamar?</p></div>
-            <div class="body-card">
-                <input type="text" id="nomeJogador" placeholder="Seu Nome (Ex: João)">
-                <button class="btn-avancar" onclick="finalizarEntrada()">Entrar no Lobby</button>
-                <button class="btn-voltar" onclick="voltarParaCodigo()">Voltar</button>
-            </div>
-        </div>
+    <!-- ECRÃ DO LOBBY -->
+    <div id="lobby-screen" class="screen">
+        <h1 id="lobby-titulo">Sala: ----</h1>
+        <div class="subtitle" id="lobby-status">Aguardando jogadores...</div>
+        <div class="ranking-list" id="jogadores-list"></div>
+        <button id="btn-iniciar" style="margin-top: 20px; display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
     </div>
 
-    <!-- LOBBY -->
-    <div class="card-padrao" id="telaLobby" style="display: none; background: transparent; border: none; box-shadow: none;">
-        <div class="header-sala"><h2>Sala: <span id="lobbyCodigoDisplay"></span></h2></div>
-        
-        <div class="ranking-container">
-            <div class="ranking-title">👥 <span id="qtdJogadores">1</span> Jogador(es) no Lobby</div>
-            <div id="listaLobby"></div>
-        </div>
-
-        <div class="body-card" style="background: #1a1a24; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
-            <p id="msgAguardando" style="text-align: center; color: #f1c40f; font-weight: bold; font-size: 1.1rem;">Aguardando o Host ou mais jogadores...</p>
-            <button id="btnIniciarPartida" class="btn-avancar" onclick="iniciarPartidaJogo()" style="display: none;" disabled>▶️ Iniciar Partida (Mín: 2)</button>
-        </div>
+    <!-- ECRÃ DE JOGO / ESCOLHA -->
+    <div id="game-screen" class="screen">
+        <h2 id="fase-titulo">Escolha sua Carta</h2>
+        <div class="subtitle" id="fase-instrucao">Aguarde as instruções...</div>
+        <div class="cards-container" id="hand-container"></div>
+        <button id="btn-acao-escolha" disabled>Escolher Carta Centrada</button>
     </div>
 
-    <!-- JOGO -->
-    <div class="game-container" id="telaJogo" style="display: none;">
-        <div class="header-sala" id="headerJogo"><h2>Sala: <span id="jogoCodigoDisplay"></span></h2></div>
-
-        <div class="ranking-container" id="painelRanking" style="display: none;">
-            <div class="ranking-title">🏆 Classificação Geral</div>
-            <div id="painelClassificacao"></div>
-        </div>
-
-        <div id="statusNarrador" class="status-narrador"></div>
-        <div class="deck" id="deckCartas"></div>
-        <button class="btn-acao" onclick="pedirNovasCartas()">🔄 Recarregar Cartas na Tela</button>
+    <!-- ECRÃ DE VOTAÇÃO (MESA) -->
+    <div id="voting-screen" class="screen">
+        <h2>Votação</h2>
+        <div class="subtitle" id="votacao-instrucao">Qual é a carta do Narrador?</div>
+        <div class="cards-container" id="table-container"></div>
+        <button id="btn-votar" disabled>Votar na Carta Centrada</button>
     </div>
 
-    <div class="versao" id="versaoApp"></div>
-
-    <!-- ZOOM -->
-    <div id="zoomModal" class="modal hidden">
-        <span class="close" onclick="fecharModal()">&times;</span>
-        <div class="carousel-container">
-            <button id="prevBtn" class="carousel-nav" onclick="navegarCarrossel(-1)">&#10094;</button>
-            <img id="imgZoom" class="modal-content" src="">
-            <button id="nextBtn" class="carousel-nav" onclick="navegarCarrossel(1)">&#10095;</button>
-        </div>
-        <div class="zoom-action-container">
-            <button id="btnEscolherCarta" onclick="confirmarCartaDoZoom()">🌟 Escolher esta Carta</button>
-        </div>
+    <!-- ECRÃ DE RESULTADOS DA RONDA -->
+    <div id="results-screen" class="screen">
+        <h2 style="color: #facc15;">Resultados da Ronda</h2>
+        <div class="subtitle">A carta dourada era do Narrador!</div>
+        <div class="cards-container" id="results-container"></div>
+        <button class="btn-secondary" onclick="verRanking()">Ver Ranking</button>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- ECRÃ DE RANKING FINAL -->
+    <div id="ranking-screen" class="screen">
+        <h2>Ranking Atual</h2>
+        <div class="ranking-list" id="ranking-container"></div>
+        <button style="margin-top:20px;" onclick="proximaRodada()">Próxima Rodada</button>
+    </div>
+
     <script>
-        // ==========================================
-        // CONFIGURAÇÕES DO CLIENTE
-        // Altere a versão aqui para refletir em toda a interface
-        const VERSAO_ATUAL = "10.61";
-        // ==========================================
-
-        document.getElementById('versaoApp').innerText = `Versão ${VERSAO_ATUAL}`;
-
         const socket = io();
-        let codigoAtual = null;
-        let isCriandoSala = false;
-        let cartasNoDeckAtual = []; 
-        let indiceCarrosselAtual = 0;
+        let minhaSala = null;
+        let meuId = null;
+        let cartaSelecionadaVisivel = null; 
 
-        function avancarParaNome(criarNova) {
-            isCriandoSala = criarNova;
-            if (!isCriandoSala) {
-                const cod = document.getElementById('codigoSala').value;
-                if (!cod) return alert('Digite o código da sala!');
-            }
-            document.getElementById('stepCodigo').style.display = 'none';
-            document.getElementById('stepNome').style.display = 'block';
+        socket.on('connect', () => { meuId = socket.id; });
+
+        function mostrarTela(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
-        function voltarParaCodigo() {
-            document.getElementById('stepNome').style.display = 'none';
-            document.getElementById('stepCodigo').style.display = 'block';
+        function entrarSala() {
+            const nome = document.getElementById('nome-input').value.trim();
+            const codigo = document.getElementById('sala-input').value.trim();
+            if(nome && codigo) socket.emit('entrarSala', { nome, codigo });
         }
 
-        function finalizarEntrada() {
-            const nome = document.getElementById('nomeJogador').value;
-            let codigo = document.getElementById('codigoSala').value;
-            if(!nome) return alert("Preencha seu nome!");
+        function iniciarPartida() {
+            if(minhaSala) socket.emit('iniciarPartida', document.getElementById('sala-input').value);
+        }
 
-            if(isCriandoSala) codigo = Math.floor(1000 + Math.random() * 9000).toString();
-            codigoAtual = codigo;
-            socket.emit('entrarSala', { nome, codigo });
+        function proximaRodada() {
+            socket.emit('proximaRodada', document.getElementById('sala-input').value);
+        }
+
+        function verRanking() {
+            mostrarTela('ranking-screen');
+        }
+
+        // Função para configurar o comportamento do Swipe/Carrossel e botão central
+        function setupCarousel(containerId, btnId, callbackAcao, regraDesativacao) {
+            const container = document.getElementById(containerId);
+            const btn = document.getElementById(btnId);
             
-            document.getElementById('telaEntrada').style.display = 'none';
-            document.getElementById('tituloApp').style.display = 'none';
-            document.getElementById('lobbyCodigoDisplay').innerText = codigo;
-            document.getElementById('telaLobby').style.display = 'block'; 
-        }
+            container.addEventListener('scroll', () => {
+                let centerOffset = container.scrollLeft + container.clientWidth / 2;
+                let cards = Array.from(container.children);
+                let closestCard = null;
+                let minDistance = Infinity;
 
-        function iniciarPartidaJogo() { socket.emit('iniciarPartida', codigoAtual); }
-        function pedirNovasCartas() { socket.emit('pedirCartas', codigoAtual); }
+                cards.forEach(card => {
+                    let cardCenter = card.offsetLeft + card.clientWidth / 2;
+                    let distance = Math.abs(centerOffset - cardCenter);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCard = card;
+                    }
+                });
+
+                if (closestCard) {
+                    cartaSelecionadaVisivel = closestCard.dataset.url;
+                    // Aplica regra extra para desativar botão (ex: se for própria carta na votação)
+                    if (regraDesativacao && regraDesativacao(closestCard)) {
+                        btn.disabled = true;
+                    } else {
+                        btn.disabled = false;
+                        btn.onclick = () => callbackAcao(cartaSelecionadaVisivel);
+                    }
+                }
+            });
+        }
 
         socket.on('atualizarSala', (sala) => {
-            const eu = sala.jogadores.find(j => j.id === socket.id);
-            if(!eu) return;
+            minhaSala = sala;
+            const codigo = document.getElementById('sala-input').value;
+            const eu = sala.jogadores.find(j => j.id === meuId);
+            const isNarrador = sala.jogadores[sala.narradorIndex].id === meuId;
 
-            if (eu.mao.length < 5 && sala.bau.length > 0) {
-                 socket.emit('pedirCartas', codigoAtual);
+            // 1. FASE DE LOBBY
+            if (sala.estado === 'aguardando') {
+                mostrarTela('lobby-screen');
+                document.getElementById('lobby-titulo').innerText = `Sala: ${codigo}`;
+                
+                let htmlList = '';
+                sala.jogadores.forEach(j => {
+                    htmlList += `<div class="ranking-item">${j.nome}</div>`;
+                });
+                document.getElementById('jogadores-list').innerHTML = htmlList;
+
+                // Só o primeiro que entrou (host) pode dar start se houver 2+ jogadores e baú não vazio
+                const isHost = sala.jogadores[0].id === meuId;
+                const btnIniciar = document.getElementById('btn-iniciar');
+                if (isHost && sala.jogadores.length >= 2 && sala.bau.length > 0) {
+                    btnIniciar.style.display = 'block';
+                    document.getElementById('lobby-status').innerText = "Pronto para começar!";
+                } else if (sala.bau.length === 0) {
+                    document.getElementById('lobby-status').innerText = "A carregar cartas (Pinterest)...";
+                    btnIniciar.style.display = 'none';
+                }
             }
 
-            if (sala.estado === 'aguardando') {
-                atualizarListaLobby(sala);
-            } else if (sala.estado === 'jogando') {
-                document.getElementById('telaLobby').style.display = 'none';
-                document.getElementById('telaJogo').style.display = 'block';
-                document.getElementById('jogoCodigoDisplay').innerText = codigoAtual;
+            // 2. FASE: ESCOLHA DO NARRADOR
+            if (sala.estado === 'escolha_narrador') {
+                mostrarTela('game-screen');
+                const btn = document.getElementById('btn-acao-escolha');
                 
-                atualizarClassificacao(sala);
-                atualizarMesaEJogo(sala, eu);
+                if (isNarrador) {
+                    document.getElementById('fase-titulo').innerText = "VOCÊ É O NARRADOR!";
+                    document.getElementById('fase-instrucao').innerText = "Diga a sua dica em voz alta e escolha uma carta.";
+                    renderizarCartas(eu.mao, 'hand-container');
+                    setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
+                } else {
+                    document.getElementById('fase-titulo').innerText = "Aguarde o Narrador...";
+                    document.getElementById('fase-instrucao').innerText = "O narrador está a pensar na dica.";
+                    document.getElementById('hand-container').innerHTML = ''; // Esconde a mão
+                    btn.disabled = true;
+                }
+            }
+
+            // 3. FASE: ESCOLHA DOS JOGADORES
+            if (sala.estado === 'escolha_jogadores') {
+                mostrarTela('game-screen');
+                const btn = document.getElementById('btn-acao-escolha');
+                
+                if (isNarrador) {
+                    document.getElementById('fase-titulo').innerText = "Aguardando Jogadores...";
+                    document.getElementById('fase-instrucao').innerText = "Os outros jogadores estão a tentar confundir a mesa.";
+                    document.getElementById('hand-container').innerHTML = '';
+                    btn.disabled = true;
+                } else {
+                    const jaJogou = sala.mesa.some(c => c.jogadorId === meuId);
+                    if (jaJogou) {
+                        document.getElementById('fase-titulo').innerText = "Carta enviada!";
+                        document.getElementById('fase-instrucao').innerText = "Aguarde os restantes jogadores...";
+                        document.getElementById('hand-container').innerHTML = '';
+                        btn.disabled = true;
+                    } else {
+                        document.getElementById('fase-titulo').innerText = "A dica foi dada!";
+                        document.getElementById('fase-instrucao').innerText = "Escolha uma carta da sua mão que combine com a dica.";
+                        renderizarCartas(eu.mao, 'hand-container');
+                        setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
+                    }
+                }
+            }
+
+            // 4. FASE: VOTAÇÃO
+            if (sala.estado === 'votacao') {
+                mostrarTela('voting-screen');
+                const btn = document.getElementById('btn-votar');
+                const jaVotou = sala.mesa.some(c => c.votos.includes(meuId));
+                
+                const urlsMesa = sala.mesa.map(c => c.cartaUrl);
+                renderizarCartas(urlsMesa, 'table-container', sala.mesa); // Passa a mesa para saber os donos
+
+                if (isNarrador) {
+                    document.getElementById('votacao-instrucao').innerText = "O Narrador não vota. Assista ao caos!";
+                    btn.disabled = true;
+                } else if (jaVotou) {
+                    document.getElementById('votacao-instrucao').innerText = "Voto registado. Aguarde os outros...";
+                    btn.disabled = true;
+                } else {
+                    document.getElementById('votacao-instrucao').innerText = "Deslize e vote na carta que acha ser a do Narrador.";
+                    
+                    // Regra: Desativar se a carta centrada for do próprio jogador
+                    setupCarousel('table-container', 'btn-votar', 
+                        (url) => socket.emit('votarCarta', { codigo, cartaUrl: url }),
+                        (cardElement) => cardElement.dataset.dono === meuId
+                    );
+                }
+            }
+
+            // 5. FASE: RESULTADOS
+            if (sala.estado === 'resultado') {
+                mostrarTela('results-screen');
+                
+                const container = document.getElementById('results-container');
+                container.innerHTML = '';
+                
+                sala.mesa.forEach(cartaObj => {
+                    const dono = sala.jogadores.find(j => j.id === cartaObj.jogadorId);
+                    const isCardNarrador = cartaObj.cartaUrl === sala.cartaNarradorUrl;
+                    
+                    const votosNomes = cartaObj.votos.map(vId => {
+                        const qmVotou = sala.jogadores.find(j => j.id === vId);
+                        return qmVotou ? qmVotou.nome : '';
+                    }).join(', ');
+
+                    const div = document.createElement('div');
+                    div.className = 'carta';
+                    if (isCardNarrador) div.classList.add('carta-narrador');
+                    div.style.backgroundImage = `url('${cartaObj.cartaUrl}')`;
+                    
+                    div.innerHTML = `
+                        <div class="carta-info">
+                            <div class="dono-texto ${isCardNarrador ? 'dono-narrador' : ''}">
+                                De: ${dono ? dono.nome : 'Desc.'} ${isCardNarrador ? '⭐' : ''}
+                            </div>
+                            <div class="votos-texto">Votos: ${cartaObj.votos.length} ${votosNomes ? '('+votosNomes+')' : ''}</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                // Atualiza também o HTML do Ranking
+                let rankingHtml = '';
+                // Ordena por pontos
+                [...sala.jogadores].sort((a,b) => b.pontos - a.pontos).forEach(j => {
+                    rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span>${j.pontos} pts</span></div>`;
+                });
+                document.getElementById('ranking-container').innerHTML = rankingHtml;
             }
         });
 
-        function atualizarListaLobby(sala) {
-            const painelLobby = document.getElementById('listaLobby');
-            const qtd = sala.jogadores.length;
-            document.getElementById('qtdJogadores').innerText = qtd;
-            painelLobby.innerHTML = '';
-            
-            sala.jogadores.forEach((j, index) => {
-                const icone = (index === 0) ? '👑' : '👤'; 
-                painelLobby.innerHTML += `<div class="jogador-rank">${icone} <strong>${j.nome}</strong></div>`;
-            });
-
-            const isHost = qtd > 0 && sala.jogadores[0].id === socket.id;
-            const btnIniciar = document.getElementById('btnIniciarPartida');
-            const msg = document.getElementById('msgAguardando');
-            
-            if (isHost) {
-                btnIniciar.style.display = 'block';
-                msg.style.display = 'none';
-                if(qtd >= 2) {
-                    btnIniciar.disabled = false;
-                    btnIniciar.innerText = '▶️ Iniciar Partida';
-                } else {
-                    btnIniciar.disabled = true;
-                    btnIniciar.innerText = '⏳ Aguardando jogadores...';
-                }
-            } else {
-                btnIniciar.style.display = 'none';
-                msg.style.display = 'block';
-            }
-        }
-
-        function atualizarClassificacao(sala) {
-            const alguemPontuou = sala.jogadores.some(j => j.pontos > 0);
-            const painelRanking = document.getElementById('painelRanking');
-            
-            if(alguemPontuou) {
-                painelRanking.style.display = 'block';
-                const painel = document.getElementById('painelClassificacao');
-                painel.innerHTML = '';
+        function renderizarCartas(urls, containerId, mesaData = null) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            urls.forEach(url => {
+                const div = document.createElement('div');
+                div.className = 'carta';
+                div.style.backgroundImage = `url('${url}')`;
+                div.dataset.url = url;
                 
-                const ranking = [...sala.jogadores].sort((a, b) => b.pontos - a.pontos);
-                ranking.forEach((j, i) => {
-                    let medalha = '👤';
-                    if(i===0) medalha = '🥇'; else if(i===1) medalha = '🥈'; else if(i===2) medalha = '🥉';
-                    painel.innerHTML += `<div class="jogador-rank">
-                        <span>${medalha} <strong>${j.nome}</strong></span>
-                        <span style="color: #2ecc71; font-weight: bold;">${j.pontos} pts</span>
-                    </div>`;
-                });
-            } else {
-                painelRanking.style.display = 'none';
-            }
-        }
-
-        function atualizarMesaEJogo(sala, eu) {
-            const souNarrador = sala.jogadores.findIndex(j => j.id === socket.id) === sala.narradorIndex;
-            const statusDiv = document.getElementById('statusNarrador');
-            
-            if (souNarrador) {
-                statusDiv.innerHTML = `<div class="narrador-titulo">VOCÊ É O NARRADOR! 🗣️</div><div class="narrador-subtitulo">Fale a dica e escolha uma carta.</div>`;
-            } else {
-                statusDiv.innerHTML = `<div class="narrador-titulo" style="color: #f1c40f;">AGUARDANDO DICA... ⏳</div>`;
-            }
-            cartasNoDeckAtual = eu.mao;
-            renderizarDeck();
-        }
-
-        function renderizarDeck() {
-            const deckDiv = document.getElementById('deckCartas');
-            deckDiv.innerHTML = '';
-            
-            if(cartasNoDeckAtual.length === 0) {
-                 deckDiv.innerHTML = '<p style="color: #888; grid-column: span 2; text-align: center;">Carregando cartas no servidor... Por favor aguarde um momento e clique em Recarregar.</p>';
-            } else {
-                cartasNoDeckAtual.forEach((cartaUrl, index) => {
-                    const img = document.createElement('img');
-                    img.src = cartaUrl; img.className = 'carta';
-                    img.onclick = () => abrirZoom(index);
-                    deckDiv.appendChild(img);
-                });
-            }
-        }
-
-        function abrirZoom(indice) {
-            indiceCarrosselAtual = indice;
-            atualizarImagemCarrossel();
-            document.getElementById('zoomModal').classList.remove('hidden');
-        }
-
-        function fecharModal() { document.getElementById('zoomModal').classList.add('hidden'); }
-
-        function atualizarImagemCarrossel() {
-            const imgZoom = document.getElementById('imgZoom');
-            imgZoom.style.opacity = '0.3';
-            setTimeout(() => { imgZoom.src = cartasNoDeckAtual[indiceCarrosselAtual]; imgZoom.style.opacity = '1'; }, 100);
-        }
-
-        function navegarCarrossel(direcao) {
-            indiceCarrosselAtual += direcao;
-            if (indiceCarrosselAtual < 0) indiceCarrosselAtual = cartasNoDeckAtual.length - 1;
-            else if (indiceCarrosselAtual >= cartasNoDeckAtual.length) indiceCarrosselAtual = 0;
-            atualizarImagemCarrossel();
-        }
-
-        function confirmarCartaDoZoom() {
-            const carta = cartasNoDeckAtual[indiceCarrosselAtual];
-            fecharModal();
-            socket.emit('jogarCarta', { codigo: codigoAtual, cartaUrl: carta });
-        }
-
-        let toqueInicialX = 0; let toqueFinalX = 0;
-        const areaZoom = document.getElementById('imgZoom');
-        areaZoom.addEventListener('touchstart', (e) => { toqueInicialX = e.changedTouches[0].screenX; });
-        areaZoom.addEventListener('touchend', (e) => { toqueFinalX = e.changedTouches[0].screenX; processarSwipe(); });
-        function processarSwipe() {
-            if (toqueFinalX < toqueInicialX - 40) navegarCarrossel(1);
-            if (toqueFinalX > toqueInicialX + 40) navegarCarrossel(-1);
+                // Se for a mesa, guardar quem é o dono no DOM para impedir auto-voto
+                if (mesaData) {
+                    const cartaObj = mesaData.find(c => c.cartaUrl === url);
+                    if (cartaObj) div.dataset.dono = cartaObj.jogadorId;
+                }
+                
+                container.appendChild(div);
+            });
+            // Aciona scroll inicial manual para setar o botão
+            container.dispatchEvent(new Event('scroll'));
         }
     </script>
 </body>
