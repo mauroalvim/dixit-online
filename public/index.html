@@ -28,15 +28,13 @@
             position: relative;
             background-color: #0f172a; 
             margin: 0;
-            /* Fundo Fallback Seguro e Bonito - Gradiente Vibrante Dixit Style */
             background: linear-gradient(135deg, #4c1d95 0%, #0f172a 50%, #881337 100%);
         }
 
-        /* FUNDO DINÂMICO GARANTIDO TIPO TINTA DIXIT (com animação) */
         .fundo-tinta-magica {
             position: fixed;
             top: -10%; left: -10%; width: 120%; height: 120%;
-            z-index: 1 !important; /* FORÇA A APARECER */
+            z-index: 1 !important; 
             background-image: url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
@@ -49,7 +47,6 @@
             100% { transform: scale(1.1) translate(-2%, -2%); }
         }
 
-        /* Película de Vidro e Sombra para destacar os painéis */
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.4); 
@@ -57,12 +54,11 @@
             z-index: 2 !important; 
         }
 
-        /* Estrutura Central dos Ecrãs */
         .screen {
             display: none; flex-direction: column; min-height: 100vh; 
             padding: 30px 20px 80px 20px; align-items: center; justify-content: flex-start;
             position: relative;
-            z-index: 10 !important; /* Sempre acima do fundo */
+            z-index: 10 !important;
         }
         .screen.active { display: flex !important; }
 
@@ -114,9 +110,6 @@
 
         h2 { text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
 
-        /* ========================================================
-           CARTAS GRANDES NA MÃO (Com indicação visual de Toque)
-           ======================================================== */
         .carousel-container {
             display: flex; gap: 20px; overflow-x: auto; padding: 20px 10px;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
@@ -138,9 +131,6 @@
             font-size: 13px; backdrop-filter: blur(4px); pointer-events: none;
         }
 
-        /* ========================================================
-           GRELHA NA MESA (Para Votação Direta e Resultados Rápidos)
-           ======================================================== */
         .grid-container {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; 
             padding: 20px 10px; width: 100%; max-width: 600px;
@@ -153,7 +143,6 @@
         }
         .carta-pequena:active { transform: scale(0.95); }
         
-        /* CARTA PRÓPRIA (Bloqueio Visual na Votação) */
         .carta-propria {
             border: 4px solid var(--red-alert) !important; 
             pointer-events: none; 
@@ -185,16 +174,14 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
         }
 
-        /* VERSÃO APENAS TELA INICIAL (Fixada em baixo) */
+        /* VERSÃO APENAS TELA INICIAL */
         .versao-app {
             position: absolute; bottom: 15px; left: 0; width: 100%;
             text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 14px; 
             font-weight: 600; z-index: 100;
         }
 
-        /* ========================================================
-           MODAL ECRÃ CHEIO (ZOOM FULL SCREEN COM BOTÃO DENTRO)
-           ======================================================== */
+        /* MODAL ECRÃ CHEIO (ZOOM FULL SCREEN COM BOTÃO DENTRO) */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -216,10 +203,9 @@
         }
         .modal-carousel::-webkit-scrollbar { display: none; }
         
-        /* CARTA TOTALMENTE FULL NO ECRÃ DE ZOOM */
         .modal-carta {
             flex: 0 0 100%; height: 85vh; border-radius: 20px;
-            background-size: cover; /* Cobre o ecrã inteiro sem espaços */
+            background-size: cover; 
             background-repeat: no-repeat; background-position: center; 
             scroll-snap-align: center; box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
@@ -284,7 +270,7 @@
         </div>
         
         <!-- 👇 ATUALIZE A VERSÃO AQUI MANUALMENTE 👇 -->
-        <div class="versao-app">Versão 10.88</div>
+        <div class="versao-app">Versão 10.89</div>
         <!-- 👆 ATUALIZE A VERSÃO AQUI MANUALMENTE 👆 -->
     </div>
 
@@ -367,8 +353,27 @@
         }
 
         // ==========================================
-        // LÓGICA DO MODAL (ZOOM COM BOTÃO DENTRO)
+        // NOVA LÓGICA BLINDADA DO MODAL (VERSÃO 10.89)
         // ==========================================
+        function atualizarBotaoPelaCarta(cardElement) {
+            const btn = document.getElementById('btn-modal-acao');
+            if(btn.style.display === 'none' || !cardElement) return;
+
+            cartaSelecionadaVisivel = cardElement.dataset.url;
+
+            if (modalRegraDesativacao && modalRegraDesativacao(cardElement)) {
+                btn.disabled = true;
+                btn.innerText = cardElement.dataset.motivoDesativado || btn.dataset.textoDesativado;
+            } else {
+                btn.disabled = false;
+                btn.innerText = btn.dataset.textoOriginal;
+                btn.onclick = () => {
+                    fecharModal();
+                    if (modalAcaoCallback) modalAcaoCallback(cartaSelecionadaVisivel);
+                };
+            }
+        }
+
         function abrirModal(urlClicada) {
             const modal = document.getElementById('image-modal');
             const modalContainer = document.getElementById('modal-container');
@@ -376,10 +381,16 @@
             modal.style.display = 'flex';
             
             const targetCard = Array.from(modalContainer.children).find(c => c.dataset.url === urlClicada);
+            
             if (targetCard) {
-                targetCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+                // ATUALIZA O BOTÃO IMEDIATAMENTE (Sem esperar pela matemática do scroll)
+                atualizarBotaoPelaCarta(targetCard);
+                
+                // Remove animação suave para não confundir as posições no telemóvel
+                setTimeout(() => { 
+                    targetCard.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); 
+                }, 10);
             }
-            setTimeout(() => { modalContainer.dispatchEvent(new Event('scroll')); }, 50);
         }
 
         function fecharModal() {
@@ -399,13 +410,22 @@
             modalRegraDesativacao = regraDesativacao;
             btn.dataset.textoOriginal = texto;
             btn.dataset.textoDesativado = textoDesativado;
-            document.getElementById('modal-container').dispatchEvent(new Event('scroll'));
+            
+            // Se o ecrã do zoom estiver aberto por algum motivo, garante que atualiza
+            if (cartaSelecionadaVisivel) {
+                 const container = document.getElementById('modal-container');
+                 const currentCard = Array.from(container.children).find(c => c.dataset.url === cartaSelecionadaVisivel);
+                 if(currentCard) atualizarBotaoPelaCarta(currentCard);
+            }
         }
 
-        // Ativação Lógica do Botão consoante a Carta selecionada no Zoom
+        // O evento de scroll continua a existir apenas para atualizar o botão se você arrastar o dedo para o lado (Swipe)
         document.getElementById('modal-container').addEventListener('scroll', function() {
             const btn = document.getElementById('btn-modal-acao');
             if(btn.style.display === 'none') return;
+
+            // Prevenção extra: se a largura do ecrã ainda for 0, ignora para não causar bugs
+            if (this.clientWidth === 0) return; 
 
             let centerOffset = this.scrollLeft + this.clientWidth / 2;
             let cards = Array.from(this.children);
@@ -419,23 +439,12 @@
             });
 
             if (closestCard) {
-                cartaSelecionadaVisivel = closestCard.dataset.url;
-                if (modalRegraDesativacao && modalRegraDesativacao(closestCard)) {
-                    btn.disabled = true;
-                    btn.innerText = closestCard.dataset.motivoDesativado || btn.dataset.textoDesativado;
-                } else {
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.textoOriginal;
-                    btn.onclick = () => {
-                        fecharModal();
-                        if (modalAcaoCallback) modalAcaoCallback(cartaSelecionadaVisivel);
-                    };
-                }
+                atualizarBotaoPelaCarta(closestCard);
             }
         });
 
         // ==========================================
-        // RENDERIZAÇÃO DE CARTAS (Mão, Mesa e Resultados)
+        // RENDERIZAÇÃO DE CARTAS 
         // ==========================================
         function renderizarCartasMao(urls) {
             const container = document.getElementById('hand-container');
@@ -443,14 +452,12 @@
             container.innerHTML = ''; modalContainer.innerHTML = ''; 
 
             urls.forEach(url => {
-                // Cartas da Mão (Visão Geral)
                 const div = document.createElement('div');
                 div.className = 'carta-grande';
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
                 div.onclick = () => abrirModal(url); 
                 container.appendChild(div);
 
-                // Cartas no Zoom Ecrã Cheio (Modal)
                 const modalDiv = document.createElement('div');
                 modalDiv.className = 'modal-carta';
                 modalDiv.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
@@ -469,7 +476,7 @@
                 div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
                 
                 if (cartaObj.jogadorId === meuId) {
-                    div.classList.add('carta-propria'); // Contorno Vermelho Intocável
+                    div.classList.add('carta-propria'); 
                 } else if (!isNarrador && !jaVotou) {
                     div.onclick = () => {
                         socket.emit('votarCarta', { codigo: salaDesejada || minhaSala.codigo, cartaUrl: cartaObj.cartaUrl });
