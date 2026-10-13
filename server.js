@@ -2,6 +2,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const axios = require('axios');
+const unzipper = require('unzipper');
+const fs = require('fs');
+const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
@@ -9,24 +12,105 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Cria pasta local temporária para guardar as cartas oficiais extraídas
+const dirExpansoes = path.join(__dirname, 'public', 'expansoes');
+if (!fs.existsSync(dirExpansoes)) fs.mkdirSync(dirExpansoes, { recursive: true });
+
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
-const memoriaCartasGlobais = new Set();
 
-const promptJuizIA = `Você é um curador de arte rigoroso para um jogo de tabuleiro estilo Dixit / Stella: Dixit Universe. 
-Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
+// 1. A LINHA DA FRENTE (Imediata e sempre disponível)
+let cartasGitHub = [];
+for (let i = 1; i <= 98; i++) {
+    cartasGitHub.push(`https://raw.githubusercontent.com/aarongaither/dixitOnline/master/assets/cards/card_${String(i).padStart(5, '0')}.jpg`);
+}
 
-REGRAS DE REJEIÇÃO ABSOLUTA (Elimine imediatamente se tiver):
-1. FOTORREALISMO: Rejeite rostos humanos reais, pessoas ou fotografias.
-2. LIXO VETORIAL: Rejeite fundos totalmente brancos, transparentes, ou objetos isolados.
-3. PADRÕES: Rejeite texturas repetitivas ou letras.
+// 2. OS REFORÇOS DE ELITE (Carregados em Background)
+let cartasZipsAsmodee = [];
 
-CRITÉRIOS DE APROVAÇÃO:
-- Aceite ilustrações, pinturas, aquarela, cenários surreais, constelações e arte fantasia onírica (estilo Stella).
+// --------------------------------------------------------
+// EXTRAÇÃO INTELIGENTE DE ZIPs EM BACKGROUND
+// --------------------------------------------------------
+async function baixarZipsEmBackground() {
+    const urlsZips = [
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-Dixit-Quest.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/banque-images-dixit-mirrors.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-journey.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-daydreams.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-Harmonies.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-memories.zip",
+        "https://cdn.svc.asmodee.net/production-libelludv2/uploads/2026/08/Banque-images-origins.zip"
+    ];
 
-Responda APENAS com o JSON. Exemplo: ["url1", "url2"]`;
+    console.log("A extrair Expansões Asmodee em background...");
+
+    for (let url of urlsZips) {
+        try {
+            const response = await axios({ method: 'get', url, responseType: 'stream' });
+            
+            response.data.pipe(unzipper.Parse())
+                .on('entry', function (entry) {
+                    const fileName = entry.path;
+                    const nomeUpper = fileName.toUpperCase();
+                    
+                    const isImage = nomeUpper.endsWith('.PNG') || nomeUpper.endsWith('.JPG') || nomeUpper.endsWith('.JPEG');
+                    const isCard = (nomeUpper.includes('CARD') || /\_\d+\_/.test(nomeUpper));
+                    const isNotTrash = !nomeUpper.includes('MACOSX') && !nomeUpper.includes('WALLPAPER') && !nomeUpper.includes('BOX') && !nomeUpper.includes('RULE');
+
+                    if (entry.type === 'File' && isImage && isCard && isNotTrash) {
+                        const nomeArquivo = path.basename(fileName);
+                        const caminhoDestino = path.join(dirExpansoes, nomeArquivo);
+                        
+                        if (!fs.existsSync(caminhoDestino)) {
+                            entry.pipe(fs.createWriteStream(caminhoDestino));
+                        } else {
+                            entry.autodrain();
+                        }
+                        
+                        const urlLocal = `/expansoes/${encodeURIComponent(nomeArquivo)}`;
+                        if (!cartasZipsAsmodee.includes(urlLocal)) {
+                            cartasZipsAsmodee.push(urlLocal);
+                        }
+                    } else {
+                        entry.autodrain();
+                    }
+                });
+        } catch (e) {
+            console.log(`Aviso: Erro ao ler ZIP ${url}`);
+        }
+    }
+    console.log(`Extração concluída! Foram carregadas ${cartasZipsAsmodee.length} novas cartas.`);
+}
+// Arranca a descompactação silenciosa imediatamente
+baixarZipsEmBackground();
+
+// --------------------------------------------------------
+// PROXY INTELIGENTE (URLs locais e Pixabay)
+// --------------------------------------------------------
+app.get('/proxy', async (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('URL missing');
+
+    // Se a carta for local (ZIPs)
+    if (targetUrl.startsWith('/expansoes/')) {
+        const fileName = targetUrl.split('/').pop();
+        const localPath = path.join(dirExpansoes, decodeURIComponent(fileName));
+        if (fs.existsSync(localPath)) return res.sendFile(localPath);
+        else return res.status(404).send('Não encontrado no servidor');
+    }
+
+    // Se for link externo (GitHub ou Pixabay)
+    try {
+        const response = await axios.get(targetUrl, { responseType: 'stream', headers: { 'User-Agent': 'Mozilla/5.0' } });
+        res.set('Cache-Control', 'public, max-age=31536000');
+        res.set('Content-Type', response.headers['content-type']);
+        response.data.pipe(res);
+    } catch (error) {
+        res.status(404).send('Imagem indisponível');
+    }
+});
 
 function embaralharArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -37,47 +121,12 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// PROXY UNIVERSAL DE IMAGENS
-// --------------------------------------------------------
-app.get('/proxy', async (req, res) => {
-    const targetUrl = req.query.url;
-    if (!targetUrl) return res.status(400).send('URL missing');
-    try {
-        const response = await axios.get(targetUrl, {
-            responseType: 'stream',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        res.set('Cache-Control', 'public, max-age=31536000');
-        res.set('Content-Type', response.headers['content-type']);
-        response.data.pipe(res);
-    } catch (error) {
-        res.status(404).send('Imagem indisponível');
-    }
-});
-
-// --------------------------------------------------------
-// GERAÇÃO DAS 98 CARTAS DO REPOSITÓRIO GITHUB DO DIXIT
-// --------------------------------------------------------
-function obterCartasGitHubDixit() {
-    let urls = [];
-    // O repositório tem de card_00001.jpg a card_00098.jpg
-    for (let i = 1; i <= 98; i++) {
-        let numeroFormatado = String(i).padStart(5, '0');
-        let url = `https://raw.githubusercontent.com/aarongaither/dixitOnline/master/assets/cards/card_${numeroFormatado}.jpg`;
-        urls.push(url);
-    }
-    return embaralharArray(urls);
-}
-
-// --------------------------------------------------------
-// BUSCA NO PIXABAY COM TEMÁTICA STELLA / DIXIT UNIVERSE
+// 3. A BÓIA DE SALVAÇÃO (Pixabay + IA)
 // --------------------------------------------------------
 async function buscarCartasStellaPixabay(quantidade = 10) {
     try {
-        const temasStella = ["astral watercolor", "ethereal fantasy art", "constellation dreamscape", "surreal cosmic illustration", "whimsical starlight painting"];
-        const promessas = temasStella.map(async (tema) => {
+        const temas = ["ethereal fantasy art", "surreal cosmic illustration", "whimsical starlight painting", "dreamscape watercolor"];
+        const promessas = temas.map(async (tema) => {
             const page = Math.floor(Math.random() * 5) + 1; 
             const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(tema)}&image_type=illustration&orientation=vertical&per_page=${quantidade}&page=${page}&safesearch=true`;
             try {
@@ -86,22 +135,23 @@ async function buscarCartasStellaPixabay(quantidade = 10) {
             } catch (e) { return []; }
         });
         const arrays = await Promise.all(promessas);
-        return embaralharArray(arrays.flat().filter(url => !memoriaCartasGlobais.has(url)));
+        return arrays.flat();
     } catch (e) { return []; }
 }
 
 async function julgarCartas(urls) {
     if(!urls || urls.length === 0) return [];
     try {
+        const promptJuizIA = `Você é um curador de arte para Dixit. Retorne UM ARRAY JSON com URLs APROVADAS. Rejeite fotorrealismo e vetores brancos. Aceite arte fantasia. URLs:\n${JSON.stringify(urls)}`;
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(`${promptJuizIA}\n\nURLs:\n${JSON.stringify(urls)}`);
+        const result = await model.generateContent(promptJuizIA);
         const match = result.response.text().match(/\[.*\]/s);
         return match ? JSON.parse(match[0]) : []; 
     } catch (e) { return []; }
 }
 
 // --------------------------------------------------------
-// ALIMENTAÇÃO DO BAÚ DA SALA (GitHub + Stella via Juiz IA)
+// PREENCHIMENTO DA SALA (Estratégia Tripla Garantida)
 // --------------------------------------------------------
 async function preencherBauSala(codigo) {
     const sala = salas[codigo];
@@ -109,41 +159,51 @@ async function preencherBauSala(codigo) {
     sala.preenchendo = true;
 
     try {
-        // 1. Se o baú estiver vazio, carrega primeiro as cartas seguras do GitHub
-        if (sala.bau.length === 0) {
-            let cartasGitHub = obterCartasGitHubDixit();
-            // Passa as do GitHub pelo Juiz IA também para garantir padrão irrepreensível
-            let aprovadasGitHub = await julgarCartas(cartasGitHub.slice(0, 30));
-            
-            // Se a IA aprovar (ou como garantia caso queira agilizar), adiciona ao baú
-            let selecaoInicial = aprovadasGitHub.length > 0 ? aprovadasGitHub : cartasGitHub.slice(0, 30);
-            
-            selecaoInicial.forEach(url => {
-                memoriaCartasGlobais.add(url);
-                sala.bau.push(url);
-            });
-            sala.bau = embaralharArray(sala.bau);
-            io.to(codigo).emit('atualizarSala', sala);
-        }
-
-        // 2. Continuação em segundo plano: Busca expansões estilo Stella no Pixabay avaliadas pelo Juiz IA
-        while (sala.bau.length < 150) {
-            let urlsStella = await buscarCartasStellaPixabay(15);
-            if (urlsStella.length === 0) break;
-            
-            let aprovadasStella = await julgarCartas(urlsStella);
-            if (aprovadasStella.length > 0) {
-                aprovadasStella.forEach(url => {
-                    if (!memoriaCartasGlobais.has(url)) {
-                        memoriaCartasGlobais.add(url);
-                        sala.bau.push(url);
-                    }
-                });
-                sala.bau = embaralharArray(sala.bau);
+        // TENTA ENCHER ATÉ 80 CARTAS POR CHAMADA
+        
+        // Fase 1: Adiciona do GitHub se ainda não estiver no limite
+        if (sala.bau.length < 80) {
+            let poolGitHub = embaralharArray([...cartasGitHub]);
+            for (let url of poolGitHub) {
+                if (!sala.cartasUsadas.has(url)) {
+                    sala.bau.push(url);
+                    sala.cartasUsadas.add(url); // Marca como usada
+                }
+                if (sala.bau.length >= 80) break;
             }
         }
+
+        // Fase 2: Completa com os ZIPs Asmodee (se já existirem e precisar de mais cartas)
+        if (sala.bau.length < 80 && cartasZipsAsmodee.length > 0) {
+            let poolZips = embaralharArray([...cartasZipsAsmodee]);
+            for (let url of poolZips) {
+                // A verificação via cartasUsadas impede que um ZIP repita uma carta que já veio do GitHub!
+                if (!sala.cartasUsadas.has(url)) {
+                    sala.bau.push(url);
+                    sala.cartasUsadas.add(url);
+                }
+                if (sala.bau.length >= 80) break;
+            }
+        }
+
+        // Fase 3 (Extremo Recurso): Se nem GitHub + Zips chegaram a 20 cartas no Baú, pede ao Pixabay
+        if (sala.bau.length < 20) {
+            let urlsStella = await buscarCartasStellaPixabay(15);
+            let aprovadas = await julgarCartas(urlsStella);
+            aprovadas.forEach(url => {
+                if (!sala.cartasUsadas.has(url)) {
+                    sala.bau.push(url);
+                    sala.cartasUsadas.add(url);
+                }
+            });
+        }
+        
+        // Sempre dá uma baralhada final no Baú antes de servir
+        sala.bau = embaralharArray(sala.bau);
+        io.to(codigo).emit('atualizarSala', sala);
+
     } catch (err) {
-        console.error("Erro ao preencher baú:", err);
+        console.error(err);
     } finally {
         sala.preenchendo = false;
     }
@@ -161,9 +221,7 @@ function calcularPontosDixit(sala) {
     const narradorId = sala.jogadores[sala.narradorIndex].id;
 
     if (acertos === 0 || acertos === totalJogadores - 1) {
-        sala.jogadores.forEach(j => {
-            if (j.id !== narradorId) j.pontos += 2;
-        });
+        sala.jogadores.forEach(j => { if (j.id !== narradorId) j.pontos += 2; });
     } else {
         const narrador = sala.jogadores.find(j => j.id === narradorId);
         narrador.pontos += 3;
@@ -185,16 +243,12 @@ function calcularPontosDixit(sala) {
 // SOCKET.IO EVENTOS
 // --------------------------------------------------------
 io.on('connection', (socket) => {
-    
     socket.on('verificarSala', (codigo) => {
         socket.emit('salaExiste', !!salas[codigo]);
     });
 
     socket.on('criarSala', ({ nome, codigo, pontosVitoria }) => {
-        let codFinal = codigo;
-        if (!codFinal) {
-            codFinal = Math.floor(1000 + Math.random() * 9000).toString(); 
-        }
+        let codFinal = codigo || Math.floor(1000 + Math.random() * 9000).toString(); 
         
         if (salas[codFinal]) {
             socket.emit('erro', 'Esta sala já existe! Tente outro código.');
@@ -204,9 +258,11 @@ io.on('connection', (socket) => {
         salas[codFinal] = {
             codigo: codFinal,
             jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', 
-            preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30
+            preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30,
+            cartasUsadas: new Set() // MEMÓRIA DA SALA CONTRA REPETIÇÕES (Essencial)
         };
         
+        // Dispara o preenchimento imediatamente ao criar a sala
         preencherBauSala(codFinal); 
         
         const sala = salas[codFinal];
@@ -219,10 +275,7 @@ io.on('connection', (socket) => {
 
     socket.on('entrarSala', ({ nome, codigo }) => {
         const sala = salas[codigo];
-        if (!sala) {
-            socket.emit('erro', 'Sala não encontrada!');
-            return;
-        }
+        if (!sala) return socket.emit('erro', 'Sala não encontrada!');
         sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
         socket.join(codigo);
         io.to(codigo).emit('atualizarSala', sala);
@@ -290,13 +343,8 @@ io.on('connection', (socket) => {
         const totalVotos = sala.mesa.reduce((acc, c) => acc + c.votos.length, 0);
         if (totalVotos === sala.jogadores.length - 1) {
             calcularPontosDixit(sala);
-            
             const alguemGanhou = sala.jogadores.some(j => j.pontos >= sala.pontosVitoria);
-            if (alguemGanhou) {
-                sala.estado = 'fim_jogo';
-            } else {
-                sala.estado = 'resultado';
-            }
+            sala.estado = alguemGanhou ? 'fim_jogo' : 'resultado';
         }
         
         io.to(codigo).emit('atualizarSala', sala);
@@ -317,7 +365,8 @@ io.on('connection', (socket) => {
             }
         });
 
-        if(sala.bau.length < 50) preencherBauSala(codigo);
+        // Abastece a sala se necessário
+        if(sala.bau.length < 30) preencherBauSala(codigo);
         io.to(codigo).emit('atualizarSala', sala);
     });
 
