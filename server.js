@@ -172,7 +172,7 @@ async function preencherBauLento(codigo) {
 }
 
 // --------------------------------------------------------
-// LÓGICA E REGRAS DIXIT (MÁQUINA DE ESTADOS)
+// LÓGICA E REGRAS DIXIT
 // --------------------------------------------------------
 function calcularPontosDixit(sala) {
     const cartaNarrador = sala.mesa.find(c => c.cartaUrl === sala.cartaNarradorUrl);
@@ -182,13 +182,11 @@ function calcularPontosDixit(sala) {
     const totalJogadores = sala.jogadores.length;
     const narradorId = sala.jogadores[sala.narradorIndex].id;
 
-    // Regra 1: Se todos acertam ou ninguém acerta, narrador ganha 0, os outros ganham 2.
     if (acertos === 0 || acertos === totalJogadores - 1) {
         sala.jogadores.forEach(j => {
             if (j.id !== narradorId) j.pontos += 2;
         });
     } else {
-        // Regra 2: Narrador ganha 3, quem acertou ganha 3.
         const narrador = sala.jogadores.find(j => j.id === narradorId);
         narrador.pontos += 3;
         cartaNarrador.votos.forEach(votoId => {
@@ -197,7 +195,6 @@ function calcularPontosDixit(sala) {
         });
     }
 
-    // Regra 3: Pontos bónus (1 ponto por cada voto na carta falsa do jogador)
     sala.mesa.forEach(c => {
         if (c.cartaUrl !== sala.cartaNarradorUrl) {
             const dono = sala.jogadores.find(j => j.id === c.jogadorId);
@@ -207,24 +204,47 @@ function calcularPontosDixit(sala) {
 }
 
 io.on('connection', (socket) => {
-    socket.on('entrarSala', ({ nome, codigo }) => {
-        if (!salas[codigo]) {
-            salas[codigo] = {
-                jogadores: [], bau: [], mesa: [], narradorIndex: 0, 
-                estado: 'aguardando', preenchendo: false, cartaNarradorUrl: null
-            };
-            preencherBauRapidoInicial(codigo); 
+    
+    // VERIFICA SE A SALA EXISTE ANTES DO JOGADOR METER O NOME
+    socket.on('verificarSala', (codigo) => {
+        socket.emit('salaExiste', !!salas[codigo]);
+    });
+
+    // O HOST CRIA A SALA COM O TOTAL DE PONTOS
+    socket.on('criarSala', ({ nome, codigo, pontosVitoria }) => {
+        if (salas[codigo]) {
+            socket.emit('erro', 'Esta sala já existe! Tente outro código.');
+            return;
         }
+        salas[codigo] = {
+            jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', 
+            preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30
+        };
+        preencherBauRapidoInicial(codigo); 
+        
         const sala = salas[codigo];
         sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
         socket.join(codigo);
         io.to(codigo).emit('atualizarSala', sala);
     });
 
+    // O JOGADOR ENTRA NA SALA JÁ EXISTENTE
+    socket.on('entrarSala', ({ nome, codigo }) => {
+        const sala = salas[codigo];
+        if (!sala) {
+            socket.emit('erro', 'Sala não encontrada!');
+            return;
+        }
+        sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
+        socket.join(codigo);
+        if (sala.bau.length > 0 || sala.estado === 'aguardando') {
+            io.to(codigo).emit('atualizarSala', sala);
+        }
+    });
+
     socket.on('iniciarPartida', (codigo) => {
         const sala = salas[codigo];
         if(sala && sala.jogadores.length >= 2) {
-            // Fase 1: Só o narrador joga
             sala.estado = 'escolha_narrador';
             io.to(codigo).emit('atualizarSala', sala);
         }
@@ -240,8 +260,6 @@ io.on('connection', (socket) => {
             jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
             sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
             sala.cartaNarradorUrl = cartaUrl;
-            
-            // Fase 2: O resto dos jogadores joga agora
             sala.estado = 'escolha_jogadores';
             io.to(codigo).emit('atualizarSala', sala);
             return;
@@ -254,7 +272,6 @@ io.on('connection', (socket) => {
             jogador.mao = jogador.mao.filter(c => c !== cartaUrl);
             sala.mesa.push({ jogadorId: socket.id, cartaUrl, votos: [] });
 
-            // Se todos jogaram, vai para votação e embaralha as cartas!
             if (sala.mesa.length === sala.jogadores.length) {
                 sala.estado = 'votacao';
                 sala.mesa = embaralharArray(sala.mesa);
@@ -268,22 +285,28 @@ io.on('connection', (socket) => {
         if(!sala || sala.estado !== 'votacao') return;
         
         const isNarrador = sala.jogadores[sala.narradorIndex].id === socket.id;
-        if (isNarrador) return; // Narrador não vota
+        if (isNarrador) return; 
 
         const cartaAlvo = sala.mesa.find(c => c.cartaUrl === cartaUrl);
         if (!cartaAlvo) return;
-        if (cartaAlvo.jogadorId === socket.id) return; // Não pode votar na própria
+        if (cartaAlvo.jogadorId === socket.id) return; 
 
         const jaVotou = sala.mesa.some(c => c.votos.includes(socket.id));
         if (jaVotou) return;
 
         cartaAlvo.votos.push(socket.id);
 
-        // Se todos os não-narradores votaram, calcula e vai para resultados
         const totalVotos = sala.mesa.reduce((acc, c) => acc + c.votos.length, 0);
         if (totalVotos === sala.jogadores.length - 1) {
             calcularPontosDixit(sala);
-            sala.estado = 'resultado';
+            
+            // Verifica se alguém atingiu o limite de pontos
+            const alguemGanhou = sala.jogadores.some(j => j.pontos >= sala.pontosVitoria);
+            if (alguemGanhou) {
+                sala.estado = 'fim_jogo';
+            } else {
+                sala.estado = 'resultado';
+            }
         }
         
         io.to(codigo).emit('atualizarSala', sala);
@@ -298,7 +321,6 @@ io.on('connection', (socket) => {
         sala.cartaNarradorUrl = null;
         sala.narradorIndex = (sala.narradorIndex + 1) % sala.jogadores.length;
 
-        // Distribui até 5 cartas novamente
         sala.jogadores.forEach(j => {
             while (j.mao.length < 5 && sala.bau.length > 0) {
                 j.mao.push(sala.bau.shift());
