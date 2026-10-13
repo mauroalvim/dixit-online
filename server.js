@@ -15,7 +15,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 const memoriaCartasGlobais = new Set();
 
-const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro (estilo Dixit). 
+const promptJuizIA = `Você é um curador de arte rigoroso para um jogo de tabuleiro estilo Dixit / Stella: Dixit Universe. 
 Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
 
 REGRAS DE REJEIÇÃO ABSOLUTA (Elimine imediatamente se tiver):
@@ -24,7 +24,7 @@ REGRAS DE REJEIÇÃO ABSOLUTA (Elimine imediatamente se tiver):
 3. PADRÕES: Rejeite texturas repetitivas ou letras.
 
 CRITÉRIOS DE APROVAÇÃO:
-- Aceite ilustrações, pinturas, aquarela, cenários surreais e arte fantasia.
+- Aceite ilustrações, pinturas, aquarela, cenários surreais, constelações e arte fantasia onírica (estilo Stella).
 
 Responda APENAS com o JSON. Exemplo: ["url1", "url2"]`;
 
@@ -37,7 +37,7 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// PROXY DO PINTEREST (Para evitar problemas de CORS/Hotlink)
+// PROXY UNIVERSAL DE IMAGENS
 // --------------------------------------------------------
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
@@ -46,8 +46,7 @@ app.get('/proxy', async (req, res) => {
         const response = await axios.get(targetUrl, {
             responseType: 'stream',
             headers: {
-                'Referer': 'https://br.pinterest.com/',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
         res.set('Cache-Control', 'public, max-age=31536000');
@@ -58,39 +57,29 @@ app.get('/proxy', async (req, res) => {
     }
 });
 
-async function buscarCartasPinterest() {
-    const pastasDisponiveis = [
-        "ligiaausten/dixit", "corujinhaliteraria/dixit", "jessicabraghiroli/dixit-cards",
-        "karenkristenn/cartas-dixit", "jojolyne/dixit", "renatabueno/dixit-cartas",
-        "marcelomourar/dixit", "nathaliabrag/dixit-art"
-    ];
-    const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 4);
+// --------------------------------------------------------
+// GERAÇÃO DAS 98 CARTAS DO REPOSITÓRIO GITHUB DO DIXIT
+// --------------------------------------------------------
+function obterCartasGitHubDixit() {
     let urls = [];
-    
-    for (let pasta of pastasSorteadas) {
-        try {
-            const urlOriginal = `https://br.pinterest.com/${pasta}.rss`;
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlOriginal)}`;
-            const response = await axios.get(proxyUrl, { timeout: 8000 });
-            if (!response.data.items) continue;
-            for (let item of response.data.items) {
-                const match = /<img src="([^"]+)"/.exec(item.description);
-                if (match) {
-                    let imgUrl = match[1].replace(/\/\d+x\//, '/736x/'); 
-                    if (!memoriaCartasGlobais.has(imgUrl)) urls.push(imgUrl);
-                }
-            }
-        } catch (e) {}
+    // O repositório tem de card_00001.jpg a card_00098.jpg
+    for (let i = 1; i <= 98; i++) {
+        let numeroFormatado = String(i).padStart(5, '0');
+        let url = `https://raw.githubusercontent.com/aarongaither/dixitOnline/master/assets/cards/card_${numeroFormatado}.jpg`;
+        urls.push(url);
     }
     return embaralharArray(urls);
 }
 
-async function buscarCartasMisturadasPixabay(quantidade = 5) {
+// --------------------------------------------------------
+// BUSCA NO PIXABAY COM TEMÁTICA STELLA / DIXIT UNIVERSE
+// --------------------------------------------------------
+async function buscarCartasStellaPixabay(quantidade = 10) {
     try {
-        const temas = ["surreal", "dream", "fantasy landscape", "whimsical", "concept art"];
-        const promessas = temas.map(async (tema) => {
-            const page = Math.floor(Math.random() * 10) + 1; 
-            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(tema + " painting")}&image_type=illustration&orientation=vertical&per_page=${quantidade}&page=${page}&safesearch=true`;
+        const temasStella = ["astral watercolor", "ethereal fantasy art", "constellation dreamscape", "surreal cosmic illustration", "whimsical starlight painting"];
+        const promessas = temasStella.map(async (tema) => {
+            const page = Math.floor(Math.random() * 5) + 1; 
+            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(tema)}&image_type=illustration&orientation=vertical&per_page=${quantidade}&page=${page}&safesearch=true`;
             try {
                 const res = await axios.get(url, { timeout: 5000 });
                 return res.data.hits.map(h => h.largeImageURL);
@@ -111,69 +100,57 @@ async function julgarCartas(urls) {
     } catch (e) { return []; }
 }
 
-async function preencherBauRapidoInicial(codigo) {
-    const sala = salas[codigo];
-    if (!sala) return;
-    sala.preenchendo = true;
-    try {
-        let urlsPinterest = await buscarCartasPinterest();
-        let urlsFinais = [];
-        
-        if (urlsPinterest.length > 0) {
-            let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
-            urlsFinais = aprovadas.length > 0 ? aprovadas : urlsPinterest.slice(0, 15);
-        } else {
-            let urlsPixabay = await buscarCartasMisturadasPixabay(15);
-            let aprovadasPixabay = await julgarCartas(urlsPixabay.slice(0, 40));
-            urlsFinais = aprovadasPixabay.length > 0 ? aprovadasPixabay : urlsPixabay.slice(0, 15);
-        }
-        
-        if (urlsFinais.length > 0) {
-            urlsFinais.forEach(url => {
-                memoriaCartasGlobais.add(url);
-                // GUARDA O URL LIMPO (sem proxy) no servidor
-                sala.bau.push(url);
-            });
-            sala.bau = embaralharArray(sala.bau);
-        }
-        io.to(codigo).emit('atualizarSala', sala);
-    } catch (err) {
-    } finally {
-        sala.preenchendo = false;
-        preencherBauLento(codigo);
-    }
-}
-
-async function preencherBauLento(codigo) {
+// --------------------------------------------------------
+// ALIMENTAÇÃO DO BAÚ DA SALA (GitHub + Stella via Juiz IA)
+// --------------------------------------------------------
+async function preencherBauSala(codigo) {
     const sala = salas[codigo];
     if (!sala || sala.preenchendo) return;
     sala.preenchendo = true;
+
     try {
-        while (sala.bau.length < 150) { 
-            let urlsPinterest = await buscarCartasPinterest();
-            let urlsAnalisar = urlsPinterest.length > 5 ? urlsPinterest.slice(0, 30) : [];
-            if (urlsAnalisar.length === 0) {
-                let urlsPixabay = await buscarCartasMisturadasPixabay(10);
-                if (urlsPixabay.length === 0) break;
-                urlsAnalisar = urlsPixabay.slice(0, 30);
-            }
-            let aprovadas = await julgarCartas(urlsAnalisar);
-            if (aprovadas.length > 0) {
-                aprovadas.forEach(url => {
-                    memoriaCartasGlobais.add(url);
-                    sala.bau.push(url);
+        // 1. Se o baú estiver vazio, carrega primeiro as cartas seguras do GitHub
+        if (sala.bau.length === 0) {
+            let cartasGitHub = obterCartasGitHubDixit();
+            // Passa as do GitHub pelo Juiz IA também para garantir padrão irrepreensível
+            let aprovadasGitHub = await julgarCartas(cartasGitHub.slice(0, 30));
+            
+            // Se a IA aprovar (ou como garantia caso queira agilizar), adiciona ao baú
+            let selecaoInicial = aprovadasGitHub.length > 0 ? aprovadasGitHub : cartasGitHub.slice(0, 30);
+            
+            selecaoInicial.forEach(url => {
+                memoriaCartasGlobais.add(url);
+                sala.bau.push(url);
+            });
+            sala.bau = embaralharArray(sala.bau);
+            io.to(codigo).emit('atualizarSala', sala);
+        }
+
+        // 2. Continuação em segundo plano: Busca expansões estilo Stella no Pixabay avaliadas pelo Juiz IA
+        while (sala.bau.length < 150) {
+            let urlsStella = await buscarCartasStellaPixabay(15);
+            if (urlsStella.length === 0) break;
+            
+            let aprovadasStella = await julgarCartas(urlsStella);
+            if (aprovadasStella.length > 0) {
+                aprovadasStella.forEach(url => {
+                    if (!memoriaCartasGlobais.has(url)) {
+                        memoriaCartasGlobais.add(url);
+                        sala.bau.push(url);
+                    }
                 });
                 sala.bau = embaralharArray(sala.bau);
             }
         }
     } catch (err) {
+        console.error("Erro ao preencher baú:", err);
     } finally {
         sala.preenchendo = false;
     }
 }
 
 // --------------------------------------------------------
-// LÓGICA E REGRAS DIXIT
+// REGRAS DE PONTUAÇÃO DIXIT
 // --------------------------------------------------------
 function calcularPontosDixit(sala) {
     const cartaNarrador = sala.mesa.find(c => c.cartaUrl === sala.cartaNarradorUrl);
@@ -204,17 +181,19 @@ function calcularPontosDixit(sala) {
     });
 }
 
+// --------------------------------------------------------
+// SOCKET.IO EVENTOS
+// --------------------------------------------------------
 io.on('connection', (socket) => {
     
     socket.on('verificarSala', (codigo) => {
         socket.emit('salaExiste', !!salas[codigo]);
     });
 
-    // CRIAÇÃO DE SALA COM CÓDIGO ALEATÓRIO CASO VAZIO
     socket.on('criarSala', ({ nome, codigo, pontosVitoria }) => {
         let codFinal = codigo;
         if (!codFinal) {
-            codFinal = Math.floor(1000 + Math.random() * 9000).toString(); // Gera 4 dígitos
+            codFinal = Math.floor(1000 + Math.random() * 9000).toString(); 
         }
         
         if (salas[codFinal]) {
@@ -223,17 +202,17 @@ io.on('connection', (socket) => {
         }
         
         salas[codFinal] = {
-            codigo: codFinal, // Guarda o código na sala
+            codigo: codFinal,
             jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', 
             preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30
         };
-        preencherBauRapidoInicial(codFinal); 
+        
+        preencherBauSala(codFinal); 
         
         const sala = salas[codFinal];
         sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
         socket.join(codFinal);
         
-        // Envia confirmação de criação para atualizar a interface (se gerou código novo)
         socket.emit('salaCriada', codFinal); 
         io.to(codFinal).emit('atualizarSala', sala);
     });
@@ -246,23 +225,18 @@ io.on('connection', (socket) => {
         }
         sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
         socket.join(codigo);
-        if (sala.bau.length > 0 || sala.estado === 'aguardando') {
-            io.to(codigo).emit('atualizarSala', sala);
-        }
+        io.to(codigo).emit('atualizarSala', sala);
     });
 
     socket.on('iniciarPartida', (codigo) => {
         const sala = salas[codigo];
         if(sala && sala.jogadores.length >= 2) {
             sala.estado = 'escolha_narrador';
-            
-            // Dá 5 cartas a cada jogador (se o baú tiver prontas)
             sala.jogadores.forEach(j => {
                 while (j.mao.length < 5 && sala.bau.length > 0) {
                     j.mao.push(sala.bau.shift());
                 }
             });
-            
             io.to(codigo).emit('atualizarSala', sala);
         }
     });
@@ -343,7 +317,7 @@ io.on('connection', (socket) => {
             }
         });
 
-        if(sala.bau.length < 50) preencherBauLento(codigo);
+        if(sala.bau.length < 50) preencherBauSala(codigo);
         io.to(codigo).emit('atualizarSala', sala);
     });
 
