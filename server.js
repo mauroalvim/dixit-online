@@ -18,14 +18,15 @@ const memoriaCartasGlobais = new Set();
 const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro (estilo Dixit). 
 Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
 
-REGRAS DE REJEIÇÃO (Elimine imediatamente se tiver alguma destas):
-1. REJEITE EXPRESSAMENTE QUALQUER ROSTO HUMANO com feições reais, mesmo que seja uma arte digital muito bem feita, pintura realista ou que tenha elementos de fantasia. Se parecer uma pessoa de verdade, rejeite.
-2. Fundos transparentes, brancos lisos, áreas de recorte de PNG ou imagens em formato de selo.
-3. Fotografias e paisagens do mundo real.
-4. Objetos aleatórios isolados flutuando sem nenhum cenário de fundo.
+REGRAS DE REJEIÇÃO ABSOLUTA (Elimine imediatamente):
+1. REJEITE QUALQUER IMAGEM QUE TENHA UM ROSTO HUMANO REALISTA. Mesmo que seja arte digital, se a pele, os olhos ou os traços parecerem fotografia, REJEITE.
+2. REJEITE paisagens fotográficas do mundo real.
+3. REJEITE fundos transparentes, brancos lisos, texturas planas ou imagens recortadas (PNG isolado).
+4. REJEITE imagens com texto legível ou marcas d'água.
 
 CRITÉRIOS DE APROVAÇÃO:
-- Cenas completas de fantasia, ilustrações abstratas, aquarela, cenários surreais e arte estilizada (estilo cartoon/livro infantil).
+- Aceite APENAS pinturas clássicas, ilustrações surreais, cenários de fantasia, aquarela, ou arte estilo "livro de contos".
+- A imagem deve preencher todo o quadro e parecer uma obra de arte pronta para contar uma história imaginativa.
 
 Responda APENAS com o JSON. Exemplo: ["url1", "url2"]`;
 
@@ -38,7 +39,7 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// MOTOR DO PINTEREST (A FONTE PRINCIPAL E PRIVILEGIADA)
+// MOTOR DO PINTEREST (Disfarçado de Navegador Real)
 // --------------------------------------------------------
 async function buscarCartasPinterest() {
     const pastasDisponiveis = [
@@ -52,20 +53,30 @@ async function buscarCartasPinterest() {
         "nathaliabrag/dixit-art"
     ];
     
-    // Aumentamos para puxar de 5 pastas diferentes de uma vez
-    const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 5);
+    // Sorteia 4 pastas para garantir variedade
+    const pastasSorteadas = embaralharArray([...pastasDisponiveis]).slice(0, 4);
     
     let urls = [];
     for (let pasta of pastasSorteadas) {
         try {
             const url = `https://br.pinterest.com/${pasta}.rss`;
-            const response = await axios.get(url, { timeout: 6000 });
+            
+            // O SEGREDO 10.56: Headers que enganam a proteção do Pinterest
+            const response = await axios.get(url, { 
+                timeout: 8000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+                }
+            });
             const xml = response.data;
             
             const regex = /<img src="([^"]+)"/g;
             let match;
             while ((match = regex.exec(xml)) !== null) {
                 let imgUrl = match[1];
+                // Busca a melhor resolução possível do Pinterest
                 imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); 
                 
                 if (!memoriaCartasGlobais.has(imgUrl)) {
@@ -77,41 +88,6 @@ async function buscarCartasPinterest() {
         }
     }
     return embaralharArray(urls);
-}
-
-// --------------------------------------------------------
-// MOTOR DO PIXABAY (APENAS ESTEPE / BACKUP)
-// --------------------------------------------------------
-const temasBusca = [
-    "surreal", "dream", "fantasy landscape", "whimsical", "fairytale", 
-    "mythology", "steampunk", "space art", "magical realism", 
-    "concept art", "ethereal", "abstract painting", "storybook illustration", 
-    "dreamscape", "mystical forest"
-];
-
-async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
-    try {
-        const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); 
-        const promessas = temasSorteados.map(async (tema) => {
-            const randomPage = Math.floor(Math.random() * 15) + 1; 
-            const query = encodeURIComponent(`${tema} -transparent -isolated -cutout -png -vector -white`);
-            const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
-            
-            try {
-                const res = await axios.get(url, { timeout: 5000 });
-                return res.data.hits.map(hit => hit.largeImageURL);
-            } catch (e) {
-                return [];
-            }
-        });
-
-        const arraysDeUrls = await Promise.all(promessas);
-        const todasUrls = arraysDeUrls.flat();
-        const urlsIneditas = todasUrls.filter(url => !memoriaCartasGlobais.has(url));
-        return embaralharArray(urlsIneditas);
-    } catch (error) {
-        return [];
-    }
 }
 
 // --------------------------------------------------------
@@ -133,7 +109,7 @@ async function julgarCartas(urls) {
 }
 
 // --------------------------------------------------------
-// GERENCIAMENTO DO BAÚ (FOCO TOTAL NO PINTEREST)
+// GERENCIAMENTO DO BAÚ (Focado 100% no Pinterest)
 // --------------------------------------------------------
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
@@ -141,22 +117,27 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        console.log(`[SALA ${codigo}] Puxando lotes do Pinterest (Prioridade Máxima)...`);
+        console.log(`[SALA ${codigo}] Puxando lotes do PINTEREST (Com disfarce de navegador)...`);
         
         // Exclusividade do Pinterest na primeira rodada
         let urlsPinterest = await buscarCartasPinterest();
         
-        // Passa até 40 cartas pro Juiz IA analisar
-        let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
-        
-        if (aprovadas.length > 0) {
-            aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-            sala.bau.push(...embaralharArray(aprovadas));
+        if (urlsPinterest.length > 0) {
+            // Passa até 40 cartas pro Juiz IA analisar
+            let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
+            
+            if (aprovadas.length > 0) {
+                aprovadas.forEach(url => memoriaCartasGlobais.add(url));
+                sala.bau.push(...embaralharArray(aprovadas));
+                console.log(`[SALA ${codigo}] Sucesso! ${aprovadas.length} cartas do Pinterest aprovadas.`);
+            } else {
+                console.log(`[AVISO] Juiz rejeitou tudo na Sala ${codigo}. Aplicando fallback de segurança.`);
+                const fallbackUrls = urlsPinterest.slice(0, 10);
+                fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
+                sala.bau.push(...fallbackUrls);
+            }
         } else {
-            console.log(`[AVISO] Juiz rejeitou tudo na Sala ${codigo}. Aplicando fallback.`);
-            const fallbackUrls = urlsPinterest.slice(0, 10);
-            fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
-            sala.bau.push(...fallbackUrls);
+            console.error(`[ERRO CRÍTICO] O Pinterest não devolveu imagens. Verifique a conexão do Render.`);
         }
         
         io.to(codigo).emit('atualizarSala', sala);
@@ -178,24 +159,12 @@ async function preencherBauLento(codigo) {
         while (sala.bau.length < 150) { 
             let urlsPinterest = await buscarCartasPinterest();
             
-            // Se o Pinterest ainda tiver imagens novas (mais que 5)
-            if (urlsPinterest.length > 5) {
-                let aprovadas = await julgarCartas(urlsPinterest.slice(0, 30));
-                if (aprovadas.length > 0) {
-                    aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-                    sala.bau.push(...embaralharArray(aprovadas));
-                }
-            } else {
-                // Se as cartas inéditas do Pinterest estiverem acabando, apela pro Pixabay
-                console.log(`[SALA ${codigo}] Pinterest esgotando. Buscando Pixabay...`);
-                let urlsPixabay = await buscarCartasMisturadasPixabay(10);
-                if (urlsPixabay.length === 0) break;
-                
-                let aprovadas = await julgarCartas(urlsPixabay.slice(0, 30));
-                if (aprovadas.length > 0) {
-                    aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-                    sala.bau.push(...embaralharArray(aprovadas));
-                }
+            if (urlsPinterest.length === 0) break;
+            
+            let aprovadas = await julgarCartas(urlsPinterest.slice(0, 30));
+            if (aprovadas.length > 0) {
+                aprovadas.forEach(url => memoriaCartasGlobais.add(url));
+                sala.bau.push(...embaralharArray(aprovadas));
             }
             
             if (sala.estado === 'jogando') {
