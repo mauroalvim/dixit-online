@@ -37,7 +37,7 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// PROXY DO PINTEREST
+// PROXY DO PINTEREST (Para evitar problemas de CORS/Hotlink)
 // --------------------------------------------------------
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url;
@@ -131,7 +131,8 @@ async function preencherBauRapidoInicial(codigo) {
         if (urlsFinais.length > 0) {
             urlsFinais.forEach(url => {
                 memoriaCartasGlobais.add(url);
-                sala.bau.push(`/proxy?url=${encodeURIComponent(url)}`);
+                // GUARDA O URL LIMPO (sem proxy) no servidor
+                sala.bau.push(url);
             });
             sala.bau = embaralharArray(sala.bau);
         }
@@ -160,7 +161,7 @@ async function preencherBauLento(codigo) {
             if (aprovadas.length > 0) {
                 aprovadas.forEach(url => {
                     memoriaCartasGlobais.add(url);
-                    sala.bau.push(`/proxy?url=${encodeURIComponent(url)}`);
+                    sala.bau.push(url);
                 });
                 sala.bau = embaralharArray(sala.bau);
             }
@@ -205,30 +206,38 @@ function calcularPontosDixit(sala) {
 
 io.on('connection', (socket) => {
     
-    // VERIFICA SE A SALA EXISTE ANTES DO JOGADOR METER O NOME
     socket.on('verificarSala', (codigo) => {
         socket.emit('salaExiste', !!salas[codigo]);
     });
 
-    // O HOST CRIA A SALA COM O TOTAL DE PONTOS
+    // CRIAÇÃO DE SALA COM CÓDIGO ALEATÓRIO CASO VAZIO
     socket.on('criarSala', ({ nome, codigo, pontosVitoria }) => {
-        if (salas[codigo]) {
+        let codFinal = codigo;
+        if (!codFinal) {
+            codFinal = Math.floor(1000 + Math.random() * 9000).toString(); // Gera 4 dígitos
+        }
+        
+        if (salas[codFinal]) {
             socket.emit('erro', 'Esta sala já existe! Tente outro código.');
             return;
         }
-        salas[codigo] = {
+        
+        salas[codFinal] = {
+            codigo: codFinal, // Guarda o código na sala
             jogadores: [], bau: [], mesa: [], narradorIndex: 0, estado: 'aguardando', 
             preenchendo: false, cartaNarradorUrl: null, pontosVitoria: parseInt(pontosVitoria) || 30
         };
-        preencherBauRapidoInicial(codigo); 
+        preencherBauRapidoInicial(codFinal); 
         
-        const sala = salas[codigo];
+        const sala = salas[codFinal];
         sala.jogadores.push({ id: socket.id, nome, mao: [], pontos: 0 });
-        socket.join(codigo);
-        io.to(codigo).emit('atualizarSala', sala);
+        socket.join(codFinal);
+        
+        // Envia confirmação de criação para atualizar a interface (se gerou código novo)
+        socket.emit('salaCriada', codFinal); 
+        io.to(codFinal).emit('atualizarSala', sala);
     });
 
-    // O JOGADOR ENTRA NA SALA JÁ EXISTENTE
     socket.on('entrarSala', ({ nome, codigo }) => {
         const sala = salas[codigo];
         if (!sala) {
@@ -246,6 +255,14 @@ io.on('connection', (socket) => {
         const sala = salas[codigo];
         if(sala && sala.jogadores.length >= 2) {
             sala.estado = 'escolha_narrador';
+            
+            // Dá 5 cartas a cada jogador (se o baú tiver prontas)
+            sala.jogadores.forEach(j => {
+                while (j.mao.length < 5 && sala.bau.length > 0) {
+                    j.mao.push(sala.bau.shift());
+                }
+            });
+            
             io.to(codigo).emit('atualizarSala', sala);
         }
     });
@@ -300,7 +317,6 @@ io.on('connection', (socket) => {
         if (totalVotos === sala.jogadores.length - 1) {
             calcularPontosDixit(sala);
             
-            // Verifica se alguém atingiu o limite de pontos
             const alguemGanhou = sala.jogadores.some(j => j.pontos >= sala.pontosVitoria);
             if (alguemGanhou) {
                 sala.estado = 'fim_jogo';
