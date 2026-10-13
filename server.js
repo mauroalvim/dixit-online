@@ -37,7 +37,7 @@ function embaralharArray(array) {
 }
 
 // --------------------------------------------------------
-// MOTOR DO PINTEREST (A SUA IDEIA DO INTERMEDIÁRIO)
+// MOTOR DO PINTEREST (Novo Intermediário Especializado)
 // --------------------------------------------------------
 async function buscarCartasPinterest() {
     const pastasDisponiveis = [
@@ -58,34 +58,37 @@ async function buscarCartasPinterest() {
         try {
             const urlOriginal = `https://br.pinterest.com/${pasta}.rss`;
             
-            // O TRUQUE: Usar o AllOrigins para enganar o bloqueio do Pinterest
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlOriginal)}`;
+            // O NOVO TRUQUE: Usar a API rss2json (estável e não é bloqueada pelo Pinterest)
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlOriginal)}`;
             
             const response = await axios.get(proxyUrl, { timeout: 8000 });
-            // O AllOrigins retorna o conteúdo dentro de response.data.contents
-            const xml = response.data.contents; 
+            const items = response.data.items; 
             
-            if (!xml) continue;
+            if (!items) continue;
 
-            const regex = /<img src="([^"]+)"/g;
-            let match;
-            while ((match = regex.exec(xml)) !== null) {
-                let imgUrl = match[1];
-                imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); 
+            for (let item of items) {
+                // O rss2json devolve as imagens dentro da tag 'description'
+                const regex = /<img src="([^"]+)"/;
+                const match = regex.exec(item.description);
                 
-                if (!memoriaCartasGlobais.has(imgUrl)) {
-                    urls.push(imgUrl);
+                if (match) {
+                    let imgUrl = match[1];
+                    imgUrl = imgUrl.replace(/\/\d+x\//, '/736x/'); 
+                    
+                    if (!memoriaCartasGlobais.has(imgUrl)) {
+                        urls.push(imgUrl);
+                    }
                 }
             }
         } catch (e) {
-            console.error(`Erro ao buscar Pinterest via Proxy (${pasta}):`, e.message);
+            console.error(`Erro ao buscar Pinterest (${pasta}):`, e.message);
         }
     }
     return embaralharArray(urls);
 }
 
 // --------------------------------------------------------
-// MOTOR DO PIXABAY (APENAS PLANO B)
+// MOTOR DO PIXABAY (Plano B Corrigido)
 // --------------------------------------------------------
 const temasBusca = [
     "surreal", "dream", "fantasy landscape", "whimsical", "fairytale", 
@@ -98,7 +101,8 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
         const temasSorteados = embaralharArray([...temasBusca]).slice(0, 5); 
         const promessas = temasSorteados.map(async (tema) => {
             const randomPage = Math.floor(Math.random() * 15) + 1; 
-            const query = encodeURIComponent(`${tema} -transparent -isolated -cutout -png -vector -white`);
+            // Palavras negativas removidas para não bloquear a API
+            const query = encodeURIComponent(`${tema} painting`);
             const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
             
             try {
@@ -119,7 +123,7 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
 }
 
 // --------------------------------------------------------
-// JUIZ IA (SEM BRECHAS)
+// JUIZ IA
 // --------------------------------------------------------
 async function julgarCartas(urls) {
     if(!urls || urls.length === 0) return [];
@@ -130,17 +134,15 @@ async function julgarCartas(urls) {
         const jsonMatch = text.match(/\[.*\]/s);
         
         if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        // BUG CORRIGIDO AQUI: Se a IA falhar na formatação, retorna VAZIO e não deixa o lixo passar.
         return []; 
     } catch (error) {
         console.error("Erro no Juiz IA:", error.message);
-        // BUG CORRIGIDO AQUI: Retorna VAZIO.
         return []; 
     }
 }
 
 // --------------------------------------------------------
-// GERENCIAMENTO DO BAÚ 
+// GERENCIAMENTO DO BAÚ (SISTEMA ANTI-BLOQUEIO)
 // --------------------------------------------------------
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
@@ -148,33 +150,30 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        console.log(`[SALA ${codigo}] Tentando Pinterest via AllOrigins...`);
+        console.log(`[SALA ${codigo}] Tentando Pinterest via rss2json...`);
         let urlsPinterest = await buscarCartasPinterest();
-        let aprovadas = [];
+        let urlsFinal = [];
         
         if (urlsPinterest.length > 0) {
-            aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
-        }
-        
-        if (aprovadas.length > 0) {
-            aprovadas.forEach(url => memoriaCartasGlobais.add(url));
-            sala.bau.push(...aprovadas);
-            console.log(`[SALA ${codigo}] SUCESSO! Cartas do Pinterest carregadas.`);
+            let aprovadas = await julgarCartas(urlsPinterest.slice(0, 40));
+            // Garantia Anti-Bloqueio: Se a IA rejeitar tudo, injeta 10 forçadas para o jogo avançar
+            urlsFinal = aprovadas.length > 0 ? aprovadas : urlsPinterest.slice(0, 10);
         } else {
-            console.log(`[SALA ${codigo}] Pinterest vazio ou barrado. Acionando Pixabay sob IA severa...`);
+            console.log(`[SALA ${codigo}] Pinterest falhou. Acionando Pixabay...`);
             let urlsPixabay = await buscarCartasMisturadasPixabay(15);
             let aprovadasPixabay = await julgarCartas(urlsPixabay.slice(0, 40));
-            
-            if (aprovadasPixabay.length > 0) {
-                aprovadasPixabay.forEach(url => memoriaCartasGlobais.add(url));
-                sala.bau.push(...aprovadasPixabay);
-            }
+            // Garantia Anti-Bloqueio para o Pixabay
+            urlsFinal = aprovadasPixabay.length > 0 ? aprovadasPixabay : urlsPixabay.slice(0, 10);
         }
         
-        // Emite a atualização para a sala assim que tiver cartas
-        if (sala.bau.length > 0) {
-            io.to(codigo).emit('atualizarSala', sala);
+        if (urlsFinal.length > 0) {
+            urlsFinal.forEach(url => memoriaCartasGlobais.add(url));
+            sala.bau.push(...embaralharArray(urlsFinal));
         }
+        
+        // CORREÇÃO CRÍTICA: Emite SEMPRE a ordem para atualizar a sala, mesmo que algo falhe,
+        // para que o cliente não fique preso no loading infinito.
+        io.to(codigo).emit('atualizarSala', sala);
 
     } catch (err) {
         console.error("Erro no preenchimento inicial:", err);
@@ -236,8 +235,9 @@ io.on('connection', (socket) => {
         sala.jogadores.push(jogador);
         
         socket.join(codigo);
-        // Só emite se já tiver cartas, caso contrário a função de preenchimento avisa
-        if (sala.bau.length > 0) {
+        // Só atualiza o jogador no lobby se já existirem cartas prontas, 
+        // caso contrário, o preencherBauRapidoInicial encarrega-se disso.
+        if (sala.bau.length > 0 || sala.estado === 'aguardando') {
             io.to(codigo).emit('atualizarSala', sala);
         }
     });
