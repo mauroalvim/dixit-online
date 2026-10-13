@@ -10,8 +10,8 @@
         :root {
             --primary: #10b981;
             --primary-hover: #059669;
-            --panel-bg: #151728; /* Fundo escuro e elegante do painel */
-            --input-bg: #0b0c14; /* Fundo mais escuro para os inputs */
+            --panel-bg: #151728; 
+            --input-bg: #0b0c14; 
             --text-main: #ffffff;
             --text-muted: #94a3b8;
             --gold-glow: 0 0 20px rgba(250, 204, 21, 0.8);
@@ -19,28 +19,18 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* Fundo Vibrante e Imersivo */
+        /* Fundo Seguro: Cor sólida + Imagem do Unsplash que não bloqueia */
         body { 
+            background-color: #0f172a;
+            background-image: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=2000&q=80');
+            background-size: cover;
+            background-position: center;
             color: var(--text-main); 
             height: 100vh; 
             overflow: hidden; 
             display: flex; 
             flex-direction: column;
-            /* Usando uma imagem bem colorida simulando um mosaico de cartas */
-            background-image: url('https://cdn.pixabay.com/photo/2022/11/07/19/12/fantasy-7576976_1280.jpg');
-            background-size: cover;
-            background-position: center;
             position: relative;
-        }
-
-        /* Desfoque suave que mantém as cores vivas, sem ficar cinza */
-        .bg-blur {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            background: rgba(15, 23, 42, 0.4); /* Leve escurecimento azulado apenas para dar contraste */
-            z-index: -1;
         }
         
         .screen {
@@ -48,65 +38,47 @@
         }
         .screen.active { display: flex; }
 
-        /* Título Principal */
         .main-title {
-            text-align: center;
-            font-size: 38px;
-            font-weight: 800;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            text-align: center; font-size: 38px; font-weight: 800;
+            margin-top: 10px; margin-bottom: 5px; text-shadow: 0 4px 15px rgba(0,0,0,0.6);
             letter-spacing: 1px;
         }
 
         .title-stars {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 20px;
+            text-align: center; font-size: 24px; margin-bottom: 20px;
             text-shadow: 0 2px 10px rgba(255, 215, 0, 0.5);
         }
 
-        /* Painel Escuro (Design Restaurado) */
         .glass-panel {
             background: var(--panel-bg);
-            border-radius: 24px;
-            padding: 30px 25px;
+            border-radius: 24px; padding: 30px 25px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto auto auto;
-            display: flex;
-            flex-direction: column;
+            width: 100%; max-width: 400px;
+            margin: 0 auto auto auto; display: flex; flex-direction: column;
         }
 
+        .login-subpanel { display: none; flex-direction: column; }
+        .login-subpanel.active { display: flex; }
+
         .panel-header {
-            color: var(--primary);
-            font-size: 22px;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            color: var(--primary); font-size: 22px; font-weight: 800;
+            text-align: center; margin-bottom: 10px; display: flex;
+            align-items: center; justify-content: center; gap: 10px;
         }
 
         .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
 
-        /* Inputs Escuros */
         input {
             width: 100%; padding: 16px; border-radius: 14px; 
             border: 1px solid rgba(255, 255, 255, 0.02);
             background: var(--input-bg); color: white; 
-            margin-bottom: 15px; font-size: 15px;
-            outline: none; transition: 0.3s;
+            margin-bottom: 15px; font-size: 15px; outline: none; transition: 0.3s;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
         }
         input:focus { border-color: var(--primary); }
         input::placeholder { color: #475569; }
 
-        /* Botão Verde Vibrante */
         button {
             width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s;
@@ -117,86 +89,92 @@
         
         .btn-secondary { background: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
         .btn-secondary:hover { background: #2563eb; }
+        
+        .btn-link { background: transparent; color: var(--text-muted); box-shadow: none; font-weight: 600; padding: 5px; }
+        .btn-link:hover { background: transparent; color: white; transform: none; text-decoration: underline; }
 
-        /* Rodapé do Painel (Decoração) */
         .panel-footer {
-            text-align: center;
-            color: #facc15;
-            font-size: 14px;
-            font-weight: 600;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            margin-top: 10px;
+            text-align: center; color: #facc15; font-size: 14px; font-weight: 600;
+            padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 10px; cursor: pointer;
         }
+        .panel-footer:hover { color: #fde047; }
 
-        /* Grid de Cartas com Scroll Horizontal */
+        /* Estilos do Jogo em si */
+        h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .cards-container {
             display: flex; gap: 15px; overflow-x: auto; padding: 20px 0;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
             flex-grow: 1; align-items: center;
         }
         .cards-container::-webkit-scrollbar { display: none; }
-        
         .carta {
             flex: 0 0 75%; max-width: 320px; height: 60vh; border-radius: 16px;
-            scroll-snap-align: center; position: relative;
-            background-size: cover; background-position: center;
+            scroll-snap-align: center; position: relative; background-size: cover; background-position: center;
             border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            transition: transform 0.3s ease;
         }
-        
         .carta-narrador { border: 4px solid #facc15; box-shadow: var(--gold-glow); }
-        
         .carta-info {
             position: absolute; bottom: 0; width: 100%; background: rgba(11, 12, 20, 0.9);
-            padding: 12px; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;
-            text-align: center;
+            padding: 12px; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; text-align: center;
         }
         .dono-texto { font-weight: 800; color: #38bdf8; font-size: 15px; }
         .dono-texto.dono-narrador { color: #facc15; }
         .votos-texto { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-
         .ranking-list {
             background: var(--input-bg); border-radius: 14px; padding: 15px;
-            width: 100%; max-height: 250px; overflow-y: auto;
-            margin-bottom: 15px;
+            width: 100%; max-height: 250px; overflow-y: auto; margin-bottom: 15px;
         }
         .ranking-item {
             display: flex; justify-content: space-between; padding: 12px; 
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 16px; font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 16px; font-weight: 600;
         }
         .ranking-item:last-child { border-bottom: none; }
-
         .versao-app {
-            position: absolute; bottom: 10px; width: 100%;
-            text-align: center; color: rgba(255, 255, 255, 0.3);
-            font-size: 12px; pointer-events: none; z-index: 1000;
+            position: absolute; bottom: 10px; width: 100%; text-align: center; 
+            color: rgba(255, 255, 255, 0.3); font-size: 12px; pointer-events: none; z-index: 1000;
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-blur"></div>
-
-    <!-- ECRÃ DE LOGIN (Restaurado com o Design Escuro e Elegante) -->
+    <!-- ECRÃ DE LOGIN (Com abas dinâmicas Host/Player) -->
     <div id="login-screen" class="screen active">
         <h1 class="main-title">Imagination</h1>
         <div class="title-stars">✨</div>
         
         <div class="glass-panel">
-            <div class="panel-header">🎮 Entrar na Partida</div>
-            <div class="subtitle">Digite seu nome e o código da Sala.</div>
             
-            <input type="text" id="nome-input" placeholder="Seu Nickname">
-            <input type="number" id="sala-input" placeholder="Código da Sala (Ex: 1234)">
-            
-            <button onclick="entrarSala()">Avançar</button>
-            
-            <div class="panel-footer">
-                👑 Criar uma nova sala? <br> Basta inventar um código! ▼
+            <!-- PAINEL 1: Jogador só insere a Sala -->
+            <div id="painel-player-codigo" class="login-subpanel active">
+                <div class="panel-header">🎮 Entrar na Partida</div>
+                <div class="subtitle">Digite o código fornecido pelo Host.</div>
+                <input type="number" id="player-sala" placeholder="Código da Sala (Ex: 1234)">
+                <button onclick="verificarSala()">Avançar</button>
+                <div class="panel-footer" onclick="mostrarPainel('painel-host')">
+                    👑 Criar uma nova sala?<br>Clique aqui ▼
+                </div>
             </div>
+
+            <!-- PAINEL 2: Jogador insere o Nome (depois de validar a sala) -->
+            <div id="painel-player-nome" class="login-subpanel">
+                <div class="panel-header">👤 Quase lá!</div>
+                <div class="subtitle">Como quer ser chamado nesta partida?</div>
+                <input type="text" id="player-nome" placeholder="Seu Nickname">
+                <button onclick="entrarComoJogador()">Entrar na Sala</button>
+                <button class="btn-link" onclick="mostrarPainel('painel-player-codigo')">Voltar</button>
+            </div>
+
+            <!-- PAINEL 3: Host cria a sala -->
+            <div id="painel-host" class="login-subpanel">
+                <div class="panel-header">👑 Nova Sala</div>
+                <div class="subtitle">Configure a sua partida.</div>
+                <input type="text" id="host-nome" placeholder="Seu Nickname">
+                <input type="number" id="host-sala" placeholder="Invente um Código (Ex: 1234)">
+                <input type="number" id="host-pontos" placeholder="Pontos para Vencer (Ex: 30)">
+                <button class="btn-secondary" onclick="criarSalaHost()">Criar Sala</button>
+                <button class="btn-link" onclick="mostrarPainel('painel-player-codigo')">Cancelar</button>
+            </div>
+
         </div>
     </div>
 
@@ -206,9 +184,7 @@
         <div class="glass-panel" style="margin-top: 20px;">
             <div class="panel-header">Jogadores</div>
             <div class="subtitle" id="lobby-status">Aguardando mais pessoas...</div>
-            
             <div class="ranking-list" id="jogadores-list"></div>
-            
             <button id="btn-iniciar" style="display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
         </div>
     </div>
@@ -235,7 +211,7 @@
 
     <!-- ECRÃ DE RESULTADOS DA RONDA -->
     <div id="results-screen" class="screen">
-        <h2 style="color: #facc15; margin-top: 10px; text-shadow: 0 0 10px rgba(250,204,21,0.5);">Resultados da Ronda</h2>
+        <h2 style="color: #facc15; margin-top: 10px; text-shadow: 0 0 10px rgba(250,204,21,0.5);">Resultados</h2>
         <div class="subtitle" style="color: white; font-weight: 600;">A carta dourada era do Narrador!</div>
         <div class="cards-container" id="results-container"></div>
         <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
@@ -243,42 +219,79 @@
         </div>
     </div>
 
-    <!-- ECRÃ DE RANKING FINAL -->
+    <!-- ECRÃ DE RANKING E FIM DE JOGO -->
     <div id="ranking-screen" class="screen">
-        <h1 class="main-title" style="font-size: 28px;">Ranking Atual</h1>
+        <h1 class="main-title" id="titulo-ranking" style="font-size: 28px;">Ranking Atual</h1>
         <div class="glass-panel" style="margin-top: 20px;">
             <div class="ranking-list" id="ranking-container" style="max-height: 400px;"></div>
-            <button onclick="proximaRodada()" style="margin-bottom: 0;">Próxima Rodada</button>
+            <button id="btn-proxima-rodada" onclick="proximaRodada()" style="margin-bottom: 0;">Próxima Rodada</button>
         </div>
     </div>
 
-    <div class="versao-app">Versão 10.64</div>
+    <div class="versao-app">Versão 10.65</div>
 
     <script>
         const socket = io();
         let minhaSala = null;
         let meuId = null;
         let cartaSelecionadaVisivel = null; 
+        let salaDesejada = null;
 
         socket.on('connect', () => { meuId = socket.id; });
 
+        socket.on('erro', (msg) => { alert(msg); });
+
+        // CONTROLO DE ECRÃS E PAINÉIS DE LOGIN
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
-        function entrarSala() {
-            const nome = document.getElementById('nome-input').value.trim();
-            const codigo = document.getElementById('sala-input').value.trim();
-            if(nome && codigo) socket.emit('entrarSala', { nome, codigo });
+        function mostrarPainel(id) {
+            document.querySelectorAll('.login-subpanel').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // FLUXO DO JOGADOR
+        function verificarSala() {
+            const codigo = document.getElementById('player-sala').value.trim();
+            if(!codigo) return alert("Digite o código da sala!");
+            salaDesejada = codigo;
+            socket.emit('verificarSala', codigo);
+        }
+
+        socket.on('salaExiste', (existe) => {
+            if(existe) {
+                mostrarPainel('painel-player-nome');
+            } else {
+                alert("Sala não encontrada! Verifique o código ou crie uma nova sala.");
+            }
+        });
+
+        function entrarComoJogador() {
+            const nome = document.getElementById('player-nome').value.trim();
+            if(nome && salaDesejada) {
+                socket.emit('entrarSala', { nome, codigo: salaDesejada });
+            }
+        }
+
+        // FLUXO DO HOST
+        function criarSalaHost() {
+            const nome = document.getElementById('host-nome').value.trim();
+            const codigo = document.getElementById('host-sala').value.trim();
+            const pontos = document.getElementById('host-pontos').value.trim();
+            if(!nome || !codigo || !pontos) return alert("Preencha todos os campos!");
+            socket.emit('criarSala', { nome, codigo, pontosVitoria: pontos });
         }
 
         function iniciarPartida() {
-            if(minhaSala) socket.emit('iniciarPartida', document.getElementById('sala-input').value);
+            if(minhaSala) socket.emit('iniciarPartida', minhaSala.codigo || document.getElementById('host-sala').value || document.getElementById('player-sala').value);
         }
 
         function proximaRodada() {
-            socket.emit('proximaRodada', document.getElementById('sala-input').value);
+            // Usa a variável global minhaSala para aceder ao código da sala atual
+            const cod = document.getElementById('host-sala').value || document.getElementById('player-sala').value;
+            socket.emit('proximaRodada', cod);
         }
 
         function verRanking() {
@@ -318,7 +331,7 @@
 
         socket.on('atualizarSala', (sala) => {
             minhaSala = sala;
-            const codigo = document.getElementById('sala-input').value;
+            const codigo = document.getElementById('host-sala').value || document.getElementById('player-sala').value;
             const eu = sala.jogadores.find(j => j.id === meuId);
             const isNarrador = sala.jogadores[sala.narradorIndex].id === meuId;
 
@@ -341,7 +354,7 @@
                     document.getElementById('lobby-status').innerText = "A carregar cartas...";
                     btnIniciar.style.display = 'none';
                 } else {
-                    document.getElementById('lobby-status').innerText = "Aguardando mais jogadores...";
+                    document.getElementById('lobby-status').innerText = `Alvo: ${sala.pontosVitoria} pts. Aguardando jogadores...`;
                     btnIniciar.style.display = 'none';
                 }
             }
@@ -411,7 +424,7 @@
                 }
             }
 
-            if (sala.estado === 'resultado') {
+            if (sala.estado === 'resultado' || sala.estado === 'fim_jogo') {
                 mostrarTela('results-screen');
                 const container = document.getElementById('results-container');
                 container.innerHTML = '';
@@ -446,6 +459,16 @@
                     rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span style="color: var(--primary);">${j.pontos} pts</span></div>`;
                 });
                 document.getElementById('ranking-container').innerHTML = rankingHtml;
+
+                if (sala.estado === 'fim_jogo') {
+                    document.getElementById('titulo-ranking').innerText = "🎉 FIM DE JOGO! 🎉";
+                    document.getElementById('titulo-ranking').style.color = "#facc15";
+                    document.getElementById('btn-proxima-rodada').style.display = "none";
+                } else {
+                    document.getElementById('titulo-ranking').innerText = "Ranking Atual";
+                    document.getElementById('titulo-ranking').style.color = "#ffffff";
+                    document.getElementById('btn-proxima-rodada').style.display = "block";
+                }
             }
         });
 
