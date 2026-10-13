@@ -15,18 +15,18 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const salas = {};
 const memoriaCartasGlobais = new Set();
 
-const promptJuizIA = `Você é um curador de arte extremamente rigoroso para um jogo de tabuleiro estilo Dixit. 
+const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro estilo Dixit. 
 Sua tarefa é analisar as URLs de imagens fornecidas e REJEITAR sumariamente qualquer uma que viole as regras abaixo.
 
-TOLERÂNCIA ZERO:
-- REJEITE qualquer imagem que pareça uma fotografia do mundo real ou fotorrealismo.
-- REJEITE imagens com fundo branco liso, fundo preto liso ou áreas transparentes.
-- REJEITE objetos isolados flutuando sem cenário (ex: uma maçã solta, um animal sem chão).
-- REJEITE texturas planas, papéis de parede abstratos sem forma definida, fractais ou padrões repetitivos.
+REGRAS DE REJEIÇÃO:
+1. REJEITE imagens que pareçam fotografias do mundo real.
+2. REJEITE fundos puramente brancos, pretos, ou transparentes. O fundo da imagem precisa ter alguma arte (céu, cenário, cores misturadas).
+3. REJEITE rostos humanos com traços realistas (ilustrações cartunescas ou rostos de fantasia exagerados estão liberados).
+4. REJEITE imagens com objetos isolados flutuando sem nenhum contexto ou cenário de fundo.
 
-CRITÉRIO DE APROVAÇÃO ESTRITO:
-- APROVE APENAS ilustrações estilizadas, pinturas oníricas ou artes digitais surreais que formem uma CENA COMPLETA com profundidade e contexto (exemplo: uma floresta mística, uma cidade flutuante, um personagem em um cenário).
-- A imagem deve parecer uma obra de arte narrativa, pronta para inspirar uma história.
+CRITÉRIO DE APROVAÇÃO:
+- APROVE pinturas, ilustrações, cenários surreais, oníricos, de fantasia ou abstratos.
+- Se a imagem for minimamente utilizável e não violar as regras acima de forma flagrante, APROVE.
 
 Retorne APENAS um array JSON contendo as URLs aprovadas. Exemplo: ["url1", "url2"]`;
 
@@ -64,9 +64,7 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
         const temasSorteados = embaralharArray([...temasBusca]).slice(0, 10); 
         const promessas = temasSorteados.map(async (tema) => {
             const randomPage = Math.floor(Math.random() * 50) + 1; 
-            // Focando em arte e excluindo termos indesejados
             const query = encodeURIComponent(`${tema} art painting illustration -photo -isolated -transparent -texture`);
-            // Mudei image_type para 'photo' para pegar cenas completas, mas a query foca em ilustrações
             const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=photo&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
             
             try {
@@ -99,27 +97,38 @@ async function julgarCartas(urls) {
         const jsonMatch = text.match(/\[.*\]/s);
         
         if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        return urls.slice(0, Math.min(urls.length, 15)); 
+        // Reduzido o fallback de 15 para 5 em caso de erro da IA para minimizar imagens estranhas.
+        return urls.slice(0, Math.min(urls.length, 5)); 
     } catch (error) {
         console.error("Erro no Juiz IA:", error.message);
-        return urls.slice(0, Math.min(urls.length, 15)); 
+        return urls.slice(0, Math.min(urls.length, 5)); 
     }
 }
 
+// CORREÇÃO: Pede mais imagens na primeira rodada para garantir que o Juiz não rejeite tudo
 async function preencherBauRapidoInicial(codigo) {
     const sala = salas[codigo];
     if (!sala) return;
     
     sala.preenchendo = true;
     try {
-        let urlsMisturadas = await buscarCartasMisturadasPixabay(5); 
-        let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
+        // Pedindo 10 imagens de 10 temas = 100 imagens brutas
+        let urlsMisturadas = await buscarCartasMisturadasPixabay(10); 
+        // Analisando 40 em vez de 30 para ter mais gordura pra rejeição
+        let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 40));
         
         if (aprovadas.length > 0) {
             aprovadas.forEach(url => memoriaCartasGlobais.add(url));
             sala.bau.push(...embaralharArray(aprovadas));
-            
             io.to(codigo).emit('atualizarSala', sala);
+        } else {
+             // Fallback de segurança extrema: se o Juiz rejeitar ABSOLUTAMENTE tudo (muito raro), 
+             // forçamos as 5 primeiras para o jogo não travar na tela de loading.
+             console.warn("Juiz rejeitou 100% no lote inicial. Forçando fallback de emergência.");
+             const fallbackUrls = urlsMisturadas.slice(0, 10);
+             fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
+             sala.bau.push(...fallbackUrls);
+             io.to(codigo).emit('atualizarSala', sala);
         }
     } catch (err) {
         console.error("Erro no preenchimento inicial:", err);
