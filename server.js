@@ -18,17 +18,17 @@ const memoriaCartasGlobais = new Set();
 const promptJuizIA = `Você é um curador de arte para um jogo de tabuleiro (estilo Dixit). 
 Analise a lista de URLs de imagens e retorne UM ARRAY JSON com as URLs APROVADAS.
 
-REGRAS PARA REJEITAR (NÃO INCLUA NA RESPOSTA):
-- Fotografias ou fotorrealismo.
-- Rostos humanos realistas (estilo fotografia).
-- Imagens com fundo totalmente branco, fundo transparente ou objetos isolados sem cenário.
-- Padrões repetitivos (tipo papel de parede) ou texturas planas sem profundidade.
+REGRAS DE REJEIÇÃO (Elimine imediatamente se tiver alguma destas):
+1. Fundos transparentes, fundos brancos lisos, pretos lisos ou vazios. O fundo DEVE ter cenário, cores ou arte.
+2. Objetos, animais ou pessoas isoladas/flutuando num espaço vazio sem cenário.
+3. Fotorrealismo extremo ou rostos humanos que pareçam fotografias reais (mesmo com filtros).
+4. Padrões repetitivos (tipo papel de parede) ou texturas lisas sem foco narrativo.
 
-REGRAS PARA APROVAR:
-- Ilustrações, pinturas, arte digital, cenários de fantasia, surreais ou abstratos narrativos.
-- Personagens desenhados/estilizados inseridos num cenário ou paisagem.
+CRITÉRIOS DE APROVAÇÃO:
+- Ilustrações, pinturas digitais, arte surreal, cenários de fantasia.
+- Cenas completas que preencham todo o espaço da imagem (de borda a borda).
 
-Responda APENAS com o JSON. Exemplo: ["url1", "url2", "url3"]`;
+Responda APENAS com o JSON. Exemplo: ["url1", "url2"]`;
 
 function embaralharArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -38,26 +38,12 @@ function embaralharArray(array) {
     return array;
 }
 
-// Lista massiva de temas para garantir diversidade extrema
 const temasBusca = [
-    "surreal", "dream", "fantasy", "illusion", "bizarre",
-    "mystical", "whimsical", "magic", "fairytale", "wonderland",
-    "mythology", "steampunk", "space art", "psychedelic", 
-    "magical realism", "concept art", "otherworldly", "ethereal", 
-    "surrealism", "abstract", "imaginative", "optical illusion",
-    "watercolor fantasy", "oil painting surreal", "digital art stylized",
-    "storybook illustration", "dreamscape", "fantasy landscape",
-    "surreal creatures", "mystical forest", "floating islands",
-    "cosmic art", "alien world", "gothic fantasy", "cyberpunk art",
-    "retro futurism", "enchanted garden", "underwater fantasy",
-    "celestial art", "mind bending", "strange art", "quirky illustration",
-    "surreal portrait", "dreamlike scene", "fantasy architecture",
-    "magical creatures", "surreal nature", "abstract expressionism",
-    "pop surrealism", "lowbrow art", "dark fantasy", "epic fantasy",
-    "surreal collage", "vintage surrealism", "surreal photography manipulation",
-    "origami landscape", "papercraft scene", "claymation style",
-    "cubism art", "fauvism style", "pointillism art", "geometric abstract",
-    "steampunk animals", "watercolor galaxy", "fantasy map"
+    "surreal", "dream", "fantasy landscape", "whimsical", "fairytale", 
+    "mythology", "steampunk city", "space art", "magical realism", 
+    "concept art", "ethereal", "abstract painting", "storybook illustration", 
+    "dreamscape", "mystical forest", "floating islands", "alien world", 
+    "enchanted garden", "underwater fantasy", "mind bending", "dreamlike scene"
 ];
 
 async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
@@ -65,8 +51,11 @@ async function buscarCartasMisturadasPixabay(quantidadePorTema = 5) {
         const temasSorteados = embaralharArray([...temasBusca]).slice(0, 10); 
         const promessas = temasSorteados.map(async (tema) => {
             const randomPage = Math.floor(Math.random() * 20) + 1; 
-            // Pesquisa limpa e direta para não quebrar a API do Pixabay
-            const query = encodeURIComponent(tema);
+            
+            // A SUA IDEIA: Filtros negativos pesados para eliminar lixo e transparência na fonte
+            const query = encodeURIComponent(`${tema} -transparent -isolated -cutout -png -vector -white`);
+            
+            // Removido o editors_choice para voltar a ter milhares de imagens de variedade
             const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${query}&image_type=illustration&orientation=vertical&per_page=${quantidadePorTema}&page=${randomPage}&safesearch=true`;
             
             try {
@@ -112,16 +101,14 @@ async function preencherBauRapidoInicial(codigo) {
     
     sala.preenchendo = true;
     try {
-        let urlsMisturadas = await buscarCartasMisturadasPixabay(5); // 10 temas x 5 = 50 imagens
+        let urlsMisturadas = await buscarCartasMisturadasPixabay(10); 
         
-        // Passa 30 para o Juiz
         let aprovadas = await julgarCartas(urlsMisturadas.slice(0, 30));
         
         if (aprovadas.length > 0) {
             aprovadas.forEach(url => memoriaCartasGlobais.add(url));
             sala.bau.push(...embaralharArray(aprovadas));
         } else {
-            // REDE DE SEGURANÇA: Se a IA rejeitar tudo ou falhar, injeta 10 cartas à força para o jogo nunca bloquear
             console.log(`[AVISO] IA rejeitou todas as imagens iniciais da Sala ${codigo}. Aplicando fallback de segurança.`);
             const fallbackUrls = urlsMisturadas.slice(0, 10);
             fallbackUrls.forEach(url => memoriaCartasGlobais.add(url));
