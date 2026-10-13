@@ -22,6 +22,7 @@
         body { 
             background: var(--bg-dark); color: var(--text-main); 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            position: relative;
         }
         
         /* Glassmorphism Containers */
@@ -90,6 +91,18 @@
             display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
             font-size: 18px; font-weight: 600;
         }
+
+        /* TEXTO DA VERSÃO */
+        .versao-app {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -141,6 +154,11 @@
         <div class="ranking-list" id="ranking-container"></div>
         <button style="margin-top:20px;" onclick="proximaRodada()">Próxima Rodada</button>
     </div>
+
+    <!-- ========================================== -->
+    <!-- MARCADOR DE VERSÃO (Altere aqui no futuro) -->
+    <!-- ========================================== -->
+    <div class="versao-app">Versão 10.62</div>
 
     <script>
         const socket = io();
@@ -230,7 +248,7 @@
                     btnIniciar.style.display = 'block';
                     document.getElementById('lobby-status').innerText = "Pronto para começar!";
                 } else if (sala.bau.length === 0) {
-                    document.getElementById('lobby-status').innerText = "A carregar cartas (Pinterest)...";
+                    document.getElementById('lobby-status').innerText = "A carregar cartas...";
                     btnIniciar.style.display = 'none';
                 }
             }
