@@ -20,6 +20,7 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
+        /* FUNDO FIXO E SEGURO (Gato Mágico/Estrelado tipo Dixit) */
         body, html { 
             color: var(--text-main); 
             min-height: 100dvh; 
@@ -27,38 +28,17 @@
             overflow-y: auto; 
             position: relative;
             background-color: #0f172a; 
-        }
-
-        /* O FUNDO MOSAICO DA VERSÃO 10.10 */
-        #dynamic-background {
-            position: fixed;
-            top: -5%; left: -5%; width: 110%; height: 110%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: 25vh;
-            gap: 15px;
-            opacity: 0.85; /* Cartas bem visíveis */
-            z-index: -3;
-            animation: panMosaico 60s ease-in-out infinite alternate;
-        }
-
-        @keyframes panMosaico {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-3%, -3%) scale(1.05); }
-        }
-
-        .mosaico-item {
+            background-image: url('https://cdn.pixabay.com/photo/2023/12/28/19/22/ai-generated-8474776_1280.jpg');
             background-size: cover;
             background-position: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            background-attachment: fixed;
         }
 
-        /* O Desfoque Mágico que realça o painel */
+        /* Desfoque suave pedido (blur 2px) e leve escurecimento para leitura */
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: -2;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: -1;
         }
 
         .screen {
@@ -187,7 +167,7 @@
             font-weight: 600; margin-top: 30px;
         }
 
-        /* MODAL ECRÃ CHEIO */
+        /* MODAL ECRÃ CHEIO (ZOOM CARTA INTEIRA E BOTÃO) */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -225,8 +205,6 @@
 </head>
 <body>
 
-    <!-- O FUNDO MOSAICO GARANTIDO -->
-    <div id="dynamic-background"></div>
     <div class="bg-overlay"></div>
 
     <div id="image-modal" class="fullscreen-modal">
@@ -237,6 +215,7 @@
         </div>
     </div>
 
+    <!-- ECRÃ DE LOGIN -->
     <div id="login-screen" class="screen active" style="display: flex;">
         <h1 class="main-title">Imagination</h1>
         <div class="title-stars">✨</div>
@@ -271,9 +250,10 @@
             </div>
         </div>
         
-        <div class="versao-app">Versão 10.74</div>
+        <div class="versao-app">Versão 10.75</div>
     </div>
 
+    <!-- ECRÃ DO LOBBY -->
     <div id="lobby-screen" class="screen">
         <h1 class="main-title" id="lobby-titulo">Sala: ----</h1>
         <div class="glass-panel">
@@ -284,18 +264,21 @@
         </div>
     </div>
 
+    <!-- ECRÃ DE JOGO / ESCOLHA DA MÃO -->
     <div id="game-screen" class="screen">
         <h2 id="fase-titulo">Sua Mão</h2>
         <div class="subtitle" id="fase-instrucao" style="color: white; font-weight: 600;">Toque na carta para expandir.</div>
         <div class="carousel-container" id="hand-container"></div>
     </div>
 
+    <!-- ECRÃ DE VOTAÇÃO (GRELHA SEM ZOOM) -->
     <div id="voting-screen" class="screen">
         <h2>Votação</h2>
         <div class="subtitle" id="votacao-instrucao" style="color: white; font-weight: 600;">Toque na carta que acha ser a do Narrador.</div>
         <div class="grid-container" id="table-container"></div>
     </div>
 
+    <!-- ECRÃ DE RESULTADOS DA RONDA -->
     <div id="results-screen" class="screen">
         <h2 style="color: #facc15;">Resultados da Ronda</h2>
         <div class="subtitle" style="color: white; font-weight: 600;">A carta com coroa e brilho é a do Narrador!</div>
@@ -305,6 +288,7 @@
         </div>
     </div>
 
+    <!-- ECRÃ DE RANKING E FIM DE JOGO -->
     <div id="ranking-screen" class="screen">
         <h1 class="main-title" id="titulo-ranking">Ranking Atual</h1>
         <div class="glass-panel">
@@ -326,47 +310,6 @@
         socket.on('connect', () => { meuId = socket.id; });
         socket.on('erro', (msg) => { alert(msg); });
 
-        // GERA O FUNDO MOSAICO ASSIM QUE ABRE A TELA (Para garantir que não fica roxo)
-        const imagensIniciais = [
-            "https://cdn.pixabay.com/photo/2022/11/07/19/12/fantasy-7576976_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/06/18/04/57/crimson-8071231_1280.jpg",
-            "https://cdn.pixabay.com/photo/2021/09/13/08/19/fantasy-6620584_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/11/09/19/36/landscape-8378170_1280.jpg",
-            "https://cdn.pixabay.com/photo/2020/05/26/20/39/bird-5224783_1280.jpg",
-            "https://cdn.pixabay.com/photo/2021/11/21/21/14/nature-6815142_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/12/28/19/22/ai-generated-8474776_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/08/11/04/51/ai-generated-8182766_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/10/24/00/40/ai-generated-8337180_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/07/13/18/34/ai-generated-8125488_1280.jpg",
-            "https://cdn.pixabay.com/photo/2022/10/03/22/05/ai-generated-7496956_1280.jpg",
-            "https://cdn.pixabay.com/photo/2023/01/14/19/50/ai-generated-7718956_1280.jpg"
-        ];
-
-        window.onload = () => {
-            const background = document.getElementById('dynamic-background');
-            const misturadas = imagensIniciais.sort(() => 0.5 - Math.random());
-            misturadas.forEach(url => {
-                const div = document.createElement('div');
-                div.className = 'mosaico-item';
-                div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
-                background.appendChild(div);
-            });
-        };
-
-        function atualizarMosaicoFundo(urls) {
-            const background = document.getElementById('dynamic-background');
-            if (urls && urls.length > 0) {
-                background.innerHTML = '';
-                const amostra = urls.slice(0, 12);
-                amostra.forEach(url => {
-                    const div = document.createElement('div');
-                    div.className = 'mosaico-item';
-                    div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
-                    background.appendChild(div);
-                });
-            }
-        }
-
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => {
                 s.classList.remove('active');
@@ -387,6 +330,9 @@
             alvo.style.display = 'flex';
         }
 
+        // ==========================================
+        // LÓGICA DO MODAL (ZOOM COM BOTÃO)
+        // ==========================================
         function abrirModal(urlClicada) {
             const modal = document.getElementById('image-modal');
             const modalContainer = document.getElementById('modal-container');
@@ -451,6 +397,9 @@
             }
         });
 
+        // ==========================================
+        // RENDERIZAÇÃO DE CARTAS
+        // ==========================================
         function renderizarCartasMao(urls) {
             const container = document.getElementById('hand-container');
             const modalContainer = document.getElementById('modal-container');
@@ -469,7 +418,6 @@
                 modalDiv.dataset.url = url;
                 modalContainer.appendChild(modalDiv);
             });
-            atualizarMosaicoFundo(urls);
         }
 
         function renderizarCartasVotacao(mesaData, isNarrador, jaVotou) {
@@ -490,7 +438,6 @@
                 }
                 container.appendChild(div);
             });
-            atualizarMosaicoFundo(mesaData.map(c => c.cartaUrl));
         }
 
         function renderizarCartasResultados(mesaData, cartaNarradorUrl, jogadores) {
@@ -524,9 +471,11 @@
                 `;
                 container.appendChild(div);
             });
-            atualizarMosaicoFundo(mesaData.map(c => c.cartaUrl));
         }
 
+        // ==========================================
+        // FLUXO DO JOGO
+        // ==========================================
         function verificarSala() {
             const codigo = document.getElementById('player-sala').value.trim();
             if(!codigo) return alert("Digite o código da sala!");
@@ -598,7 +547,6 @@
                     document.getElementById('lobby-status').innerText = `Alvo: ${sala.pontosVitoria} pts. Aguardando...`;
                     btnIniciar.style.display = 'none';
                 }
-                if (sala.bau && sala.bau.length > 0) atualizarMosaicoFundo(sala.bau.slice(0, 10));
             }
 
             if (sala.estado === 'escolha_narrador') {
