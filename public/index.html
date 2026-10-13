@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Imagination</title>
     <script src="/socket.io/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Adicionado: Biblioteca de Confetes para o Fim de Jogo -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #10b981;
@@ -16,6 +18,7 @@
             --text-muted: #cbd5e1;
             --gold-glow: 0 0 20px rgba(250, 204, 21, 0.9);
             --red-alert: #ef4444;
+            --winner-green: #00c896;
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
@@ -167,21 +170,59 @@
 
         .ranking-list {
             background: var(--input-bg); border-radius: 16px; padding: 20px;
-            width: 100%; max-height: 350px; overflow-y: auto; margin-bottom: 15px;
+            width: 100%; max-height: 400px; overflow-y: auto; margin-bottom: 15px;
         }
+        
         .ranking-item {
             display: flex; justify-content: space-between; padding: 15px; 
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
+            border-radius: 8px;
+        }
+        
+        /* 🏆 ESTILOS DA TELA DE FIM DE JOGO (NOVO) 🏆 */
+        .winner-card {
+            background: linear-gradient(135deg, var(--winner-green), #34d399);
+            border-radius: 20px;
+            padding: 28px 20px;
+            text-align: center;
+            box-shadow: 0 10px 32px rgba(0,200,150,0.35);
+            margin-bottom: 24px;
+            width: 100%;
         }
 
-        /* VERSÃO APENAS TELA INICIAL */
+        .trophy { font-size: 52px; display: block; margin-bottom: 10px; }
+
+        .winner-name {
+            font-size: clamp(24px, 7vw, 34px);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .winner-sub {
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+        }
+
+        .ranking-item.winner-row {
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.05));
+            border: 1px solid rgba(250, 204, 21, 0.5);
+            color: #facc15;
+            box-shadow: inset 0 0 10px rgba(250, 204, 21, 0.1);
+        }
+
         .versao-app {
             position: absolute; bottom: 15px; left: 0; width: 100%;
             text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 14px; 
             font-weight: 600; z-index: 100;
         }
 
-        /* MODAL ECRÃ CHEIO (ZOOM FULL SCREEN COM BOTÃO DENTRO) */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -269,9 +310,7 @@
             </div>
         </div>
         
-        <!-- 👇 ATUALIZE A VERSÃO AQUI MANUALMENTE 👇 -->
-        <div class="versao-app">Versão 10.89</div>
-        <!-- 👆 ATUALIZE A VERSÃO AQUI MANUALMENTE 👆 -->
+        <div class="versao-app">Versão 10.90</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
@@ -309,12 +348,20 @@
         </div>
     </div>
 
-    <!-- ECRÃ RANKING GERAL -->
+    <!-- ECRÃ RANKING GERAL E FIM DE JOGO -->
     <div id="ranking-screen" class="screen">
         <h1 class="main-title" id="titulo-ranking">Ranking Atual</h1>
-        <div class="glass-panel">
+        
+        <div class="glass-panel" style="max-width: 500px; width: 100%;">
+            <!-- CAIXA DO VENCEDOR (Injetada via JS apenas no Fim de Jogo) -->
+            <div id="winnerDisplayContainer" style="display: none;"></div>
+            
+            <div class="panel-header" id="subtitulo-ranking" style="font-size: 18px; color: var(--text-muted); display: none;">Placar Final</div>
+            
             <div class="ranking-list" id="ranking-container"></div>
+            
             <button id="btn-proxima-rodada" onclick="proximaRodada()" style="margin-bottom: 0;">Próxima Rodada</button>
+            <button id="btn-reiniciar-jogo" class="btn-link" onclick="location.reload()" style="display: none; margin-top: 15px;">Sair da Sala</button>
         </div>
     </div>
 
@@ -353,7 +400,22 @@
         }
 
         // ==========================================
-        // NOVA LÓGICA BLINDADA DO MODAL (VERSÃO 10.89)
+        // ANIMAÇÃO DE CONFETES (FIM DE JOGO)
+        // ==========================================
+        function dispararConfete() {
+            if (typeof confetti === "function") {
+                const end = Date.now() + 3500;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+                const interval = setInterval(() => {
+                    const left = end - Date.now();
+                    if (left <= 0) return clearInterval(interval);
+                    confetti({ ...defaults, particleCount: 50 * (left / 3500), origin: { x: Math.random(), y: Math.random() - 0.2 } });
+                }, 250);
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DO MODAL 
         // ==========================================
         function atualizarBotaoPelaCarta(cardElement) {
             const btn = document.getElementById('btn-modal-acao');
@@ -383,10 +445,7 @@
             const targetCard = Array.from(modalContainer.children).find(c => c.dataset.url === urlClicada);
             
             if (targetCard) {
-                // ATUALIZA O BOTÃO IMEDIATAMENTE (Sem esperar pela matemática do scroll)
                 atualizarBotaoPelaCarta(targetCard);
-                
-                // Remove animação suave para não confundir as posições no telemóvel
                 setTimeout(() => { 
                     targetCard.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); 
                 }, 10);
@@ -411,7 +470,6 @@
             btn.dataset.textoOriginal = texto;
             btn.dataset.textoDesativado = textoDesativado;
             
-            // Se o ecrã do zoom estiver aberto por algum motivo, garante que atualiza
             if (cartaSelecionadaVisivel) {
                  const container = document.getElementById('modal-container');
                  const currentCard = Array.from(container.children).find(c => c.dataset.url === cartaSelecionadaVisivel);
@@ -419,12 +477,9 @@
             }
         }
 
-        // O evento de scroll continua a existir apenas para atualizar o botão se você arrastar o dedo para o lado (Swipe)
         document.getElementById('modal-container').addEventListener('scroll', function() {
             const btn = document.getElementById('btn-modal-acao');
             if(btn.style.display === 'none') return;
-
-            // Prevenção extra: se a largura do ecrã ainda for 0, ignora para não causar bugs
             if (this.clientWidth === 0) return; 
 
             let centerOffset = this.scrollLeft + this.clientWidth / 2;
@@ -578,7 +633,7 @@
                 mostrarTela('lobby-screen');
                 document.getElementById('lobby-titulo').innerText = `Sala: ${codigo}`;
                 let htmlList = '';
-                sala.jogadores.forEach(j => { htmlList += `<div class="ranking-item"><span>${j.nome}</span></div>`; });
+                sala.jogadores.forEach(j => { htmlList += `<div class="ranking-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); border-radius:0;"><span>${j.nome}</span></div>`; });
                 document.getElementById('jogadores-list').innerHTML = htmlList;
 
                 const isHost = sala.jogadores[0].id === meuId;
@@ -652,20 +707,64 @@
                 mostrarTela('results-screen');
                 renderizarCartasResultados(sala.mesa, sala.cartaNarradorUrl, sala.jogadores);
                 
+                // LÓGICA DO RANKING E FIM DE JOGO
+                const jogadoresOrdenados = [...sala.jogadores].sort((a,b) => b.pontos - a.pontos);
                 let rankingHtml = '';
-                [...sala.jogadores].sort((a,b) => b.pontos - a.pontos).forEach(j => {
-                    rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span style="color: var(--primary);">${j.pontos} pts</span></div>`;
+                const maxPts = jogadoresOrdenados[0].pontos;
+
+                jogadoresOrdenados.forEach(j => {
+                    // Se for o Fim do Jogo, o vencedor recebe um estilo visual especial na lista
+                    const isWinner = (sala.estado === 'fim_jogo' && j.pontos === maxPts);
+                    const rowClass = isWinner ? 'ranking-item winner-row' : 'ranking-item';
+                    const scoreColor = isWinner ? '#facc15' : 'var(--primary)';
+                    
+                    rankingHtml += `
+                        <div class="${rowClass}" style="${!isWinner ? 'border-bottom: 1px solid rgba(255,255,255,0.1); border-radius:0;' : ''}">
+                            <span>${isWinner ? '👑 ' : ''}${j.nome}</span> 
+                            <span style="color: ${scoreColor}; font-weight:900;">${j.pontos} pts</span>
+                        </div>`;
                 });
+                
                 document.getElementById('ranking-container').innerHTML = rankingHtml;
 
                 if (sala.estado === 'fim_jogo') {
+                    // CONFIGURAR TELA DE FIM DE JOGO ESTILO "DIXIT SCORE"
                     document.getElementById('titulo-ranking').innerText = "🎉 FIM DE JOGO! 🎉";
-                    document.getElementById('titulo-ranking').style.color = "#facc15";
+                    document.getElementById('subtitulo-ranking').style.display = "block";
                     document.getElementById('btn-proxima-rodada').style.display = "none";
+                    document.getElementById('btn-reiniciar-jogo').style.display = "block";
+                    
+                    // Constrói o Cartão Verde de Vencedor
+                    const vencedores = jogadoresOrdenados.filter(j => j.pontos === maxPts).map(j => j.nome);
+                    const winnerContainer = document.getElementById('winnerDisplayContainer');
+                    winnerContainer.style.display = "block";
+                    
+                    const nameHtml = vencedores.length > 1
+                        ? `<div class="winner-sub">Empate!</div><div class="winner-name">${vencedores.join(' & ')}</div>`
+                        : `<div class="winner-sub">Vencedor</div><div class="winner-name">${vencedores[0]}</div>`;
+                        
+                    winnerContainer.innerHTML = `
+                        <div class="winner-card">
+                            <span class="trophy">🏆</span>
+                            ${nameHtml}
+                            <div class="winner-sub" style="margin-top:8px">${maxPts} pontos</div>
+                        </div>`;
+                    
+                    // Dispara a animação se o painel de ranking for mostrado
+                    const originalVerRanking = verRanking;
+                    verRanking = function() {
+                        originalVerRanking();
+                        dispararConfete();
+                        // Garante que só dispara uma vez ao clicar
+                        verRanking = originalVerRanking; 
+                    };
+
                 } else {
                     document.getElementById('titulo-ranking').innerText = "Ranking Atual";
-                    document.getElementById('titulo-ranking').style.color = "#ffffff";
+                    document.getElementById('subtitulo-ranking').style.display = "none";
+                    document.getElementById('winnerDisplayContainer').style.display = "none";
                     document.getElementById('btn-proxima-rodada').style.display = "block";
+                    document.getElementById('btn-reiniciar-jogo').style.display = "none";
                 }
             }
         });
