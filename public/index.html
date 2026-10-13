@@ -20,7 +20,7 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* FUNDO ALEGRE E VIBRANTE (Tinta Abstrata) */
+        /* FUNDO NOVO: PORTAL DE FANTASIA SURREAL (A ESSÊNCIA DO DIXIT) */
         body, html { 
             color: var(--text-main); 
             min-height: 100dvh; 
@@ -28,7 +28,8 @@
             overflow-y: auto; 
             position: relative;
             background-color: #0f172a; 
-            background-image: url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1920&q=80');
+            /* Nova imagem: Arte de fantasia / Portal onírico */
+            background-image: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -36,15 +37,15 @@
 
         .bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.25);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: -1;
+            /* Ajustado o escurecimento para dar mais destaque ao fundo novo */
+            background: rgba(15, 23, 42, 0.40);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: -1;
         }
 
         .screen {
             display: none; flex-direction: column; min-height: 100dvh; 
             padding: 30px 20px; align-items: center; justify-content: flex-start;
         }
-        /* GARANTE QUE A TELA ATIVA SEMPRE APARECE */
         .screen.active { display: flex !important; }
 
         .main-title {
@@ -95,7 +96,7 @@
 
         h2 { text-align: center; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 28px; }
 
-        /* ESTILO 1: CARTAS GRANDES NA MÃO (CARROSSEL HORIZONTAL) */
+        /* ESTILO 1: CARTAS GRANDES NA MÃO */
         .carousel-container {
             display: flex; gap: 20px; overflow-x: auto; padding: 20px 10px;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
@@ -117,7 +118,7 @@
             font-size: 13px; backdrop-filter: blur(4px); pointer-events: none;
         }
 
-        /* ESTILO 2: CARTAS NA MESA (GRELHA - PARA VOTAÇÃO E RESULTADOS) */
+        /* ESTILO 2: CARTAS NA MESA */
         .grid-container {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; 
             padding: 20px 10px; width: 100%; max-width: 600px;
@@ -130,7 +131,6 @@
         }
         .carta-pequena:active { transform: scale(0.95); }
         
-        /* BORDA VERMELHA (CARTA DO PRÓPRIO JOGADOR) */
         .carta-propria {
             border: 4px solid var(--red-alert) !important; 
             pointer-events: none;
@@ -162,13 +162,12 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: 600;
         }
 
-        /* VERSÃO APENAS NA TELA DE LOGIN */
         .versao-app {
             text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 14px; 
             font-weight: 600; margin-top: 30px;
         }
 
-        /* MODAL ECRÃ CHEIO (ZOOM FULL COM BOTÃO DENTRO) */
+        /* MODAL ECRÃ CHEIO */
         .fullscreen-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column;
@@ -190,7 +189,6 @@
         }
         .modal-carousel::-webkit-scrollbar { display: none; }
         
-        /* CARTA FULL NO ZOOM (cover) */
         .modal-carta {
             flex: 0 0 100%; height: 80vh; border-radius: 20px;
             background-size: cover; background-repeat: no-repeat; background-position: center; 
@@ -218,8 +216,7 @@
         </div>
     </div>
 
-    <!-- ECRÃ DE LOGIN (O único que mostra a versão) -->
-    <!-- ESTE ECRÃ AGORA TEM display: flex E class="active" DIRETO NO CSS E HTML PARA NÃO SUMIR -->
+    <!-- ECRÃ DE LOGIN -->
     <div id="login-screen" class="screen active" style="display: flex;">
         <h1 class="main-title">Imagination</h1>
         <div class="title-stars">✨</div>
@@ -254,8 +251,7 @@
             </div>
         </div>
         
-        <!-- A VERSÃO FICA SÓ AQUI -->
-        <div class="versao-app">Versão 10.71</div>
+        <div class="versao-app">Versão 10.72</div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
@@ -283,7 +279,7 @@
         <div class="grid-container" id="table-container"></div>
     </div>
 
-    <!-- ECRÃ DE RESULTADOS DA RONDA (GRELHA COM INFO) -->
+    <!-- ECRÃ DE RESULTADOS DA RONDA -->
     <div id="results-screen" class="screen">
         <h2 style="color: #facc15;">Resultados da Ronda</h2>
         <div class="subtitle" style="color: white; font-weight: 600;">A carta com coroa e brilho é a do Narrador!</div>
@@ -316,15 +312,14 @@
         socket.on('connect', () => { meuId = socket.id; });
         socket.on('erro', (msg) => { alert(msg); });
 
-        // NAVEGAÇÃO DE TELAS
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => {
                 s.classList.remove('active');
-                s.style.display = 'none'; // Garante o sumiço
+                s.style.display = 'none'; 
             });
             const alvo = document.getElementById(id);
             alvo.classList.add('active');
-            alvo.style.display = 'flex'; // Força a exibição
+            alvo.style.display = 'flex'; 
         }
 
         function mostrarPainel(id) {
