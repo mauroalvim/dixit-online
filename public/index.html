@@ -8,89 +8,126 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
             --primary: #10b981;
             --primary-hover: #059669;
             --text-main: #f8fafc;
-            --gold-glow: 0 0 20px rgba(250, 204, 21, 0.6);
+            --gold-glow: 0 0 20px rgba(250, 204, 21, 0.8);
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
+        /* Fundo imersivo com imagem surreal */
         body { 
-            background: var(--bg-dark); color: var(--text-main); 
-            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            color: var(--text-main); 
+            height: 100vh; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column;
+            background-image: url('https://cdn.pixabay.com/photo/2021/09/13/08/19/fantasy-6620584_1280.jpg');
+            background-size: cover;
+            background-position: center;
             position: relative;
         }
+
+        /* Camada de desfoque (Glassmorphism global) */
+        .bg-blur {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            backdrop-filter: blur(25px) brightness(0.6);
+            -webkit-backdrop-filter: blur(25px) brightness(0.6);
+            z-index: -1;
+        }
         
-        /* Glassmorphism Containers */
         .screen {
             display: none; flex-direction: column; height: 100%; padding: 20px;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
         .screen.active { display: flex; }
 
-        h1, h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-
-        /* Inputs e Botões */
-        input {
-            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);
-            background: var(--glass-bg); color: white; margin-bottom: 15px; font-size: 16px;
-            backdrop-filter: blur(10px);
+        /* Painel de Vidro para Login e Lobby */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .subtitle { text-align: center; color: #cbd5e1; font-size: 14px; margin-bottom: 25px; }
+
+        /* Inputs e Botões com estilo translúcido */
+        input {
+            width: 100%; padding: 15px; border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2); color: white; 
+            margin-bottom: 15px; font-size: 16px;
+            outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.4); }
+        input::placeholder { color: #94a3b8; }
+
         button {
             width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600;
             background: var(--primary); color: white; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); margin-bottom: 10px;
         }
         button:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-2px); }
-        button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; }
+        button:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); cursor: not-allowed; box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
         
-        .btn-secondary { background: #3b82f6; }
-        .btn-secondary:hover { background: #2563eb; }
+        .btn-secondary { background: rgba(59, 130, 246, 0.8); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        .btn-secondary:hover { background: rgba(37, 99, 235, 1); }
 
         /* Grid de Cartas com Scroll Horizontal Estilo Carrossel */
         .cards-container {
             display: flex; gap: 15px; overflow-x: auto; padding: 20px 0;
             scroll-snap-type: x mandatory; scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            flex-grow: 1; align-items: center;
         }
         .cards-container::-webkit-scrollbar { display: none; }
         
         .carta {
-            flex: 0 0 80%; max-width: 300px; height: 60vh; border-radius: 16px;
+            flex: 0 0 75%; max-width: 320px; height: 60vh; border-radius: 16px;
             scroll-snap-align: center; position: relative;
             background-size: cover; background-position: center;
-            border: 2px solid var(--glass-border); box-shadow: 0 10px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             transition: transform 0.3s ease;
         }
         
         /* Destaques Especiais */
-        .carta-narrador { border: 4px solid #facc15; box-shadow: var(--gold-glow); }
-        .borda-desativada { opacity: 0.4; pointer-events: none; }
+        .carta-narrador { border: 3px solid #facc15; box-shadow: var(--gold-glow); }
         
         /* Detalhes nos Resultados */
         .carta-info {
-            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8);
-            padding: 10px; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
-            text-align: center; backdrop-filter: blur(5px);
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.75);
+            padding: 12px; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;
+            text-align: center; backdrop-filter: blur(8px);
         }
-        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 14px; }
+        .dono-texto { font-weight: 800; color: #38bdf8; font-size: 15px; }
         .dono-texto.dono-narrador { color: #facc15; }
-        .votos-texto { font-size: 12px; color: #cbd5e1; margin-top: 4px; }
+        .votos-texto { font-size: 13px; color: #e2e8f0; margin-top: 4px; }
 
         /* Ranking List */
         .ranking-list {
-            background: var(--glass-bg); border-radius: 16px; padding: 20px;
-            border: 1px solid var(--glass-border); flex-grow: 1; overflow-y: auto;
+            background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1); width: 100%;
+            max-height: 200px; overflow-y: auto;
         }
         .ranking-item {
-            display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 18px; font-weight: 600;
+            display: flex; justify-content: space-between; padding: 12px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 16px; font-weight: 600;
         }
+        .ranking-item:last-child { border-bottom: none; }
 
         /* TEXTO DA VERSÃO */
         .versao-app {
@@ -98,7 +135,7 @@
             bottom: 10px;
             width: 100%;
             text-align: center;
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.4);
             font-size: 12px;
             pointer-events: none;
             z-index: 1000;
@@ -107,21 +144,27 @@
 </head>
 <body>
 
+    <div class="bg-blur"></div>
+
     <!-- ECRÃ DE LOGIN -->
     <div id="login-screen" class="screen active">
-        <h1>Imagination</h1>
-        <div class="subtitle">O Jogo das Cartas Surreais</div>
-        <input type="text" id="nome-input" placeholder="Seu Nickname">
-        <input type="number" id="sala-input" placeholder="Código da Sala (Ex: 1234)">
-        <button onclick="entrarSala()">Entrar na Sala</button>
+        <div class="glass-panel">
+            <h1>Imagination</h1>
+            <div class="subtitle">O Jogo das Cartas Surreais</div>
+            <input type="text" id="nome-input" placeholder="Seu Nickname">
+            <input type="number" id="sala-input" placeholder="Código da Sala (Ex: 1234)">
+            <button onclick="entrarSala()">Entrar na Sala</button>
+        </div>
     </div>
 
     <!-- ECRÃ DO LOBBY -->
     <div id="lobby-screen" class="screen">
-        <h1 id="lobby-titulo">Sala: ----</h1>
-        <div class="subtitle" id="lobby-status">Aguardando jogadores...</div>
-        <div class="ranking-list" id="jogadores-list"></div>
-        <button id="btn-iniciar" style="margin-top: 20px; display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
+        <div class="glass-panel">
+            <h1 id="lobby-titulo">Sala: ----</h1>
+            <div class="subtitle" id="lobby-status">Aguardando jogadores...</div>
+            <div class="ranking-list" id="jogadores-list"></div>
+            <button id="btn-iniciar" style="margin-top: 20px; display: none;" onclick="iniciarPartida()">Iniciar Jogo</button>
+        </div>
     </div>
 
     <!-- ECRÃ DE JOGO / ESCOLHA -->
@@ -142,23 +185,25 @@
 
     <!-- ECRÃ DE RESULTADOS DA RONDA -->
     <div id="results-screen" class="screen">
-        <h2 style="color: #facc15;">Resultados da Ronda</h2>
-        <div class="subtitle">A carta dourada era do Narrador!</div>
+        <h2 style="color: #facc15; text-shadow: 0 0 10px rgba(250,204,21,0.5);">Resultados da Ronda</h2>
+        <div class="subtitle">A carta com brilho dourado era do Narrador!</div>
         <div class="cards-container" id="results-container"></div>
         <button class="btn-secondary" onclick="verRanking()">Ver Ranking</button>
     </div>
 
     <!-- ECRÃ DE RANKING FINAL -->
     <div id="ranking-screen" class="screen">
-        <h2>Ranking Atual</h2>
-        <div class="ranking-list" id="ranking-container"></div>
-        <button style="margin-top:20px;" onclick="proximaRodada()">Próxima Rodada</button>
+        <div class="glass-panel" style="max-width: 500px;">
+            <h2>Ranking Atual</h2>
+            <div class="ranking-list" id="ranking-container" style="max-height: 400px; margin-bottom: 20px;"></div>
+            <button onclick="proximaRodada()">Próxima Rodada</button>
+        </div>
     </div>
 
     <!-- ========================================== -->
     <!-- MARCADOR DE VERSÃO (Altere aqui no futuro) -->
     <!-- ========================================== -->
-    <div class="versao-app">Versão 10.62</div>
+    <div class="versao-app">Versão 10.63</div>
 
     <script>
         const socket = io();
@@ -191,7 +236,6 @@
             mostrarTela('ranking-screen');
         }
 
-        // Função para configurar o comportamento do Swipe/Carrossel e botão central
         function setupCarousel(containerId, btnId, callbackAcao, regraDesativacao) {
             const container = document.getElementById(containerId);
             const btn = document.getElementById(btnId);
@@ -213,7 +257,6 @@
 
                 if (closestCard) {
                     cartaSelecionadaVisivel = closestCard.dataset.url;
-                    // Aplica regra extra para desativar botão (ex: se for própria carta na votação)
                     if (regraDesativacao && regraDesativacao(closestCard)) {
                         btn.disabled = true;
                     } else {
@@ -237,11 +280,10 @@
                 
                 let htmlList = '';
                 sala.jogadores.forEach(j => {
-                    htmlList += `<div class="ranking-item">${j.nome}</div>`;
+                    htmlList += `<div class="ranking-item"><span>${j.nome}</span></div>`;
                 });
                 document.getElementById('jogadores-list').innerHTML = htmlList;
 
-                // Só o primeiro que entrou (host) pode dar start se houver 2+ jogadores e baú não vazio
                 const isHost = sala.jogadores[0].id === meuId;
                 const btnIniciar = document.getElementById('btn-iniciar');
                 if (isHost && sala.jogadores.length >= 2 && sala.bau.length > 0) {
@@ -266,7 +308,7 @@
                 } else {
                     document.getElementById('fase-titulo').innerText = "Aguarde o Narrador...";
                     document.getElementById('fase-instrucao').innerText = "O narrador está a pensar na dica.";
-                    document.getElementById('hand-container').innerHTML = ''; // Esconde a mão
+                    document.getElementById('hand-container').innerHTML = ''; 
                     btn.disabled = true;
                 }
             }
@@ -304,7 +346,7 @@
                 const jaVotou = sala.mesa.some(c => c.votos.includes(meuId));
                 
                 const urlsMesa = sala.mesa.map(c => c.cartaUrl);
-                renderizarCartas(urlsMesa, 'table-container', sala.mesa); // Passa a mesa para saber os donos
+                renderizarCartas(urlsMesa, 'table-container', sala.mesa); 
 
                 if (isNarrador) {
                     document.getElementById('votacao-instrucao').innerText = "O Narrador não vota. Assista ao caos!";
@@ -314,8 +356,6 @@
                     btn.disabled = true;
                 } else {
                     document.getElementById('votacao-instrucao').innerText = "Deslize e vote na carta que acha ser a do Narrador.";
-                    
-                    // Regra: Desativar se a carta centrada for do próprio jogador
                     setupCarousel('table-container', 'btn-votar', 
                         (url) => socket.emit('votarCarta', { codigo, cartaUrl: url }),
                         (cardElement) => cardElement.dataset.dono === meuId
@@ -326,7 +366,6 @@
             // 5. FASE: RESULTADOS
             if (sala.estado === 'resultado') {
                 mostrarTela('results-screen');
-                
                 const container = document.getElementById('results-container');
                 container.innerHTML = '';
                 
@@ -355,9 +394,7 @@
                     container.appendChild(div);
                 });
                 
-                // Atualiza também o HTML do Ranking
                 let rankingHtml = '';
-                // Ordena por pontos
                 [...sala.jogadores].sort((a,b) => b.pontos - a.pontos).forEach(j => {
                     rankingHtml += `<div class="ranking-item"><span>${j.nome}</span> <span>${j.pontos} pts</span></div>`;
                 });
@@ -374,7 +411,6 @@
                 div.style.backgroundImage = `url('${url}')`;
                 div.dataset.url = url;
                 
-                // Se for a mesa, guardar quem é o dono no DOM para impedir auto-voto
                 if (mesaData) {
                     const cartaObj = mesaData.find(c => c.cartaUrl === url);
                     if (cartaObj) div.dataset.dono = cartaObj.jogadorId;
@@ -382,7 +418,6 @@
                 
                 container.appendChild(div);
             });
-            // Aciona scroll inicial manual para setar o botão
             container.dispatchEvent(new Event('scroll'));
         }
     </script>
