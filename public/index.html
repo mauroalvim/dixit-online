@@ -19,12 +19,12 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* Fundo Seguro: Cor sólida + Imagem do Unsplash que não bloqueia */
+        /* Fundo Seguro, Elegante e Abstrato (Semelhante à v10.10) */
         body { 
-            background-color: #0f172a;
-            background-image: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=2000&q=80');
-            background-size: cover;
-            background-position: center;
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            /* Imagem baseada em CSS puramente gerado (abstract waves) */
+            background-image: radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
             color: var(--text-main); 
             height: 100vh; 
             overflow: hidden; 
@@ -99,7 +99,6 @@
         }
         .panel-footer:hover { color: #fde047; }
 
-        /* Estilos do Jogo em si */
         h2 { text-align: center; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .cards-container {
             display: flex; gap: 15px; overflow-x: auto; padding: 20px 0;
@@ -137,14 +136,13 @@
 </head>
 <body>
 
-    <!-- ECRÃ DE LOGIN (Com abas dinâmicas Host/Player) -->
+    <!-- ECRÃ DE LOGIN (Painéis Dinâmicos) -->
     <div id="login-screen" class="screen active">
         <h1 class="main-title">Imagination</h1>
         <div class="title-stars">✨</div>
         
         <div class="glass-panel">
             
-            <!-- PAINEL 1: Jogador só insere a Sala -->
             <div id="painel-player-codigo" class="login-subpanel active">
                 <div class="panel-header">🎮 Entrar na Partida</div>
                 <div class="subtitle">Digite o código fornecido pelo Host.</div>
@@ -155,7 +153,6 @@
                 </div>
             </div>
 
-            <!-- PAINEL 2: Jogador insere o Nome (depois de validar a sala) -->
             <div id="painel-player-nome" class="login-subpanel">
                 <div class="panel-header">👤 Quase lá!</div>
                 <div class="subtitle">Como quer ser chamado nesta partida?</div>
@@ -164,12 +161,11 @@
                 <button class="btn-link" onclick="mostrarPainel('painel-player-codigo')">Voltar</button>
             </div>
 
-            <!-- PAINEL 3: Host cria a sala -->
             <div id="painel-host" class="login-subpanel">
                 <div class="panel-header">👑 Nova Sala</div>
                 <div class="subtitle">Configure a sua partida.</div>
                 <input type="text" id="host-nome" placeholder="Seu Nickname">
-                <input type="number" id="host-sala" placeholder="Invente um Código (Ex: 1234)">
+                <input type="number" id="host-sala" placeholder="Deixe vazio para gerar código">
                 <input type="number" id="host-pontos" placeholder="Pontos para Vencer (Ex: 30)">
                 <button class="btn-secondary" onclick="criarSalaHost()">Criar Sala</button>
                 <button class="btn-link" onclick="mostrarPainel('painel-player-codigo')">Cancelar</button>
@@ -228,7 +224,7 @@
         </div>
     </div>
 
-    <div class="versao-app">Versão 10.65</div>
+    <div class="versao-app">Versão 10.66</div>
 
     <script>
         const socket = io();
@@ -238,10 +234,8 @@
         let salaDesejada = null;
 
         socket.on('connect', () => { meuId = socket.id; });
-
         socket.on('erro', (msg) => { alert(msg); });
 
-        // CONTROLO DE ECRÃS E PAINÉIS DE LOGIN
         function mostrarTela(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -252,7 +246,6 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // FLUXO DO JOGADOR
         function verificarSala() {
             const codigo = document.getElementById('player-sala').value.trim();
             if(!codigo) return alert("Digite o código da sala!");
@@ -264,7 +257,7 @@
             if(existe) {
                 mostrarPainel('painel-player-nome');
             } else {
-                alert("Sala não encontrada! Verifique o código ou crie uma nova sala.");
+                alert("Sala não encontrada! Verifique o código.");
             }
         });
 
@@ -275,28 +268,31 @@
             }
         }
 
-        // FLUXO DO HOST
         function criarSalaHost() {
             const nome = document.getElementById('host-nome').value.trim();
             const codigo = document.getElementById('host-sala').value.trim();
             const pontos = document.getElementById('host-pontos').value.trim();
-            if(!nome || !codigo || !pontos) return alert("Preencha todos os campos!");
+            if(!nome || !pontos) return alert("Preencha o seu nome e os pontos!");
             socket.emit('criarSala', { nome, codigo, pontosVitoria: pontos });
         }
 
+        // Caso o servidor gere um código aleatório, o front-end guarda-o
+        socket.on('salaCriada', (codigo) => {
+            document.getElementById('host-sala').value = codigo;
+            salaDesejada = codigo;
+        });
+
         function iniciarPartida() {
-            if(minhaSala) socket.emit('iniciarPartida', minhaSala.codigo || document.getElementById('host-sala').value || document.getElementById('player-sala').value);
+            const cod = (minhaSala && minhaSala.codigo) || document.getElementById('host-sala').value || salaDesejada;
+            if(cod) socket.emit('iniciarPartida', cod);
         }
 
         function proximaRodada() {
-            // Usa a variável global minhaSala para aceder ao código da sala atual
-            const cod = document.getElementById('host-sala').value || document.getElementById('player-sala').value;
-            socket.emit('proximaRodada', cod);
+            const cod = (minhaSala && minhaSala.codigo) || document.getElementById('host-sala').value || salaDesejada;
+            if(cod) socket.emit('proximaRodada', cod);
         }
 
-        function verRanking() {
-            mostrarTela('ranking-screen');
-        }
+        function verRanking() { mostrarTela('ranking-screen'); }
 
         function setupCarousel(containerId, btnId, callbackAcao, regraDesativacao) {
             const container = document.getElementById(containerId);
@@ -311,10 +307,7 @@
                 cards.forEach(card => {
                     let cardCenter = card.offsetLeft + card.clientWidth / 2;
                     let distance = Math.abs(centerOffset - cardCenter);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestCard = card;
-                    }
+                    if (distance < minDistance) { minDistance = distance; closestCard = card; }
                 });
 
                 if (closestCard) {
@@ -331,8 +324,9 @@
 
         socket.on('atualizarSala', (sala) => {
             minhaSala = sala;
-            const codigo = document.getElementById('host-sala').value || document.getElementById('player-sala').value;
+            const codigo = sala.codigo || salaDesejada;
             const eu = sala.jogadores.find(j => j.id === meuId);
+            if (!eu) return;
             const isNarrador = sala.jogadores[sala.narradorIndex].id === meuId;
 
             if (sala.estado === 'aguardando') {
@@ -354,7 +348,7 @@
                     document.getElementById('lobby-status').innerText = "A carregar cartas...";
                     btnIniciar.style.display = 'none';
                 } else {
-                    document.getElementById('lobby-status').innerText = `Alvo: ${sala.pontosVitoria} pts. Aguardando jogadores...`;
+                    document.getElementById('lobby-status').innerText = `Alvo: ${sala.pontosVitoria} pts. Aguardando...`;
                     btnIniciar.style.display = 'none';
                 }
             }
@@ -365,7 +359,7 @@
                 
                 if (isNarrador) {
                     document.getElementById('fase-titulo').innerText = "VOCÊ É O NARRADOR!";
-                    document.getElementById('fase-instrucao').innerText = "Diga a sua dica em voz alta e escolha uma carta.";
+                    document.getElementById('fase-instrucao').innerText = "Diga a dica em voz alta e escolha uma carta.";
                     renderizarCartas(eu.mao, 'hand-container');
                     setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
                 } else {
@@ -394,7 +388,7 @@
                         btn.disabled = true;
                     } else {
                         document.getElementById('fase-titulo').innerText = "A dica foi dada!";
-                        document.getElementById('fase-instrucao').innerText = "Escolha uma carta da sua mão que combine com a dica.";
+                        document.getElementById('fase-instrucao').innerText = "Escolha a carta que mais combina com a dica.";
                         renderizarCartas(eu.mao, 'hand-container');
                         setupCarousel('hand-container', 'btn-acao-escolha', (url) => socket.emit('jogarCarta', { codigo, cartaUrl: url }));
                     }
@@ -416,7 +410,7 @@
                     document.getElementById('votacao-instrucao').innerText = "Voto registado. Aguarde os outros...";
                     btn.disabled = true;
                 } else {
-                    document.getElementById('votacao-instrucao').innerText = "Deslize e vote na carta que acha ser a do Narrador.";
+                    document.getElementById('votacao-instrucao').innerText = "Vote na carta que acha ser a do Narrador.";
                     setupCarousel('table-container', 'btn-votar', 
                         (url) => socket.emit('votarCarta', { codigo, cartaUrl: url }),
                         (cardElement) => cardElement.dataset.dono === meuId
@@ -441,7 +435,8 @@
                     const div = document.createElement('div');
                     div.className = 'carta';
                     if (isCardNarrador) div.classList.add('carta-narrador');
-                    div.style.backgroundImage = `url('${cartaObj.cartaUrl}')`;
+                    // O SEGREDO ESTÁ AQUI: O frontend anexa o "/proxy?url=" para contornar o bloqueio visual!
+                    div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(cartaObj.cartaUrl)}')`;
                     
                     div.innerHTML = `
                         <div class="carta-info">
@@ -478,7 +473,8 @@
             urls.forEach(url => {
                 const div = document.createElement('div');
                 div.className = 'carta';
-                div.style.backgroundImage = `url('${url}')`;
+                // O SEGREDO ESTÁ AQUI TAMBÉM!
+                div.style.backgroundImage = `url('/proxy?url=${encodeURIComponent(url)}')`;
                 div.dataset.url = url;
                 
                 if (mesaData) {
@@ -488,7 +484,8 @@
                 
                 container.appendChild(div);
             });
-            container.dispatchEvent(new Event('scroll'));
+            // Aciona o evento de scroll levemente para ativar o botão de seleção da primeira carta
+            setTimeout(() => { container.dispatchEvent(new Event('scroll')); }, 100);
         }
     </script>
 </body>
